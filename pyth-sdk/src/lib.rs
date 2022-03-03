@@ -21,7 +21,7 @@ type ProductIdentifier = [u8; 32];
     BorshDeserialize,
     serde::Serialize,
     serde::Deserialize,
-    JsonSchema
+    JsonSchema,
 )]
 #[repr(C)]
 pub enum PriceStatus {
@@ -53,7 +53,7 @@ impl Default for PriceStatus {
     BorshDeserialize,
     serde::Serialize,
     serde::Deserialize,
-    JsonSchema
+    JsonSchema,
 )]
 #[repr(C)]
 pub struct Price {
@@ -121,12 +121,12 @@ impl Price {
      * `result_expo` determines the exponent of the result, i.e., the number of digits below the decimal
      * point. This method returns `None` if either the price or confidence are too large to be
      * represented with the requested exponent.
-     * 
+     *
      * Example:
      * ```ignore
      * let btc_usd: Price = ...;
      * let eth_usd: Price = ...;
-     * // -8 is the desired exponent for the result 
+     * // -8 is the desired exponent for the result
      * let btc_eth: PriceConf = btc_usd.get_price_in_quote(&eth_usd, -8);
      * println!("BTC/ETH price: ({} +- {}) x 10^{}", price.price, price.conf, price.expo);
      * ```
@@ -146,7 +146,7 @@ impl Price {
      * The result is returned with exponent `result_expo`.
      *
      * An example use case for this function is to get the value of an LP token.
-     * 
+     *
      * Example:
      * ```ignore
      * let btc_usd: Price = ...;

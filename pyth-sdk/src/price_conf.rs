@@ -12,7 +12,7 @@ const MAX_PD_V_U64: u64 = (1 << 28) - 1;
 
 /**
  * A price with a degree of uncertainty, represented as a price +- a confidence interval.
- * 
+ *
  * The confidence interval roughly corresponds to the standard error of a normal distribution.
  * Both the price and confidence are stored in a fixed-point numeric representation, `x * 10^expo`,
  * where `expo` is the exponent. For example:
@@ -42,7 +42,7 @@ const MAX_PD_V_U64: u64 = (1 << 28) - 1;
     BorshDeserialize,
     serde::Serialize,
     serde::Deserialize,
-    JsonSchema
+    JsonSchema,
 )]
 pub struct PriceConf {
     pub price: i64,
