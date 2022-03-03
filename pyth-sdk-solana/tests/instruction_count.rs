@@ -1,7 +1,8 @@
-use {
-    pyth_client::{instruction, PriceConf},
-    solana_program_test::*,
+use pyth_client::{
+    instruction,
+    PriceConf,
 };
+use solana_program_test::*;
 
 mod common;
 use common::test_instr_exec_ok;
@@ -9,8 +10,8 @@ use common::test_instr_exec_ok;
 fn pc(price: i64, conf: u64, expo: i32) -> PriceConf {
     PriceConf {
         price: price,
-        conf: conf,
-        expo: expo,
+        conf:  conf,
+        expo:  expo,
     }
 }
 
@@ -56,26 +57,17 @@ async fn test_normalize_best_case() {
 
 #[tokio::test]
 async fn test_div_max_price() {
-    test_instr_exec_ok(instruction::divide(
-        pc(i64::MAX, 1, 0),
-        pc(1, 1, 0)
-    )).await;
+    test_instr_exec_ok(instruction::divide(pc(i64::MAX, 1, 0), pc(1, 1, 0))).await;
 }
 
 #[tokio::test]
 async fn test_div_max_price_2() {
-    test_instr_exec_ok(instruction::divide(
-        pc(i64::MAX, 1, 0),
-        pc(i64::MAX, 1, 0)
-    )).await;
+    test_instr_exec_ok(instruction::divide(pc(i64::MAX, 1, 0), pc(i64::MAX, 1, 0))).await;
 }
 
 #[tokio::test]
 async fn test_mul_max_price() {
-    test_instr_exec_ok(instruction::multiply(
-        pc(i64::MAX, 1, 2),
-        pc(123, 1, 2),
-    )).await;
+    test_instr_exec_ok(instruction::multiply(pc(i64::MAX, 1, 2), pc(123, 1, 2))).await;
 }
 
 #[tokio::test]
@@ -83,5 +75,6 @@ async fn test_mul_max_price_2() {
     test_instr_exec_ok(instruction::multiply(
         pc(i64::MAX, 1, 2),
         pc(i64::MAX, 1, 2),
-    )).await;
+    ))
+    .await;
 }
