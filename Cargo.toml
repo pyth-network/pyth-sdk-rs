@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "pyth-sdk",
+    "pyth-sdk-solana",
+]
