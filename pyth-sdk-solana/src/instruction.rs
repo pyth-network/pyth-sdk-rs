@@ -2,10 +2,8 @@
 
 use bytemuck::bytes_of;
 
-use crate::{
-    Price,
-    PriceStatus,
-};
+use crate::state::PriceAccount;
+use crate::PriceStatus;
 
 use crate::{
     id,
@@ -112,7 +110,7 @@ pub fn noop() -> Instruction {
 }
 
 // Returns ok if price account status matches given expected price status.
-pub fn price_status_check(price: &Price, expected_price_status: PriceStatus) -> Instruction {
+pub fn price_status_check(price: &PriceAccount, expected_price_status: PriceStatus) -> Instruction {
     Instruction {
         program_id: id(),
         accounts:   vec![],

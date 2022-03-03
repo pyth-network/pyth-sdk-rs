@@ -46,7 +46,7 @@ pub fn process_instruction(
         } => {
             let price = load_price(&price_account_data[..])?;
 
-            if price.get_current_price_status() == expected_price_status {
+            if price.status == expected_price_status {
                 Ok(())
             } else {
                 Err(ProgramError::Custom(0))
