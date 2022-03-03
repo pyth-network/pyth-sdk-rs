@@ -1,4 +1,4 @@
-name: Solana SDK
+name: Pyth SDK
 
 on:
   push:
