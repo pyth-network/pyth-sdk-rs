@@ -1,10 +1,12 @@
-// example usage of pyth-client account structure
+// example usage of pyth solana account structure
 // bootstrap all product and pricing accounts from root mapping account
+// It is adviced to use Price directly wherever possible as described in eth_price example.
+// Please use account structure only if you need it.
 
-use pyth_client::{
-    load_mapping,
-    load_price,
-    load_product,
+use pyth_sdk_solana::state::{
+    load_mapping_account,
+    load_price_account,
+    load_product_account,
     CorpAction,
     PriceStatus,
     PriceType,
@@ -45,14 +47,14 @@ fn main() {
     loop {
         // get Mapping account from key
         let map_data = clnt.get_account_data(&akey).unwrap();
-        let map_acct = load_mapping(&map_data).unwrap();
+        let map_acct = load_mapping_account(&map_data).unwrap();
 
         // iget and print each Product in Mapping directory
         let mut i = 0;
         for prod_akey in &map_acct.products {
             let prod_pkey = Pubkey::new(&prod_akey.val);
             let prod_data = clnt.get_account_data(&prod_pkey).unwrap();
-            let prod_acct = load_product(&prod_data).unwrap();
+            let prod_acct = load_product_account(&prod_data).unwrap();
 
             // print key and reference data for this Product
             println!("product_account .. {:?}", prod_pkey);
@@ -67,45 +69,22 @@ fn main() {
                 let mut px_pkey = Pubkey::new(&prod_acct.px_acc.val);
                 loop {
                     let pd = clnt.get_account_data(&px_pkey).unwrap();
-                    let pa = load_price(&pd).unwrap();
+                    let pa = load_price_account(&pd).unwrap();
 
                     println!("  price_account .. {:?}", px_pkey);
-
-                    let maybe_price = pa.get_current_price();
-                    match maybe_price {
-                        Some(p) => {
-                            println!("    price ........ {} x 10^{}", p.price, p.expo);
-                            println!("    conf ......... {} x 10^{}", p.conf, p.expo);
-                        }
-                        None => {
-                            println!("    price ........ unavailable");
-                            println!("    conf ......... unavailable");
-                        }
-                    }
-
+                    println!("    price ........ {} x 10^{}", pa.agg.price, pa.expo);
+                    println!("    conf ......... {} x 10^{}", pa.agg.conf, pa.expo);
                     println!("    price_type ... {}", get_price_type(&pa.ptype));
                     println!("    exponent ..... {}", pa.expo);
-                    println!(
-                        "    status ....... {}",
-                        get_status(&pa.get_current_price_status())
-                    );
+                    println!("    status ....... {}", get_status(&pa.agg.status));
                     println!("    corp_act ..... {}", get_corp_act(&pa.agg.corp_act));
 
                     println!("    num_qt ....... {}", pa.num_qt);
                     println!("    valid_slot ... {}", pa.valid_slot);
                     println!("    publish_slot . {}", pa.agg.pub_slot);
 
-                    let maybe_twap = pa.get_twap();
-                    match maybe_twap {
-                        Some(twap) => {
-                            println!("    twap ......... {} x 10^{}", twap.price, twap.expo);
-                            println!("    twac ......... {} x 10^{}", twap.conf, twap.expo);
-                        }
-                        None => {
-                            println!("    twap ......... unavailable");
-                            println!("    twac ......... unavailable");
-                        }
-                    }
+                    println!("    twap ......... {} x 10^{}", pa.twap.val, pa.expo);
+                    println!("    twac ......... {} x 10^{}", pa.twac.val, pa.expo);
 
                     // go to next price account in list
                     if pa.next.is_valid() {

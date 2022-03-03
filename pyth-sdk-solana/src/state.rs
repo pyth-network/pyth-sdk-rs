@@ -1,3 +1,5 @@
+//! Structures and functions for interacting with Solana on-chain account data.
+
 use borsh::{
     BorshDeserialize,
     BorshSerialize,
@@ -11,16 +13,14 @@ use bytemuck::{
     Zeroable,
 };
 use std::mem::size_of;
-use crate::error::PythError;
-use crate::PriceConf;
 
-#[cfg(target_arch = "bpf")]
-use solana_program::{
-    clock::Clock,
-    sysvar::Sysvar,
+pub use pyth_sdk::{
+    Price,
+    PriceConf,
+    PriceStatus,
 };
 
-solana_program::declare_id!("PythC11111111111111111111111111111111111111");
+use crate::PythError;
 
 pub const MAGIC: u32 = 0xa1b2c3d4;
 pub const VERSION_2: u32 = 2;
@@ -29,7 +29,6 @@ pub const MAP_TABLE_SIZE: usize = 640;
 pub const PROD_ACCT_SIZE: usize = 512;
 pub const PROD_HDR_SIZE: usize = 48;
 pub const PROD_ATTR_SIZE: usize = PROD_ACCT_SIZE - PROD_HDR_SIZE;
-pub const MAX_SLOT_DIFFERENCE: u64 = 25;
 
 /// The type of Pyth account determines what data it contains
 #[derive(
@@ -54,36 +53,6 @@ pub enum AccountType {
 impl Default for AccountType {
     fn default() -> Self {
         AccountType::Unknown
-    }
-}
-
-/// The current status of a price feed.
-#[derive(
-    Copy,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    BorshSerialize,
-    BorshDeserialize,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-#[repr(C)]
-pub enum PriceStatus {
-    /// The price feed is not currently updating for an unknown reason.
-    Unknown,
-    /// The price feed is updating as expected.
-    Trading,
-    /// The price feed is not currently updating because trading in the product has been halted.
-    Halted,
-    /// The price feed is not currently updating because an auction is setting the price.
-    Auction,
-}
-
-impl Default for PriceStatus {
-    fn default() -> Self {
-        PriceStatus::Unknown
     }
 }
 
@@ -156,7 +125,7 @@ pub struct AccKey {
 /// Mapping accounts form a linked-list containing the listing of all products on Pyth.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(C)]
-pub struct Mapping {
+pub struct MappingAccount {
     /// pyth magic number
     pub magic:    u32,
     /// program version
@@ -174,11 +143,11 @@ pub struct Mapping {
 }
 
 #[cfg(target_endian = "little")]
-unsafe impl Zeroable for Mapping {
+unsafe impl Zeroable for MappingAccount {
 }
 
 #[cfg(target_endian = "little")]
-unsafe impl Pod for Mapping {
+unsafe impl Pod for MappingAccount {
 }
 
 
@@ -186,7 +155,7 @@ unsafe impl Pod for Mapping {
 /// and its base/quote currencies.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(C)]
-pub struct Product {
+pub struct ProductAccount {
     /// pyth magic number
     pub magic:  u32,
     /// program version
@@ -201,18 +170,18 @@ pub struct Product {
     pub attr:   [u8; PROD_ATTR_SIZE],
 }
 
-impl Product {
+impl ProductAccount {
     pub fn iter(&self) -> AttributeIter {
         AttributeIter { attrs: &self.attr }
     }
 }
 
 #[cfg(target_endian = "little")]
-unsafe impl Zeroable for Product {
+unsafe impl Zeroable for ProductAccount {
 }
 
 #[cfg(target_endian = "little")]
-unsafe impl Pod for Product {
+unsafe impl Pod for ProductAccount {
 }
 
 /// A price and confidence at a specific slot. This struct can represent either a
@@ -296,7 +265,7 @@ pub struct Ema {
 /// Price accounts represent a continuously-updating price feed for a product.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 #[repr(C)]
-pub struct Price {
+pub struct PriceAccount {
     /// pyth magic number
     pub magic:      u32,
     /// program version
@@ -344,106 +313,11 @@ pub struct Price {
 }
 
 #[cfg(target_endian = "little")]
-unsafe impl Zeroable for Price {
+unsafe impl Zeroable for PriceAccount {
 }
 
 #[cfg(target_endian = "little")]
-unsafe impl Pod for Price {
-}
-
-impl Price {
-    /**
-     * Get the current status of the aggregate price.
-     * If this lib is used on-chain it will mark price status as unknown if price has not been updated for a while.
-     */
-    pub fn get_current_price_status(&self) -> PriceStatus {
-        #[cfg(target_arch = "bpf")]
-        if matches!(self.agg.status, PriceStatus::Trading)
-            && Clock::get().unwrap().slot - self.agg.pub_slot > MAX_SLOT_DIFFERENCE
-        {
-            return PriceStatus::Unknown;
-        }
-        self.agg.status
-    }
-
-    /**
-     * Get the current price and confidence interval as fixed-point numbers of the form a * 10^e.
-     * Returns a struct containing the current price, confidence interval, and the exponent for both
-     * numbers. Returns `None` if price information is currently unavailable for any reason.
-     */
-    pub fn get_current_price(&self) -> Option<PriceConf> {
-        if !matches!(self.get_current_price_status(), PriceStatus::Trading) {
-            None
-        } else {
-            Some(PriceConf {
-                price: self.agg.price,
-                conf:  self.agg.conf,
-                expo:  self.expo,
-            })
-        }
-    }
-
-    /**
-     * Get the time-weighted average price (TWAP) and a confidence interval on the result.
-     * Returns `None` if the twap is currently unavailable.
-     *
-     * At the moment, the confidence interval returned by this method is computed in
-     * a somewhat questionable way, so we do not recommend using it for high-value applications.
-     */
-    pub fn get_twap(&self) -> Option<PriceConf> {
-        // This method currently cannot return None, but may do so in the future.
-        // Note that the twac is a positive number in i64, so safe to cast to u64.
-        Some(PriceConf {
-            price: self.twap.val,
-            conf:  self.twac.val as u64,
-            expo:  self.expo,
-        })
-    }
-
-    /**
-     * Get the current price of this account in a different quote currency. If this account
-     * represents the price of the product X/Z, and `quote` represents the price of the product Y/Z,
-     * this method returns the price of X/Y. Use this method to get the price of e.g., mSOL/SOL from
-     * the mSOL/USD and SOL/USD accounts.
-     *
-     * `result_expo` determines the exponent of the result, i.e., the number of digits below the decimal
-     * point. This method returns `None` if either the price or confidence are too large to be
-     * represented with the requested exponent.
-     */
-    pub fn get_price_in_quote(&self, quote: &Price, result_expo: i32) -> Option<PriceConf> {
-        return match (self.get_current_price(), quote.get_current_price()) {
-            (Some(base_price_conf), Some(quote_price_conf)) => base_price_conf
-                .div(&quote_price_conf)?
-                .scale_to_exponent(result_expo),
-            (_, _) => None,
-        };
-    }
-
-    /**
-     * Get the price of a basket of currencies. Each entry in `amounts` is of the form
-     * `(price, qty, qty_expo)`, and the result is the sum of `price * qty * 10^qty_expo`.
-     * The result is returned with exponent `result_expo`.
-     *
-     * An example use case for this function is to get the value of an LP token.
-     */
-    pub fn price_basket(amounts: &[(Price, i64, i32)], result_expo: i32) -> Option<PriceConf> {
-        assert!(amounts.len() > 0);
-        let mut res = PriceConf {
-            price: 0,
-            conf:  0,
-            expo:  result_expo,
-        };
-        for i in 0..amounts.len() {
-            res = res.add(
-                &amounts[i]
-                    .0
-                    .get_current_price()?
-                    .cmul(amounts[i].1, amounts[i].2)?
-                    .scale_to_exponent(result_expo)?,
-            )?
-        }
-        Some(res)
-    }
+unsafe impl Pod for PriceAccount {
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -480,8 +354,8 @@ fn load<T: Pod>(data: &[u8]) -> Result<&T, PodCastError> {
 }
 
 /** Get a `Mapping` account from the raw byte value of a Solana account. */
-pub fn load_mapping(data: &[u8]) -> Result<&Mapping, PythError> {
-    let pyth_mapping = load::<Mapping>(&data).map_err(|_| PythError::InvalidAccountData)?;
+pub fn load_mapping_account(data: &[u8]) -> Result<&MappingAccount, PythError> {
+    let pyth_mapping = load::<MappingAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
 
     if pyth_mapping.magic != MAGIC {
         return Err(PythError::InvalidAccountData);
@@ -497,8 +371,8 @@ pub fn load_mapping(data: &[u8]) -> Result<&Mapping, PythError> {
 }
 
 /** Get a `Product` account from the raw byte value of a Solana account. */
-pub fn load_product(data: &[u8]) -> Result<&Product, PythError> {
-    let pyth_product = load::<Product>(&data).map_err(|_| PythError::InvalidAccountData)?;
+pub fn load_product_account(data: &[u8]) -> Result<&ProductAccount, PythError> {
+    let pyth_product = load::<ProductAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
 
     if pyth_product.magic != MAGIC {
         return Err(PythError::InvalidAccountData);
@@ -514,8 +388,8 @@ pub fn load_product(data: &[u8]) -> Result<&Product, PythError> {
 }
 
 /** Get a `Price` account from the raw byte value of a Solana account. */
-pub fn load_price(data: &[u8]) -> Result<&Price, PythError> {
-    let pyth_price = load::<Price>(&data).map_err(|_| PythError::InvalidAccountData)?;
+pub fn load_price_account(data: &[u8]) -> Result<&PriceAccount, PythError> {
+    let pyth_price = load::<PriceAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
 
     if pyth_price.magic != MAGIC {
         return Err(PythError::InvalidAccountData);
@@ -529,7 +403,6 @@ pub fn load_price(data: &[u8]) -> Result<&Price, PythError> {
 
     return Ok(pyth_price);
 }
-
 
 pub struct AttributeIter<'a> {
     attrs: &'a [u8],

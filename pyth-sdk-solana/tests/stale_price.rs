@@ -1,12 +1,12 @@
 #![cfg(feature = "test-bpf")] // Only runs on bpf, where solana programs run
 
-use pyth_client::{
-    instruction,
+use pyth_sdk_solana::instruction;
+use pyth_sdk_solana::state::{
     AccKey,
     AccountType,
     CorpAction,
     Ema,
-    Price,
+    PriceAccount,
     PriceComp,
     PriceInfo,
     PriceStatus,
@@ -20,7 +20,7 @@ use solana_program_test::*;
 mod common;
 use common::test_instr_exec_ok;
 
-fn price_all_zero() -> Price {
+fn price_account_all_zero() -> PriceAccount {
     let acc_key = AccKey { val: [0; 32] };
 
     let ema = Ema {
@@ -43,7 +43,7 @@ fn price_all_zero() -> Price {
         publisher: acc_key,
     };
 
-    Price {
+    PriceAccount {
         magic:      MAGIC,
         ver:        VERSION_2,
         atype:      AccountType::Price as u32,
@@ -72,7 +72,7 @@ fn price_all_zero() -> Price {
 
 #[tokio::test]
 async fn test_price_not_stale() {
-    let mut price = price_all_zero();
+    let mut price = price_account_all_zero();
     price.agg.status = PriceStatus::Trading;
     test_instr_exec_ok(instruction::price_status_check(
         &price,
@@ -84,7 +84,7 @@ async fn test_price_not_stale() {
 
 #[tokio::test]
 async fn test_price_stale() {
-    let mut price = price_all_zero();
+    let mut price = price_account_all_zero();
     price.agg.status = PriceStatus::Trading;
     // Value 100 will cause an overflow because this is bigger than Solana slot in the test suite (its ~1-5).
     // As the check will be 5u - 100u ~= 1e18 > MAX_SLOT_DIFFERENCE. It can only break when Solana slot in the test suite becomes
