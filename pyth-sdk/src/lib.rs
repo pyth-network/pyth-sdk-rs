@@ -6,7 +6,7 @@ use borsh::{
 use schemars::JsonSchema;
 
 mod price_conf;
-pub use self::price_conf::PriceConf;
+pub use price_conf::PriceConf;
 
 type ProductIdentifier = [u8; 32];
 
@@ -123,7 +123,7 @@ impl Price {
      * represented with the requested exponent.
      * 
      * Example:
-     * ```
+     * ```ignore
      * let btc_usd: Price = ...;
      * let eth_usd: Price = ...;
      * // -8 is the desired exponent for the result 
@@ -148,7 +148,7 @@ impl Price {
      * An example use case for this function is to get the value of an LP token.
      * 
      * Example:
-     * ```rust
+     * ```ignore
      * let btc_usd: Price = ...;
      * let eth_usd: Price = ...;
      * // Quantity of each asset in fixed-point a * 10^e.

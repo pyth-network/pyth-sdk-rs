@@ -18,7 +18,7 @@ const MAX_PD_V_U64: u64 = (1 << 28) - 1;
  * where `expo` is the exponent. For example:
  *
  * ```
- * use pyth_client::PriceConf;
+ * use pyth_sdk::PriceConf;
  * PriceConf { price: 12345, conf: 267, expo: -2 }; // represents 123.45 +- 2.67
  * PriceConf { price: 123, conf: 1, expo: 2 }; // represents 12300 +- 100
  * ```
