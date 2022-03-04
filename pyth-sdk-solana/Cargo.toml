@@ -1,11 +1,11 @@
 [package]
-name = "pyth-client"
+name = "pyth-sdk-solana"
 version = "0.5.0"
 authors = ["Pyth Data Foundation"]
 edition = "2018"
 license = "Apache-2.0"
 homepage = "https://pyth.network"
-repository = "https://github.com/pyth-network/pyth-client-rs"
+repository = "https://github.com/pyth-network/pyth-sdk-rs"
 description = "pyth price oracle data structures and example usage"
 keywords = [ "pyth", "solana", "oracle" ]
 readme = "README.md"
@@ -23,6 +23,7 @@ num-derive = "0.3"
 num-traits = "0.2"
 thiserror = "1.0"
 serde = { version = "1.0.136", features = ["derive"] }
+pyth-sdk = { path = "../pyth-sdk" }
 
 [dev-dependencies]
 solana-program-test = "1.8.1"

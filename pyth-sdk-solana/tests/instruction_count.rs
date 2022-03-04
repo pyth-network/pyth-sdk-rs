@@ -1,8 +1,7 @@
-use pyth_client::{
-    instruction,
-    PriceConf,
-};
+use pyth_sdk_solana::instruction;
 use solana_program_test::*;
+
+use pyth_sdk::PriceConf;
 
 mod common;
 use common::test_instr_exec_ok;

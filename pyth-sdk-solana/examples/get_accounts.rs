@@ -1,10 +1,12 @@
-// example usage of pyth-client account structure
+// example usage of pyth solana account structure
 // bootstrap all product and pricing accounts from root mapping account
+// It is adviced to use Price directly wherever possible as described in eth_price example.
+// Please use account structure only if you need it.
 
-use pyth_client::{
-    load_mapping,
-    load_price,
-    load_product,
+use pyth_sdk_solana::state::{
+    load_mapping_account,
+    load_price_account,
+    load_product_account,
     CorpAction,
     PriceStatus,
     PriceType,
@@ -45,14 +47,14 @@ fn main() {
     loop {
         // get Mapping account from key
         let map_data = clnt.get_account_data(&akey).unwrap();
-        let map_acct = load_mapping(&map_data).unwrap();
+        let map_acct = load_mapping_account(&map_data).unwrap();
 
         // iget and print each Product in Mapping directory
         let mut i = 0;
         for prod_akey in &map_acct.products {
             let prod_pkey = Pubkey::new(&prod_akey.val);
             let prod_data = clnt.get_account_data(&prod_pkey).unwrap();
-            let prod_acct = load_product(&prod_data).unwrap();
+            let prod_acct = load_product_account(&prod_data).unwrap();
 
             // print key and reference data for this Product
             println!("product_account .. {:?}", prod_pkey);
@@ -66,12 +68,13 @@ fn main() {
             if prod_acct.px_acc.is_valid() {
                 let mut px_pkey = Pubkey::new(&prod_acct.px_acc.val);
                 loop {
-                    let pd = clnt.get_account_data(&px_pkey).unwrap();
-                    let pa = load_price(&pd).unwrap();
+                    let price_data = clnt.get_account_data(&px_pkey).unwrap();
+                    let price_account = load_price_account(&price_data).unwrap();
+                    let price = price_account.to_price();
 
                     println!("  price_account .. {:?}", px_pkey);
 
-                    let maybe_price = pa.get_current_price();
+                    let maybe_price = price.get_current_price();
                     match maybe_price {
                         Some(p) => {
                             println!("    price ........ {} x 10^{}", p.price, p.expo);
@@ -83,19 +86,19 @@ fn main() {
                         }
                     }
 
-                    println!("    price_type ... {}", get_price_type(&pa.ptype));
-                    println!("    exponent ..... {}", pa.expo);
+                    println!("    price_type ... {}", get_price_type(&price_account.ptype));
+                    println!("    exponent ..... {}", price.expo);
                     println!(
                         "    status ....... {}",
-                        get_status(&pa.get_current_price_status())
+                        get_status(&price.status)
                     );
-                    println!("    corp_act ..... {}", get_corp_act(&pa.agg.corp_act));
+                    println!("    corp_act ..... {}", get_corp_act(&price_account.agg.corp_act));
 
-                    println!("    num_qt ....... {}", pa.num_qt);
-                    println!("    valid_slot ... {}", pa.valid_slot);
-                    println!("    publish_slot . {}", pa.agg.pub_slot);
+                    println!("    num_qt ....... {}", price_account.num_qt);
+                    println!("    valid_slot ... {}", price_account.valid_slot);
+                    println!("    publish_slot . {}", price_account.agg.pub_slot);
 
-                    let maybe_twap = pa.get_twap();
+                    let maybe_twap = price.get_twap();
                     match maybe_twap {
                         Some(twap) => {
                             println!("    twap ......... {} x 10^{}", twap.price, twap.expo);
@@ -108,8 +111,8 @@ fn main() {
                     }
 
                     // go to next price account in list
-                    if pa.next.is_valid() {
-                        px_pkey = Pubkey::new(&pa.next.val);
+                    if price_account.next.is_valid() {
+                        px_pkey = Pubkey::new(&price_account.next.val);
                     } else {
                         break;
                     }
