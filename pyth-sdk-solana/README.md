@@ -41,8 +41,10 @@ Applications can obtain the content of these accounts in two different ways:
 In both cases, the content of the account will be provided to the application as a binary blob (`Vec<u8>`).
 The examples below assume that the user has already obtained this account data.
 
-### Parse account data
-To parse price account this library provides a `load_price` method which translates the binary data to Pyth Price structure. Pyth Price contains some functions to help working with the price. For more information please visit documentations of this crate.
+### Parse price data
+Pyth Network stores price of each product (e.g: `Crypto.BTC/USD`) in a separate Solana account. To understand more how Pyth accounts are structured please go to [Solana Account Structure](#solana-account-structure) section below.
+
+To parse price account this library provides a `load_price` method which translates the binary data of a Price Solana Account to Pyth Price structure. Pyth Price contains some functions to help working with the price. For more information please visit documentations of this crate.
 
 ```rust
 use pyth_sdk_solana::{load_price, Price};
@@ -53,11 +55,11 @@ let price: Price = load_price( &price_account_data ).unwrap();
 
 ### Get the current price
 
-Read the current price from a `Price` account: 
+Read the current price from a `Price`: 
 
 ```rust
-let price: PriceConf = price_account.get_current_price().unwrap();
-println!("price: ({} +- {}) x 10^{}", price.price, price.conf, price.expo);
+let current_price: PriceConf = price.get_current_price().unwrap();
+println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 
 The price is returned along with a confidence interval that represents the degree of uncertainty in the price.
@@ -98,7 +100,7 @@ println!("0.1 BTC and 0.05 ETH are worth: ({} +- {}) x 10^{} USD",
 This function additionally propagates any uncertainty in the price into uncertainty in the value of the basket.
 
 ### Solana Account Structure
-> It is adviced to use `load_price` above wherever possible as the account structure is designed specific to the Pyth onchain oracle and it is likely to change.
+> Warning: the solana account structure is an internal API that is subject to change. Prefer to use load_price when possible.
 
 Pyth Network has several different types of accounts:
 * Price accounts store the current price for a product
