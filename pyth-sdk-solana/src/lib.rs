@@ -12,8 +12,7 @@ pub mod instruction;
 pub mod processor;
 
 // ID is Pyth Oracle mainnet id. This is also used in local testing.
-solana_program::declare_id!("FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH");
-
+solana_program::declare_id!("PythC11111111111111111111111111111111111111");
 
 use state::load_price_account;
 
