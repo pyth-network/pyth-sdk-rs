@@ -68,27 +68,51 @@ fn main() {
             if prod_acct.px_acc.is_valid() {
                 let mut px_pkey = Pubkey::new(&prod_acct.px_acc.val);
                 loop {
-                    let pd = clnt.get_account_data(&px_pkey).unwrap();
-                    let pa = load_price_account(&pd).unwrap();
+                    let price_data = clnt.get_account_data(&px_pkey).unwrap();
+                    let price_account = load_price_account(&price_data).unwrap();
+                    let price = price_account.to_price();
 
                     println!("  price_account .. {:?}", px_pkey);
-                    println!("    price ........ {} x 10^{}", pa.agg.price, pa.expo);
-                    println!("    conf ......... {} x 10^{}", pa.agg.conf, pa.expo);
-                    println!("    price_type ... {}", get_price_type(&pa.ptype));
-                    println!("    exponent ..... {}", pa.expo);
-                    println!("    status ....... {}", get_status(&pa.agg.status));
-                    println!("    corp_act ..... {}", get_corp_act(&pa.agg.corp_act));
 
-                    println!("    num_qt ....... {}", pa.num_qt);
-                    println!("    valid_slot ... {}", pa.valid_slot);
-                    println!("    publish_slot . {}", pa.agg.pub_slot);
+                    let maybe_price = price.get_current_price();
+                    match maybe_price {
+                        Some(p) => {
+                            println!("    price ........ {} x 10^{}", p.price, p.expo);
+                            println!("    conf ......... {} x 10^{}", p.conf, p.expo);
+                        }
+                        None => {
+                            println!("    price ........ unavailable");
+                            println!("    conf ......... unavailable");
+                        }
+                    }
 
-                    println!("    twap ......... {} x 10^{}", pa.twap.val, pa.expo);
-                    println!("    twac ......... {} x 10^{}", pa.twac.val, pa.expo);
+                    println!("    price_type ... {}", get_price_type(&price_account.ptype));
+                    println!("    exponent ..... {}", price.expo);
+                    println!(
+                        "    status ....... {}",
+                        get_status(&price.status)
+                    );
+                    println!("    corp_act ..... {}", get_corp_act(&price_account.agg.corp_act));
+
+                    println!("    num_qt ....... {}", price_account.num_qt);
+                    println!("    valid_slot ... {}", price_account.valid_slot);
+                    println!("    publish_slot . {}", price_account.agg.pub_slot);
+
+                    let maybe_twap = price.get_twap();
+                    match maybe_twap {
+                        Some(twap) => {
+                            println!("    twap ......... {} x 10^{}", twap.price, twap.expo);
+                            println!("    twac ......... {} x 10^{}", twap.conf, twap.expo);
+                        }
+                        None => {
+                            println!("    twap ......... unavailable");
+                            println!("    twac ......... unavailable");
+                        }
+                    }
 
                     // go to next price account in list
-                    if pa.next.is_valid() {
-                        px_pkey = Pubkey::new(&pa.next.val);
+                    if price_account.next.is_valid() {
+                        px_pkey = Pubkey::new(&price_account.next.val);
                     } else {
                         break;
                     }
