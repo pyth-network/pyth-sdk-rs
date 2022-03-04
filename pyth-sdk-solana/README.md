@@ -36,7 +36,7 @@ Pyth Network stores its price feeds in a collection of Solana accounts. To under
 This crate provides utilities for interpreting and manipulating the content of these accounts.
 Applications can obtain the content of these accounts in two different ways:
 * On-chain programs should pass these accounts to the instructions that require price feeds.
-* Off-chain programs can access these accounts using the Solana RPC client (as in the [example program](examples/get_accounts.rs)).
+* Off-chain programs can access these accounts using the Solana RPC client (as in the [eth price example program](examples/eth_price.rs)).
 
 In both cases, the content of the account will be provided to the application as a binary blob (`Vec<u8>`).
 The examples below assume that the user has already obtained this account data.
@@ -134,31 +134,24 @@ Run the following commands to try this example program:
 
 ```
 cargo build --examples
-cargo run --example get_accounts
+cargo run --example eth_price
 ```
 
 The output of this command is a listing of Pyth's accounts, such as:
 
 ```
-product_account .. 6MEwdxe4g1NeAF9u6KDG14anJpFsVEa2cvr5H6iriFZ8
-  symbol.......... SRM/USD
-  asset_type...... Crypto
-  quote_currency.. USD
-  description..... SRM/USD
-  generic_symbol.. SRMUSD
-  base............ SRM
-  price_account .. 992moaMQKs32GKZ9dxi8keyM2bUmbrwBZpK4p2K6X5Vs
-    price ........ 7398000000
-    conf ......... 3200000
-    price_type ... price
-    exponent ..... -9
-    status ....... trading
-    corp_act ..... nocorpact
-    num_qt ....... 1
-    valid_slot ... 91340924
-    publish_slot . 91340925
-    twap ......... 7426390900
-    twac ......... 2259870
+.....ETH/USD.....
+status .......... Trading
+num_publishers .. 19
+price ........... 291958500000 x 10^-8
+conf ............ 163920000 x 10^-8
+twap ............ 291343470000 x 10^-8
+twac ............ 98874533 x 10^-8
+```
+
+For an example of using Solana Account structure please run:
+```
+cargo run --example get_accounts
 ```
 
 ## Development
