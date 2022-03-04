@@ -5,12 +5,12 @@ use pyth_sdk_solana::state::{
     AccKey,
     AccountType,
     CorpAction,
-    Ema,
     PriceAccount,
     PriceComp,
     PriceInfo,
     PriceStatus,
     PriceType,
+    Rational,
     MAGIC,
     VERSION_2,
 };
@@ -23,7 +23,7 @@ use common::test_instr_exec_ok;
 fn price_account_all_zero() -> PriceAccount {
     let acc_key = AccKey { val: [0; 32] };
 
-    let ema = Ema {
+    let rational = Rational {
         val:   0,
         numer: 0,
         denom: 0,
@@ -54,8 +54,8 @@ fn price_account_all_zero() -> PriceAccount {
         num_qt:     0,
         last_slot:  0,
         valid_slot: 0,
-        twap:       ema,
-        twac:       ema,
+        twap:       rational,
+        twac:       rational,
         drv1:       0,
         drv2:       0,
         prod:       acc_key,
