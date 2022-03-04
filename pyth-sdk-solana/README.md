@@ -175,14 +175,3 @@ Use `cargo build-bpf` / `cargo test-bpf` to build in BPF for Solana; these comma
 The BPF tests will also run an instruction count program that logs the resource consumption
 of various library functions.
 This program can also be run on its own using `cargo test-bpf --test instruction_count`.
-
-### Releases
-
-To release a new version of this package, perform the following steps:
-
-1. Increment the version number in `Cargo.toml`.
-   You may use a version number with a `-beta.x` suffix such as `0.0.1-beta.0` to create opt-in test versions.
-2. Merge your change into `main` on github.
-3. Create and publish a new github release.
-   The name of the release should be the version number, and the tag should be the version number prefixed with `v`.
-   Publishing the release will trigger a github action that will automatically publish the [pyth-client](https://crates.io/crates/pyth-client) rust crate to `crates.io`.
