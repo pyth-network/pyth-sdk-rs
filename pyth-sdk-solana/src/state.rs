@@ -248,7 +248,10 @@ pub struct PriceComp {
     pub latest:    PriceInfo,
 }
 
-/// An exponentially-weighted moving average.
+#[deprecated = "Type is renamed to Rational, please use the new name."]
+pub type Ema = Rational;
+
+/// An number represented as both `value` and also in rational as `numer/denom`.
 #[derive(
     Copy,
     Clone,
@@ -262,12 +265,9 @@ pub struct PriceComp {
     serde::Deserialize,
 )]
 #[repr(C)]
-pub struct Ema {
-    /// The current value of the EMA
+pub struct Rational {
     pub val:   i64,
-    /// numerator state for next update
     pub numer: i64,
-    /// denominator state for next update
     pub denom: i64,
 }
 
@@ -295,10 +295,10 @@ pub struct PriceAccount {
     pub last_slot:  u64,
     /// valid slot-time of agg. price
     pub valid_slot: u64,
-    /// time-weighted average price
-    pub twap:       Ema,
-    /// time-weighted average confidence interval
-    pub twac:       Ema,
+    /// exponentially moving average price
+    pub twap:       Rational,
+    /// exponentially moving average confidence interval
+    pub twac:       Rational,
     /// space for future derived values
     pub drv1:       i64,
     /// space for future derived values
