@@ -32,7 +32,7 @@ See [pyth-sdk-solana on crates.io](https://crates.io/crates/pyth-sdk-solana/) to
 
 ## Usage
 
-Pyth Network stores its price feeds in a collection of Solana accounts.
+Pyth Network stores its price feeds in a collection of Solana accounts. To understand more how Pyth accounts are structured please go to [Solana Account Structure](#solana-account-structure) section below.
 This crate provides utilities for interpreting and manipulating the content of these accounts.
 Applications can obtain the content of these accounts in two different ways:
 * On-chain programs should pass these accounts to the instructions that require price feeds.
@@ -42,9 +42,9 @@ In both cases, the content of the account will be provided to the application as
 The examples below assume that the user has already obtained this account data.
 
 ### Parse price data
-Pyth Network stores price of each product (e.g: `Crypto.BTC/USD`) in a separate Solana account. To understand more how Pyth accounts are structured please go to [Solana Account Structure](#solana-account-structure) section below.
+A price feed (e.g: `Crypto.BTC/USD`) is stored in a Solana Price account. You can find price accounts in the pyth.network website (e.g.: [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)).  
 
-To parse price account this library provides a `load_price` method which translates the binary data of a Price Solana Account to Pyth Price structure. Pyth Price contains some functions to help working with the price. For more information please visit documentations of this crate.
+To parse price feed from a price account this library provides a `load_price` method which translates the binary data of a Price Solana Account to Pyth Price structure. Pyth Price contains some functions to help working with the price. For more information please visit documentations of this crate.
 
 ```rust
 use pyth_sdk_solana::{load_price, Price};
@@ -100,17 +100,17 @@ println!("0.1 BTC and 0.05 ETH are worth: ({} +- {}) x 10^{} USD",
 This function additionally propagates any uncertainty in the price into uncertainty in the value of the basket.
 
 ### Solana Account Structure
-> Warning: the solana account structure is an internal API that is subject to change. Prefer to use load_price when possible.
-
 Pyth Network has several different types of accounts:
 * Price accounts store the current price for a product
 * Product accounts store metadata about a product, such as its symbol (e.g., "BTC/USD").
 * Mapping accounts store a listing of all Pyth accounts
 
 For more information on the different types of Pyth accounts, see the [account structure documentation](https://docs.pyth.network/how-pyth-works/account-structure).
-The pyth.network website also lists the public keys of the accounts (e.g., [BTC/USD accounts](https://pyth.network/markets/#BTC/USD)).  
+The pyth.network website also lists the public keys of the accounts (e.g., [BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)).  
 
 This library provides several `load_*` methods in state module that translate the binary data in each account into an appropriate struct: 
+
+> Warning: the solana account structure is an internal API that is subject to change. Prefer to use load_price when possible.
 
 ```rust
 use pyth_sdk_solana::state::*;
