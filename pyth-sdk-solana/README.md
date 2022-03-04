@@ -32,7 +32,14 @@ See [pyth-sdk-solana on crates.io](https://crates.io/crates/pyth-sdk-solana/) to
 
 ## Usage
 
-Pyth Network stores its price feeds in a collection of Solana accounts. To understand more how Pyth accounts are structured please go to [Solana Account Structure](#solana-account-structure) section below.
+Pyth Network stores its price feeds in a collection of Solana accounts of various types:
+* Price accounts store the current price for a product
+* Product accounts store metadata about a product, such as its symbol (e.g., "BTC/USD").
+* Mapping accounts store a listing of all Pyth accounts
+
+For more information on the different types of Pyth accounts, see the [account structure documentation](https://docs.pyth.network/how-pyth-works/account-structure).
+The pyth.network website also lists the public keys of the accounts (e.g., [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)). 
+
 This crate provides utilities for interpreting and manipulating the content of these accounts.
 Applications can obtain the content of these accounts in two different ways:
 * On-chain programs should pass these accounts to the instructions that require price feeds.
@@ -42,9 +49,10 @@ In both cases, the content of the account will be provided to the application as
 The examples below assume that the user has already obtained this account data.
 
 ### Parse price data
-A price feed (e.g: `Crypto.BTC/USD`) is stored in a Solana Price account. You can find price accounts in the pyth.network website (e.g.: [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)).  
+Each price feed (e.g: `Crypto.BTC/USD`) is stored in a Solana price account.
+You can find price accounts in the pyth.network website (e.g.: [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)).  
 
-To parse price feed from a price account this library provides a `load_price` method which translates the binary data of a Price Solana Account to Pyth Price structure. Pyth Price contains some functions to help working with the price. For more information please visit documentations of this crate.
+To read the price from a price account, this library provides a `load_price` method that translates the binary account data into a `Price` struct:
 
 ```rust
 use pyth_sdk_solana::{load_price, Price};
@@ -52,6 +60,10 @@ use pyth_sdk_solana::{load_price, Price};
 let price_account_data: Vec<u8> = ...;
 let price: Price = load_price( &price_account_data ).unwrap();
 ```
+
+The `Price` struct contains several useful functions for working with the price.
+Some of these functions are described below.
+For more detailed information, please see the crate documentation.
 
 ### Get the current price
 
@@ -100,17 +112,10 @@ println!("0.1 BTC and 0.05 ETH are worth: ({} +- {}) x 10^{} USD",
 This function additionally propagates any uncertainty in the price into uncertainty in the value of the basket.
 
 ### Solana Account Structure
-Pyth Network has several different types of accounts:
-* Price accounts store the current price for a product
-* Product accounts store metadata about a product, such as its symbol (e.g., "BTC/USD").
-* Mapping accounts store a listing of all Pyth accounts
 
-For more information on the different types of Pyth accounts, see the [account structure documentation](https://docs.pyth.network/how-pyth-works/account-structure).
-The pyth.network website also lists the public keys of the accounts (e.g., [BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)).  
+> Warning: the Solana account structure is an internal API that is subject to change. Prefer to use `load_price` when possible.
 
-This library provides several `load_*` methods in state module that translate the binary data in each account into an appropriate struct: 
-
-> Warning: the solana account structure is an internal API that is subject to change. Prefer to use load_price when possible.
+This library also provides several `load_*` methods that allow users to translate the binary data in each account into an appropriate struct:
 
 ```rust
 use pyth_sdk_solana::state::*;
