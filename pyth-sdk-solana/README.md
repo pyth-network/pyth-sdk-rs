@@ -43,7 +43,7 @@ The pyth.network website also lists the public keys of the accounts (e.g., [Cryp
 This crate provides utilities for interpreting and manipulating the content of these accounts.
 Applications can obtain the content of these accounts in two different ways:
 * On-chain programs should pass these accounts to the instructions that require price feeds.
-* Off-chain programs can access these accounts using the Solana RPC client (as in the [example program](examples/get_accounts.rs)).
+* Off-chain programs can access these accounts using the Solana RPC client (as in the [eth price example program](examples/eth_price.rs)).
 
 In both cases, the content of the account will be provided to the application as a binary blob (`Vec<u8>`).
 The examples below assume that the user has already obtained this account data.
@@ -139,6 +139,23 @@ Run the following commands to try this example program:
 
 ```
 cargo build --examples
+cargo run --example eth_price
+```
+
+The output of this command is price of ETH/USD over time, such as:
+
+```
+.....ETH/USD.....
+status .......... Trading
+num_publishers .. 19
+price ........... 291958500000 x 10^-8
+conf ............ 163920000 x 10^-8
+twap ............ 291343470000 x 10^-8
+twac ............ 98874533 x 10^-8
+```
+
+For an example of using Solana Account structure please run:
+```
 cargo run --example get_accounts
 ```
 
