@@ -296,9 +296,9 @@ pub struct PriceAccount {
     /// valid slot-time of agg. price
     pub valid_slot: u64,
     /// exponentially moving average price
-    pub twap:       Rational,
+    pub ema_price:       Rational,
     /// exponentially moving average confidence interval
-    pub twac:       Rational,
+    pub ema_conf:       Rational,
     /// space for future derived values
     pub drv1:       i64,
     /// space for future derived values
@@ -347,8 +347,8 @@ impl PriceAccount {
             status,
             max_num_publishers: self.num,
             num_publishers: self.num_qt,
-            ema_price: self.twap.val,
-            ema_conf: self.twac.val as u64,
+            ema_price: self.ema_price.val,
+            ema_conf: self.ema_conf.val as u64,
             expo: self.expo,
             product_id: self.prod.val,
         }

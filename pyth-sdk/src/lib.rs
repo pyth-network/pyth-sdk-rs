@@ -96,15 +96,14 @@ impl Price {
     }
 
     /**
-     * Get the time-weighted average price (TWAP) and a confidence interval on the result.
+     * Get the exponential moving average price (ema_price) and a confidence interval on the result.
      * Returns `None` if the twap is currently unavailable.
      *
      * At the moment, the confidence interval returned by this method is computed in
      * a somewhat questionable way, so we do not recommend using it for high-value applications.
      */
-    pub fn get_twap(&self) -> Option<PriceConf> {
+    pub fn get_ema_price(&self) -> Option<PriceConf> {
         // This method currently cannot return None, but may do so in the future.
-        // Note that the twac is a positive number in i64, so safe to cast to u64.
         Some(PriceConf {
             price: self.ema_price,
             conf:  self.ema_conf,
