@@ -20,6 +20,15 @@ pub use pyth_sdk::{
     PriceStatus,
 };
 
+#[cfg(target_arch = "bpf")]
+use solana_program::{
+    clock::Clock,
+    sysvar::Sysvar,
+};
+
+#[cfg(target_arch = "bpf")]
+use crate::MAX_SLOT_DIFFERENCE;
+
 use crate::PythError;
 
 pub const MAGIC: u32 = 0xa1b2c3d4;
@@ -318,6 +327,32 @@ unsafe impl Zeroable for PriceAccount {
 
 #[cfg(target_endian = "little")]
 unsafe impl Pod for PriceAccount {
+}
+
+impl PriceAccount {
+    pub fn to_price(&self) -> Price {
+        #[allow(unused_mut)]
+        let mut status = self.agg.status;
+    
+        #[cfg(target_arch = "bpf")]
+        if matches!(status, PriceStatus::Trading)
+            && Clock::get().unwrap().slot - self.agg.pub_slot > MAX_SLOT_DIFFERENCE
+        {
+            status = PriceStatus::Unknown;
+        }
+    
+        Price {
+            price: self.agg.price,
+            conf: self.agg.conf,
+            status,
+            max_num_publishers: self.num,
+            num_publishers: self.num_qt,
+            ema_price: self.twap.val,
+            ema_conf: self.twac.val as u64,
+            expo: self.expo,
+            product_id: self.prod.val,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

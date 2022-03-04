@@ -23,12 +23,6 @@ pub use pyth_sdk::{
     PriceStatus,
 };
 
-#[cfg(target_arch = "bpf")]
-use solana_program::{
-    clock::Clock,
-    sysvar::Sysvar,
-};
-
 /// Maximum acceptable slot difference before price is considered to be stale.
 pub const MAX_SLOT_DIFFERENCE: u64 = 25;
 
@@ -36,25 +30,5 @@ pub const MAX_SLOT_DIFFERENCE: u64 = 25;
 pub fn load_price(data: &[u8]) -> Result<Price, PythError> {
     let price_account = load_price_account(data)?;
 
-    #[allow(unused_mut)]
-    let mut status = price_account.agg.status;
-
-    #[cfg(target_arch = "bpf")]
-    if matches!(status, PriceStatus::Trading)
-        && Clock::get().unwrap().slot - price_account.agg.pub_slot > MAX_SLOT_DIFFERENCE
-    {
-        status = PriceStatus::Unknown;
-    }
-
-    Ok(Price {
-        price: price_account.agg.price,
-        conf: price_account.agg.conf,
-        status,
-        max_num_publishers: price_account.num,
-        num_publishers: price_account.num_qt,
-        ema_price: price_account.twap.val,
-        ema_conf: price_account.twac.val as u64,
-        expo: price_account.expo,
-        product_id: price_account.prod.val,
-    })
+    Ok(price_account.to_price())
 }
