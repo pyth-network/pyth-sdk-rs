@@ -11,10 +11,9 @@ These crates can be built for either your native platform or other platforms for
 
 ### Releases
 
-To release a new version of this package, perform the following steps:
+To  release new versions of these packages, perform the following steps within the crate being released:
 
 1. Increment the version number in `Cargo.toml`.
    You may use a version number with a `-beta.x` suffix such as `0.0.1-beta.0` to create opt-in test versions.
 2. Merge your change into `main` on github.
 3. Create and publish a new github release.
-   Publishing the release will trigger a github action that will automatically publish the [pyth-sdk](https://crates.io/crates/pyth-sdk) or [pyth-sdk-solana](https://crates.io/crates/pyth-sdk-solana) rust crate to `crates.io`.
