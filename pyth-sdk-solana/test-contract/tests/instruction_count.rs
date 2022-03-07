@@ -1,5 +1,5 @@
-use test_contract::instruction;
 use solana_program_test::*;
+use test_contract::instruction;
 
 use pyth_sdk_solana::PriceConf;
 

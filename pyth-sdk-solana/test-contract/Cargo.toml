@@ -9,7 +9,6 @@ no-entrypoint = []
 
 [dependencies]
 pyth-sdk-solana = { path = "../" }
-pyth-sdk = { path = "../../pyth-sdk" }
 solana-program = "1.8.1"
 bytemuck = "1.7.2"
 borsh = "0.9"

@@ -1,9 +1,9 @@
-use test_contract::id;
-use test_contract::processor::process_instruction;
 use solana_program::instruction::Instruction;
 use solana_program_test::*;
 use solana_sdk::signature::Signer;
 use solana_sdk::transaction::Transaction;
+use test_contract::id;
+use test_contract::processor::process_instruction;
 
 // Panics if running instruction fails
 pub async fn test_instr_exec_ok(instr: Instruction) {

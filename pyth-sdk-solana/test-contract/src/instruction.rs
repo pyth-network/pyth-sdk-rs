@@ -3,8 +3,10 @@
 use bytemuck::bytes_of;
 
 use pyth_sdk_solana::state::PriceAccount;
-use pyth_sdk::PriceStatus;
-use pyth_sdk_solana::PriceConf;
+use pyth_sdk_solana::{
+    PriceConf,
+    PriceStatus,
+};
 
 use crate::id;
 use borsh::{
