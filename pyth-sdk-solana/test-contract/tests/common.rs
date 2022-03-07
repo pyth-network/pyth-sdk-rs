@@ -8,7 +8,7 @@ use test_contract::processor::process_instruction;
 // Panics if running instruction fails
 pub async fn test_instr_exec_ok(instr: Instruction) {
     let (mut banks_client, payer, recent_blockhash) =
-        ProgramTest::new("pyth_sdk_solana", id(), processor!(process_instruction))
+        ProgramTest::new("test_contract", id(), processor!(process_instruction))
             .start()
             .await;
     let mut transaction = Transaction::new_with_payer(&[instr], Some(&payer.pubkey()));
