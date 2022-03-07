@@ -97,7 +97,7 @@ impl Price {
 
     /**
      * Get the exponential moving average price (ema_price) and a confidence interval on the result.
-     * Returns `None` if the twap is currently unavailable.
+     * Returns `None` if the ema price is currently unavailable.
      *
      * At the moment, the confidence interval returned by this method is computed in
      * a somewhat questionable way, so we do not recommend using it for high-value applications.
