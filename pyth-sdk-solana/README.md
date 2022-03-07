@@ -150,8 +150,8 @@ status .......... Trading
 num_publishers .. 19
 price ........... 291958500000 x 10^-8
 conf ............ 163920000 x 10^-8
-twap ............ 291343470000 x 10^-8
-twac ............ 98874533 x 10^-8
+ema_price ....... 291343470000 x 10^-8
+ema_conf ........ 98874533 x 10^-8
 ```
 
 For an example of using Solana Account structure please run:
@@ -179,8 +179,8 @@ product_account .. 6MEwdxe4g1NeAF9u6KDG14anJpFsVEa2cvr5H6iriFZ8
     num_qt ....... 1
     valid_slot ... 91340924
     publish_slot . 91340925
-    twap ......... 7426390900
-    twac ......... 2259870
+    ema_price .... 7426390900
+    ema_conf ..... 2259870
 ```
 
 ## Development

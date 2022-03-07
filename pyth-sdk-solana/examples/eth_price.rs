@@ -39,15 +39,15 @@ fn main() {
         }
 
 
-        let maybe_twap = eth_price.get_twap();
-        match maybe_twap {
-            Some(twap) => {
-                println!("twap ............ {} x 10^{}", twap.price, twap.expo);
-                println!("twac ............ {} x 10^{}", twap.conf, twap.expo);
+        let maybe_ema_price = eth_price.get_ema_price();
+        match maybe_ema_price {
+            Some(ema_price) => {
+                println!("ema_price ....... {} x 10^{}", ema_price.price, ema_price.expo);
+                println!("ema_conf ........ {} x 10^{}", ema_price.conf, ema_price.expo);
             }
             None => {
-                println!("twap ............ unavailable");
-                println!("twac ............ unavailable");
+                println!("ema_price ....... unavailable");
+                println!("ema_conf ........ unavailable");
             }
         }
 
