@@ -7,13 +7,6 @@ pub use self::error::PythError;
 mod error;
 pub mod state;
 
-pub mod entrypoint;
-pub mod instruction;
-pub mod processor;
-
-// This is used only in local testing.
-solana_program::declare_id!("PythC11111111111111111111111111111111111111");
-
 use state::load_price_account;
 
 pub use pyth_sdk::{

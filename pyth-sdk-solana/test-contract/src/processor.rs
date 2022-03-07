@@ -7,7 +7,7 @@ use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 
 use crate::instruction::PythClientInstruction;
-use crate::load_price;
+use pyth_sdk_solana::load_price;
 
 pub fn process_instruction(
     _program_id: &Pubkey,

@@ -19,6 +19,19 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install dependencies
       run: sudo apt-get install libudev-dev
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --verbose
+  test-contract:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./pyth-sdk-solana/test-contract
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: sudo apt-get install libudev-dev
     - name: Install Solana Binaries
       run: |
         sh -c "$(curl -sSfL https://release.solana.com/v1.8.14/install)"

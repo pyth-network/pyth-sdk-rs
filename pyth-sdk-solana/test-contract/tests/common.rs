@@ -1,5 +1,5 @@
-use pyth_sdk_solana::id;
-use pyth_sdk_solana::processor::process_instruction;
+use test_contract::id;
+use test_contract::processor::process_instruction;
 use solana_program::instruction::Instruction;
 use solana_program_test::*;
 use solana_sdk::signature::Signer;

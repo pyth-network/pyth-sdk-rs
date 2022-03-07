@@ -1,6 +1,6 @@
 #![cfg(feature = "test-bpf")] // Only runs on bpf, where solana programs run
 
-use pyth_sdk_solana::instruction;
+use test_contract::instruction;
 use pyth_sdk_solana::state::{
     AccKey,
     AccountType,

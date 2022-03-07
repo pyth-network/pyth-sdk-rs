@@ -21,13 +21,6 @@ Add a dependency to your Cargo.toml:
 pyth-sdk-solana="<version>"
 ```
 
-If you want to use this library in your on-chain program you should use `no-entrypoint` feature to prevent conflict between your program and this library's program.
-
-```toml
-[dependencies]
-pyth-sdk-solana = {version = "<version>", features = ["no-entrypoint"]}
-```
-
 See [pyth-sdk-solana on crates.io](https://crates.io/crates/pyth-sdk-solana/) to get the latest version of the library.
 
 ## Usage

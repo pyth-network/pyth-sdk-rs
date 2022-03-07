@@ -10,10 +10,6 @@ description = "pyth price oracle data structures and example usage"
 keywords = [ "pyth", "solana", "oracle" ]
 readme = "README.md"
 
-[features]
-test-bpf = []
-no-entrypoint = []
-
 [dependencies]
 solana-program = "1.8.1"
 borsh = "0.9"
@@ -26,7 +22,6 @@ serde = { version = "1.0.136", features = ["derive"] }
 pyth-sdk = { path = "../pyth-sdk" }
 
 [dev-dependencies]
-solana-program-test = "1.8.1"
 solana-client = "1.8.1"
 solana-sdk = "1.8.1"
 
