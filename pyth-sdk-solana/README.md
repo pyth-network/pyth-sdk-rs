@@ -181,7 +181,3 @@ product_account .. 6MEwdxe4g1NeAF9u6KDG14anJpFsVEa2cvr5H6iriFZ8
 This library can be built for either your native platform or in BPF (used by Solana programs). 
 Use `cargo build` / `cargo test` to build and test natively.
 Use `cargo build-bpf` / `cargo test-bpf` to build in BPF for Solana; these commands require you to have installed the [Solana CLI tools](https://docs.solana.com/cli/install-solana-cli-tools). 
-
-The BPF tests will also run an instruction count program that logs the resource consumption
-of various library functions.
-This program can also be run on its own using `cargo test-bpf --test instruction_count`.
