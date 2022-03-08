@@ -39,7 +39,6 @@ Pyth Network stores its price feeds in a collection of Solana accounts of variou
 
 > :warning:        This structure is designed for Pyth Oracle internal program. In most of the use cases only Price account is needed.
 
-
 For more information on the different types of Pyth accounts, see the [account structure documentation](https://docs.pyth.network/how-pyth-works/account-structure).
 The pyth.network website also lists the public keys of the accounts (e.g., [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)). 
 
