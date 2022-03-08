@@ -37,8 +37,7 @@ Pyth Network stores its price feeds in a collection of Solana accounts of variou
 * Product accounts store metadata about a product, such as its symbol (e.g., "BTC/USD").
 * Mapping accounts store a listing of all Pyth accounts
 
-| :zap:        This structure is designed for Pyth Oracle internal program. In most of the use cases only Price account is needed.   |
-|------------------------------------------------------------------------------------------------------------------------------------|
+> :warning:        This structure is designed for Pyth Oracle internal program. In most of the use cases only Price account is needed.
 
 
 For more information on the different types of Pyth accounts, see the [account structure documentation](https://docs.pyth.network/how-pyth-works/account-structure).
@@ -117,9 +116,7 @@ This function additionally propagates any uncertainty in the price into uncertai
 
 ### Solana Account Structure
 
-| :zap:        the Solana account structure is an internal API that is subject to change. Prefer to use `load_price` when possible.   |
-|-------------------------------------------------------------------------------------------------------------------------------------|
-
+> :warning: the Solana account structure is an internal API that is subject to change. Prefer to use `load_price` when possible.
 
 This library also provides several `load_*` methods that allow users to translate the binary data in each account into an appropriate struct:
 
