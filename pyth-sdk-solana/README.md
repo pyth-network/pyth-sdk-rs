@@ -1,7 +1,7 @@
 # Pyth SDK Solana
 
 This crate provides utilities for reading price feeds from the [pyth.network](https://pyth.network/) oracle on the Solana network.
-The crate includes a library for on-chain programs and an off-chain example program.
+The crate includes a library for reading and using Pyth data feeds in Solana both on-chain (Solana programs) and off-chain (clients interacting with Solana blockchain). It also includes multiple off-chain example programs.
 
 Key features of this library include:
 
@@ -29,6 +29,8 @@ Pyth Network stores its price feeds in a collection of Solana accounts of variou
 * Price accounts store the current price for a product
 * Product accounts store metadata about a product, such as its symbol (e.g., "BTC/USD").
 * Mapping accounts store a listing of all Pyth accounts
+
+> :warning: This structure is designed for Pyth Oracle internal program. In most of the use cases only Price account is needed.
 
 For more information on the different types of Pyth accounts, see the [account structure documentation](https://docs.pyth.network/how-pyth-works/account-structure).
 The pyth.network website also lists the public keys of the accounts (e.g., [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)). 
@@ -106,7 +108,7 @@ This function additionally propagates any uncertainty in the price into uncertai
 
 ### Solana Account Structure
 
-> Warning: the Solana account structure is an internal API that is subject to change. Prefer to use `load_price` when possible.
+> :warning: The Solana account structure is an internal API that is subject to change. Prefer to use `load_price` when possible.
 
 This library also provides several `load_*` methods that allow users to translate the binary data in each account into an appropriate struct:
 
@@ -127,7 +129,7 @@ let mapping_account: &MappingAccount = load_mapping_account( &mapping_account_da
 
 ### Off-chain example program
 
-The example program prints the product reference data and current price information for Pyth on Solana devnet.
+The example [eth_price](examples/eth_price.rs) program prints the product reference data and current price information for Pyth on Solana devnet.
 Run the following commands to try this example program:
 
 ```
@@ -147,7 +149,7 @@ ema_price ....... 291343470000 x 10^-8
 ema_conf ........ 98874533 x 10^-8
 ```
 
-For an example of using Solana Account structure please run:
+For [an example](examples/get_accounts.rs) of using Solana Account structure please run:
 ```
 cargo run --example get_accounts
 ```
