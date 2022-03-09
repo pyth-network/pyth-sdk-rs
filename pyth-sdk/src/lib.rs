@@ -8,7 +8,7 @@ use schemars::JsonSchema;
 mod price_conf;
 pub use price_conf::PriceConf;
 
-type ProductIdentifier = [u8; 32];
+pub type ProductIdentifier = [u8; 32];
 
 /// Represents availability status of a price feed.
 #[derive(
