@@ -1,7 +1,7 @@
-use pyth_sdk_solana::instruction;
 use solana_program_test::*;
+use test_contract::instruction;
 
-use pyth_sdk::PriceConf;
+use pyth_sdk_solana::PriceConf;
 
 mod common;
 use common::test_instr_exec_ok;

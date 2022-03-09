@@ -2,13 +2,13 @@
 
 use bytemuck::bytes_of;
 
-use crate::state::PriceAccount;
-use crate::PriceStatus;
-
-use crate::{
-    id,
+use pyth_sdk_solana::state::PriceAccount;
+use pyth_sdk_solana::{
     PriceConf,
+    PriceStatus,
 };
+
+use crate::id;
 use borsh::{
     BorshDeserialize,
     BorshSerialize,

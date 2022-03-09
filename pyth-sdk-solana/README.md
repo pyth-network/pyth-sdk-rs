@@ -21,13 +21,6 @@ Add a dependency to your Cargo.toml:
 pyth-sdk-solana="<version>"
 ```
 
-If you want to use this library in your on-chain program you should use `no-entrypoint` feature to prevent conflict between your program and this library's program.
-
-```toml
-[dependencies]
-pyth-sdk-solana = {version = "<version>", features = ["no-entrypoint"]}
-```
-
 See [pyth-sdk-solana on crates.io](https://crates.io/crates/pyth-sdk-solana/) to get the latest version of the library.
 
 ## Usage
@@ -188,7 +181,3 @@ product_account .. 6MEwdxe4g1NeAF9u6KDG14anJpFsVEa2cvr5H6iriFZ8
 This library can be built for either your native platform or in BPF (used by Solana programs). 
 Use `cargo build` / `cargo test` to build and test natively.
 Use `cargo build-bpf` / `cargo test-bpf` to build in BPF for Solana; these commands require you to have installed the [Solana CLI tools](https://docs.solana.com/cli/install-solana-cli-tools). 
-
-The BPF tests will also run an instruction count program that logs the resource consumption
-of various library functions.
-This program can also be run on its own using `cargo test-bpf --test instruction_count`.
