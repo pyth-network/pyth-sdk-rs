@@ -89,7 +89,8 @@ impl Default for CorpAction {
     }
 }
 
-/// The type of prices associated with a product -- each product may have multiple price feeds of different types.
+/// The type of prices associated with a product -- each product may have multiple price feeds of
+/// different types.
 #[derive(
     Copy,
     Clone,
@@ -210,10 +211,12 @@ unsafe impl Pod for ProductAccount {
 #[repr(C)]
 pub struct PriceInfo {
     /// the current price.
-    /// For the aggregate price use price.get_current_price() whenever possible. It has more checks to make sure price is valid.
+    /// For the aggregate price use price.get_current_price() whenever possible. It has more checks
+    /// to make sure price is valid.
     pub price:    i64,
     /// confidence interval around the price.
-    /// For the aggregate confidence use price.get_current_price() whenever possible. It has more checks to make sure price is valid.
+    /// For the aggregate confidence use price.get_current_price() whenever possible. It has more
+    /// checks to make sure price is valid.
     pub conf:     u64,
     /// status of price (Trading is valid).
     /// For the aggregate status use price.get_current_status() whenever possible.
@@ -388,7 +391,7 @@ fn load<T: Pod>(data: &[u8]) -> Result<&T, PodCastError> {
     }
 }
 
-/** Get a `Mapping` account from the raw byte value of a Solana account. */
+/// Get a `Mapping` account from the raw byte value of a Solana account.
 pub fn load_mapping_account(data: &[u8]) -> Result<&MappingAccount, PythError> {
     let pyth_mapping = load::<MappingAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
 
@@ -405,7 +408,7 @@ pub fn load_mapping_account(data: &[u8]) -> Result<&MappingAccount, PythError> {
     return Ok(pyth_mapping);
 }
 
-/** Get a `Product` account from the raw byte value of a Solana account. */
+/// Get a `Product` account from the raw byte value of a Solana account.
 pub fn load_product_account(data: &[u8]) -> Result<&ProductAccount, PythError> {
     let pyth_product = load::<ProductAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
 
@@ -422,7 +425,7 @@ pub fn load_product_account(data: &[u8]) -> Result<&ProductAccount, PythError> {
     return Ok(pyth_product);
 }
 
-/** Get a `Price` account from the raw byte value of a Solana account. */
+/// Get a `Price` account from the raw byte value of a Solana account.
 pub fn load_price_account(data: &[u8]) -> Result<&PriceAccount, PythError> {
     let pyth_price = load::<PriceAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
 
