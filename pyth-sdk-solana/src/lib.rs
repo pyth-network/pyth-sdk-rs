@@ -13,6 +13,7 @@ pub use pyth_sdk::{
     Price,
     PriceConf,
     PriceStatus,
+    ProductIdentifier,
 };
 
 /// Maximum acceptable slot difference before price is considered to be stale.

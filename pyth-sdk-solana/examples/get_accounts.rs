@@ -86,13 +86,16 @@ fn main() {
                         }
                     }
 
-                    println!("    price_type ... {}", get_price_type(&price_account.ptype));
-                    println!("    exponent ..... {}", price.expo);
                     println!(
-                        "    status ....... {}",
-                        get_status(&price.status)
+                        "    price_type ... {}",
+                        get_price_type(&price_account.ptype)
                     );
-                    println!("    corp_act ..... {}", get_corp_act(&price_account.agg.corp_act));
+                    println!("    exponent ..... {}", price.expo);
+                    println!("    status ....... {}", get_status(&price.status));
+                    println!(
+                        "    corp_act ..... {}",
+                        get_corp_act(&price_account.agg.corp_act)
+                    );
 
                     println!("    num_qt ....... {}", price_account.num_qt);
                     println!("    valid_slot ... {}", price_account.valid_slot);
@@ -101,8 +104,14 @@ fn main() {
                     let maybe_ema_price = price.get_ema_price();
                     match maybe_ema_price {
                         Some(ema_price) => {
-                            println!("    ema_price .... {} x 10^{}", ema_price.price, ema_price.expo);
-                            println!("    ema_conf ..... {} x 10^{}", ema_price.conf, ema_price.expo);
+                            println!(
+                                "    ema_price .... {} x 10^{}",
+                                ema_price.price, ema_price.expo
+                            );
+                            println!(
+                                "    ema_conf ..... {} x 10^{}",
+                                ema_price.conf, ema_price.expo
+                            );
                         }
                         None => {
                             println!("    ema_price .... unavailable");
