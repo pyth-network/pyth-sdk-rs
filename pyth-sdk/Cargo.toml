@@ -6,7 +6,7 @@ edition = "2018"
 license = "Apache-2.0"
 homepage = "https://pyth.network"
 repository = "https://github.com/pyth-network/pyth-sdk-rs"
-description = "pyth price oracle data structures and example usage"
+description = "Data structures and utilites for the Pyth price oracle"
 keywords = [ "pyth", "oracle" ]
 readme = "README.md"
 

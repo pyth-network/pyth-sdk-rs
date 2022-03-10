@@ -8,6 +8,7 @@ use schemars::JsonSchema;
 mod price_conf;
 pub use price_conf::PriceConf;
 
+/// This consists of 32 bytes and it is currently based on largest Public Key size on various blockchains.
 pub type ProductIdentifier = [u8; 32];
 
 /// Represents availability status of a price feed.
@@ -80,6 +81,7 @@ pub struct Price {
 impl Price {
     /**
      * Get the current price and confidence interval as fixed-point numbers of the form a * 10^e.
+     *
      * Returns a struct containing the current price, confidence interval, and the exponent for both
      * numbers. Returns `None` if price information is currently unavailable for any reason.
      */
@@ -97,8 +99,8 @@ impl Price {
 
     /**
      * Get the exponential moving average price (ema_price) and a confidence interval on the result.
-     * Returns `None` if the ema price is currently unavailable.
      *
+     * Returns `None` if the ema price is currently unavailable.
      * At the moment, the confidence interval returned by this method is computed in
      * a somewhat questionable way, so we do not recommend using it for high-value applications.
      */
@@ -112,8 +114,9 @@ impl Price {
     }
 
     /**
-     * Get the current price of this account in a different quote currency. If this account
-     * represents the price of the product X/Z, and `quote` represents the price of the product Y/Z,
+     * Get the current price of this account in a different quote currency.
+     *
+     * If this account represents the price of the product X/Z, and `quote` represents the price of the product Y/Z,
      * this method returns the price of X/Y. Use this method to get the price of e.g., mSOL/SOL from
      * the mSOL/USD and SOL/USD accounts.
      *
@@ -140,7 +143,9 @@ impl Price {
     }
 
     /**
-     * Get the price of a basket of currencies. Each entry in `amounts` is of the form
+     * Get the price of a basket of currencies.
+     *
+     * Each entry in `amounts` is of the form
      * `(price, qty, qty_expo)`, and the result is the sum of `price * qty * 10^qty_expo`.
      * The result is returned with exponent `result_expo`.
      *
