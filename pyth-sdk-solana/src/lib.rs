@@ -17,7 +17,7 @@ pub use pyth_sdk::{
 };
 
 /// Maximum valid slot duration before price is considered to be stale.
-pub const VALID_SLOT_DURATION: u64 = 25;
+pub const VALID_SLOT_PERIOD: u64 = 25;
 
 /// Loads Pyth Price from the raw byte value of a Solana account.
 pub fn load_price(data: &[u8]) -> Result<Price, PythError> {

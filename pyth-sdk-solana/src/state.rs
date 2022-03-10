@@ -27,7 +27,7 @@ use solana_program::{
 };
 
 #[cfg(target_arch = "bpf")]
-use crate::VALID_SLOT_DURATION;
+use crate::VALID_SLOT_PERIOD;
 
 use crate::PythError;
 
@@ -336,7 +336,7 @@ impl PriceAccount {
 
         #[cfg(target_arch = "bpf")]
         if matches!(status, PriceStatus::Trading)
-            && Clock::get().unwrap().slot - self.agg.pub_slot > VALID_SLOT_DURATION
+            && Clock::get().unwrap().slot - self.agg.pub_slot > VALID_SLOT_PERIOD
         {
             status = PriceStatus::Unknown;
         }
