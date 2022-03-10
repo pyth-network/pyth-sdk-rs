@@ -16,7 +16,7 @@ pub use pyth_sdk::{
     ProductIdentifier,
 };
 
-/// Maximum valid slot duration before price is considered to be stale.
+/// Maximum valid slot period before price is considered to be stale.
 pub const VALID_SLOT_PERIOD: u64 = 25;
 
 /// Loads Pyth Price from the raw byte value of a Solana account.
