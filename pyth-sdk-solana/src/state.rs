@@ -296,9 +296,9 @@ pub struct PriceAccount {
     /// valid slot-time of agg. price
     pub valid_slot: u64,
     /// exponentially moving average price
-    pub ema_price:       Rational,
+    pub ema_price:  Rational,
     /// exponentially moving average confidence interval
-    pub ema_conf:       Rational,
+    pub ema_conf:   Rational,
     /// space for future derived values
     pub drv1:       i64,
     /// space for future derived values
@@ -333,14 +333,14 @@ impl PriceAccount {
     pub fn to_price(&self) -> Price {
         #[allow(unused_mut)]
         let mut status = self.agg.status;
-    
+
         #[cfg(target_arch = "bpf")]
         if matches!(status, PriceStatus::Trading)
             && Clock::get().unwrap().slot - self.agg.pub_slot > MAX_SLOT_DIFFERENCE
         {
             status = PriceStatus::Unknown;
         }
-    
+
         Price {
             price: self.agg.price,
             conf: self.agg.conf,
