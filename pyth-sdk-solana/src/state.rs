@@ -27,7 +27,7 @@ use solana_program::{
 };
 
 #[cfg(target_arch = "bpf")]
-use crate::MAX_SLOT_DIFFERENCE;
+use crate::VALID_SLOT_DURATION;
 
 use crate::PythError;
 
@@ -336,7 +336,7 @@ impl PriceAccount {
 
         #[cfg(target_arch = "bpf")]
         if matches!(status, PriceStatus::Trading)
-            && Clock::get().unwrap().slot - self.agg.pub_slot > MAX_SLOT_DIFFERENCE
+            && Clock::get().unwrap().slot - self.agg.pub_slot > VALID_SLOT_DURATION
         {
             status = PriceStatus::Unknown;
         }
