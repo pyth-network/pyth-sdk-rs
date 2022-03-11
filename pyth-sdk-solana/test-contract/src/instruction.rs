@@ -44,8 +44,9 @@ pub enum PythClientInstruction {
     Noop,
 
     PriceStatusCheck {
-        // A Price serialized as a vector of bytes. This field is stored as a vector of bytes (instead of a Price)
-        // so that we do not have to add Borsh serialization to all structs, which is expensive.
+        // A Price serialized as a vector of bytes. This field is stored as a vector of bytes
+        // (instead of a Price) so that we do not have to add Borsh serialization to all
+        // structs, which is expensive.
         price_account_data:    Vec<u8>,
         expected_price_status: PriceStatus,
     },

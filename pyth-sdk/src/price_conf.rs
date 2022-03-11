@@ -10,27 +10,25 @@ const PD_EXPO: i32 = -9;
 const PD_SCALE: u64 = 1_000_000_000;
 const MAX_PD_V_U64: u64 = (1 << 28) - 1;
 
-/**
- * A price with a degree of uncertainty, represented as a price +- a confidence interval.
- *
- * The confidence interval roughly corresponds to the standard error of a normal distribution.
- * Both the price and confidence are stored in a fixed-point numeric representation, `x * 10^expo`,
- * where `expo` is the exponent. For example:
- *
- * ```
- * use pyth_sdk::PriceConf;
- * PriceConf { price: 12345, conf: 267, expo: -2 }; // represents 123.45 +- 2.67
- * PriceConf { price: 123, conf: 1, expo: 2 }; // represents 12300 +- 100
- * ```
- *
- * `PriceConf` supports a limited set of mathematical operations. All of these operations will
- * propagate any uncertainty in the arguments into the result. However, the uncertainty in the
- * result may overestimate the true uncertainty (by at most a factor of `sqrt(2)`) due to
- * computational limitations. Furthermore, all of these operations may return `None` if their
- * result cannot be represented within the numeric representation (e.g., the exponent is so
- * small that the price does not fit into an i64). Users of these methods should (1) select
- * their exponents to avoid this problem, and (2) handle the `None` case gracefully.
- */
+/// A price with a degree of uncertainty, represented as a price +- a confidence interval.
+/// 
+/// The confidence interval roughly corresponds to the standard error of a normal distribution.
+/// Both the price and confidence are stored in a fixed-point numeric representation, `x *
+/// 10^expo`, where `expo` is the exponent. For example:
+/// 
+/// ```
+/// use pyth_sdk::PriceConf;
+/// PriceConf { price: 12345, conf: 267, expo: -2 }; // represents 123.45 +- 2.67
+/// PriceConf { price: 123, conf: 1, expo: 2 }; // represents 12300 +- 100
+/// ```
+/// 
+/// `PriceConf` supports a limited set of mathematical operations. All of these operations will
+/// propagate any uncertainty in the arguments into the result. However, the uncertainty in the
+/// result may overestimate the true uncertainty (by at most a factor of `sqrt(2)`) due to
+/// computational limitations. Furthermore, all of these operations may return `None` if their
+/// result cannot be represented within the numeric representation (e.g., the exponent is so
+/// small that the price does not fit into an i64). Users of these methods should (1) select
+/// their exponents to avoid this problem, and (2) handle the `None` case gracefully.
 #[derive(
     Clone,
     Copy,
@@ -45,22 +43,24 @@ const MAX_PD_V_U64: u64 = (1 << 28) - 1;
     JsonSchema,
 )]
 pub struct PriceConf {
+    /// Price.
     pub price: i64,
+    /// Confidence Interval.
     pub conf:  u64,
+    /// Exponent.
     pub expo:  i32,
 }
 
 impl PriceConf {
-    /**
-     * Divide this price by `other` while propagating the uncertainty in both prices into the result.
-     *
-     * This method will automatically select a reasonable exponent for the result. If both
-     * `self` and `other` are normalized, the exponent is `self.expo + PD_EXPO - other.expo` (i.e.,
-     * the fraction has `PD_EXPO` digits of additional precision). If they are not normalized,
-     * this method will normalize them, resulting in an unpredictable result exponent.
-     * If the result is used in a context that requires a specific exponent, please call
-     * `scale_to_exponent` on it.
-     */
+    /// Divide this price by `other` while propagating the uncertainty in both prices into the
+    /// result.
+    /// 
+    /// This method will automatically select a reasonable exponent for the result. If both
+    /// `self` and `other` are normalized, the exponent is `self.expo + PD_EXPO - other.expo`
+    /// (i.e., the fraction has `PD_EXPO` digits of additional precision). If they are not
+    /// normalized, this method will normalize them, resulting in an unpredictable result
+    /// exponent. If the result is used in a context that requires a specific exponent,
+    /// please call `scale_to_exponent` on it.
     pub fn div(&self, other: &PriceConf) -> Option<PriceConf> {
         // PriceConf is not guaranteed to store its price/confidence in normalized form.
         // Normalize them here to bound the range of price/conf, which is required to perform
@@ -95,8 +95,9 @@ impl PriceConf {
         let other_confidence_pct: u64 =
             other.conf.checked_mul(PD_SCALE)?.checked_div(other_price)?;
 
-        // first term is 57 bits, second term is 57 + 58 - 29 = 86 bits. Same exponent as the midprice.
-        // Note: the computation of the 2nd term consumes about 3k ops. We may want to optimize this.
+        // first term is 57 bits, second term is 57 + 58 - 29 = 86 bits. Same exponent as the
+        // midprice. Note: the computation of the 2nd term consumes about 3k ops. We may
+        // want to optimize this.
         let conf = (base.conf.checked_mul(PD_SCALE)?.checked_div(other_price)? as u128)
             .checked_add(
                 (other_confidence_pct as u128)
@@ -105,7 +106,8 @@ impl PriceConf {
             )?;
 
         // Note that this check only fails if an argument's confidence interval was >> its price,
-        // in which case None is a reasonable result, as we have essentially 0 information about the price.
+        // in which case None is a reasonable result, as we have essentially 0 information about the
+        // price.
         if conf < (u64::MAX as u128) {
             Some(PriceConf {
                 price: (midprice as i64)
@@ -118,14 +120,13 @@ impl PriceConf {
             None
         }
     }
-
-    /**
-     * Add `other` to this, propagating uncertainty in both prices. Requires both
-     * `PriceConf`s to have the same exponent -- use `scale_to_exponent` on the arguments
-     * if necessary.
-     *
-     * TODO: could generalize this method to support different exponents.
-     */
+ 
+    /// Add `other` to this, propagating uncertainty in both prices.
+    /// 
+    /// Requires both `PriceConf`s to have the same exponent -- use `scale_to_exponent` on
+    /// the arguments if necessary.
+    /// 
+    /// TODO: could generalize this method to support different exponents.
     pub fn add(&self, other: &PriceConf) -> Option<PriceConf> {
         assert_eq!(self.expo, other.expo);
 
@@ -139,7 +140,7 @@ impl PriceConf {
         })
     }
 
-    /** Multiply this `PriceConf` by a constant `c * 10^e`. */
+    /// Multiply this `PriceConf` by a constant `c * 10^e`.
     pub fn cmul(&self, c: i64, e: i32) -> Option<PriceConf> {
         self.mul(&PriceConf {
             price: c,
@@ -148,7 +149,7 @@ impl PriceConf {
         })
     }
 
-    /** Multiply this `PriceConf` by `other`, propagating any uncertainty. */
+    /// Multiply this `PriceConf` by `other`, propagating any uncertainty.
     pub fn mul(&self, other: &PriceConf) -> Option<PriceConf> {
         // PriceConf is not guaranteed to store its price/confidence in normalized form.
         // Normalize them here to bound the range of price/conf, which is required to perform
@@ -182,10 +183,8 @@ impl PriceConf {
         })
     }
 
-    /**
-     * Get a copy of this struct where the price and confidence
-     * have been normalized to be between `MIN_PD_V_I64` and `MAX_PD_V_I64`.
-     */
+    /// Get a copy of this struct where the price and confidence
+    /// have been normalized to be between `MIN_PD_V_I64` and `MAX_PD_V_I64`.
     pub fn normalize(&self) -> Option<PriceConf> {
         // signed division is very expensive in op count
         let (mut p, s) = PriceConf::to_unsigned(self.price);
@@ -205,14 +204,13 @@ impl PriceConf {
         })
     }
 
-    /**
-     * Scale this price/confidence so that its exponent is `target_expo`. Return `None` if
-     * this number is outside the range of numbers representable in `target_expo`, which will
-     * happen if `target_expo` is too small.
-     *
-     * Warning: if `target_expo` is significantly larger than the current exponent, this function
-     * will return 0 +- 0.
-     */
+    /// Scale this price/confidence so that its exponent is `target_expo`.
+    /// 
+    /// Return `None` if this number is outside the range of numbers representable in `target_expo`,
+    /// which will happen if `target_expo` is too small.
+    /// 
+    /// Warning: if `target_expo` is significantly larger than the current exponent, this
+    /// function will return 0 +- 0.
     pub fn scale_to_exponent(&self, target_expo: i32) -> Option<PriceConf> {
         let mut delta = target_expo.checked_sub(self.expo)?;
         if delta >= 0 {
@@ -249,10 +247,8 @@ impl PriceConf {
         }
     }
 
-    /**
-     * Helper function to convert signed integers to unsigned and a sign bit, which simplifies
-     * some of the computations above.
-     */
+    /// Helper function to convert signed integers to unsigned and a sign bit, which simplifies
+    /// some of the computations above.
     fn to_unsigned(x: i64) -> (u64, i64) {
         if x == i64::MIN {
             // special case because i64::MIN == -i64::MIN
