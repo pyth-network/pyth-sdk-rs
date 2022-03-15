@@ -8,6 +8,9 @@ use schemars::JsonSchema;
 mod price_conf;
 pub use price_conf::PriceConf;
 
+/// Unique identifier for a price.
+pub type PriceIdentifier = [u8; 32];
+
 /// Consists of 32 bytes and it is currently based on largest Public Key size on various blockchains.
 pub type ProductIdentifier = [u8; 32];
 
@@ -58,6 +61,8 @@ impl Default for PriceStatus {
 )]
 #[repr(C)]
 pub struct Price {
+    /// Unique identifier for this price.
+    pub id:                 PriceIdentifier,
     /// The current price.
     pub price:              i64,
     /// Confidence interval around the price.
