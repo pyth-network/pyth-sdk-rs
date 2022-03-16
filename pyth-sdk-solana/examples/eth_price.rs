@@ -1,6 +1,6 @@
 // example usage of reading pyth price from solana price account
 
-use pyth_sdk_solana::load_price_feed;
+use pyth_sdk_solana::load_price_feed_from_account;
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use std::str::FromStr;
@@ -19,8 +19,8 @@ fn main() {
 
     loop {
         // get price data from key
-        let eth_price_account_data = clnt.get_account_data(&eth_price_key).unwrap();
-        let eth_price_feed = load_price_feed(&eth_price_account_data).unwrap();
+        let mut eth_price_account = clnt.get_account(&eth_price_key).unwrap();
+        let eth_price_feed = load_price_feed_from_account(&eth_price_key, &mut eth_price_account).unwrap();
 
         println!(".....ETH/USD.....");
         println!("status .......... {:?}", eth_price_feed.status);

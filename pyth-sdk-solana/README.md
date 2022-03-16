@@ -47,22 +47,35 @@ The examples below assume that the user has already obtained this account data.
 Each price feed (e.g: `Crypto.BTC/USD`) is stored in a Solana price account.
 You can find price accounts in the pyth.network website (e.g.: [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)).  
 
-To read the price from a price account, this library provides a `load_price_feed` method that translates the binary account data into a `Price` struct:
-
-```rust
-use pyth_sdk_solana::{load_price_feed, PriceFeed};
-
-let price_account_data: Vec<u8> = ...;
-let price_feed: PriceFeed = load_price_feed( &price_account_data ).unwrap();
-```
-
 The `Price` struct contains several useful functions for working with the price.
 Some of these functions are described below.
 For more detailed information, please see the crate documentation.
 
+#### On-chain
+
+To read the price from a price account on-chain, this library provides a `load_price_from_account_info` method that constructs `Price` struct from AccountInfo:
+
+```rust
+use pyth_sdk_solana::{load_price_feed_from_account_info, PriceFeed};
+
+let price_account_info: AccountInfo = ...;
+let price: PriceFeed = load_price_feed_from_account_info( &price_account_info ).unwrap();
+```
+
+#### Off-chain
+To read the price from a price account off-chain in clients, this library provides a `load_price_from_account` method that constructs `Price` struct from Account:
+
+```rust
+use pyth_sdk_solana::{load_price_feed_from_account, PriceFeed};
+
+let price_key: Pubkey = ...;
+let mut price_account: Account = ...;
+let price: PriceFeed = load_price_feed_from_account( &price_key, &mut price_account ).unwrap();
+```
+
 ### Get the current price
 
-Read the current price from a `Price`: 
+Read the current price from a `PriceFeed`:
 
 ```rust
 let current_price: Price = price_feed.get_current_price().unwrap();
@@ -108,7 +121,7 @@ This function additionally propagates any uncertainty in the price into uncertai
 
 ### Solana Account Structure
 
-> :warning: The Solana account structure is an internal API that is subject to change. Prefer to use `load_price_feed` when possible.
+> :warning: The Solana account structure is an internal API that is subject to change. Prefer to use `load_price_feed_*` when possible.
 
 This library also provides several `load_*` methods that allow users to translate the binary data in each account into an appropriate struct:
 

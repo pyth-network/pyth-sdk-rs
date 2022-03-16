@@ -12,6 +12,7 @@ use bytemuck::{
     PodCastError,
     Zeroable,
 };
+use solana_program::pubkey::Pubkey;
 use std::mem::size_of;
 
 pub use pyth_sdk::{
@@ -333,7 +334,7 @@ unsafe impl Pod for PriceAccount {
 }
 
 impl PriceAccount {
-    pub fn to_price_feed(&self) -> PriceFeed {
+    pub fn to_price_feed(&self, price_key: &Pubkey) -> PriceFeed {
         #[allow(unused_mut)]
         let mut status = self.agg.status;
 
@@ -345,6 +346,7 @@ impl PriceAccount {
         }
 
         PriceFeed {
+            id: price_key.to_bytes(),
             price: self.agg.price,
             conf: self.agg.conf,
             status,
