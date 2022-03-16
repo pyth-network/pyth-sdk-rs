@@ -70,11 +70,11 @@ fn main() {
                 loop {
                     let price_data = clnt.get_account_data(&px_pkey).unwrap();
                     let price_account = load_price_account(&price_data).unwrap();
-                    let price = price_account.to_price(&px_pkey);
+                    let price_feed = price_account.to_price_feed(&px_pkey);
 
                     println!("  price_account .. {:?}", px_pkey);
 
-                    let maybe_price = price.get_current_price();
+                    let maybe_price = price_feed.get_current_price();
                     match maybe_price {
                         Some(p) => {
                             println!("    price ........ {} x 10^{}", p.price, p.expo);
@@ -90,8 +90,8 @@ fn main() {
                         "    price_type ... {}",
                         get_price_type(&price_account.ptype)
                     );
-                    println!("    exponent ..... {}", price.expo);
-                    println!("    status ....... {}", get_status(&price.status));
+                    println!("    exponent ..... {}", price_feed.expo);
+                    println!("    status ....... {}", get_status(&price_feed.status));
                     println!(
                         "    corp_act ..... {}",
                         get_corp_act(&price_account.agg.corp_act)
@@ -101,7 +101,7 @@ fn main() {
                     println!("    valid_slot ... {}", price_account.valid_slot);
                     println!("    publish_slot . {}", price_account.agg.pub_slot);
 
-                    let maybe_ema_price = price.get_ema_price();
+                    let maybe_ema_price = price_feed.get_ema_price();
                     match maybe_ema_price {
                         Some(ema_price) => {
                             println!(

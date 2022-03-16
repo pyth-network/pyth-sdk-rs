@@ -16,8 +16,8 @@ use solana_program::pubkey::Pubkey;
 use std::mem::size_of;
 
 pub use pyth_sdk::{
+    PriceFeed,
     Price,
-    PriceConf,
     PriceStatus,
 };
 
@@ -334,7 +334,7 @@ unsafe impl Pod for PriceAccount {
 }
 
 impl PriceAccount {
-    pub fn to_price(&self, price_key: &Pubkey) -> Price {
+    pub fn to_price_feed(&self, price_key: &Pubkey) -> PriceFeed {
         #[allow(unused_mut)]
         let mut status = self.agg.status;
 
@@ -345,7 +345,7 @@ impl PriceAccount {
             status = PriceStatus::Unknown;
         }
 
-        Price {
+        PriceFeed {
             id: price_key.to_bytes(),
             price: self.agg.price,
             conf: self.agg.conf,

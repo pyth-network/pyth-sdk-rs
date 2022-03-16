@@ -45,7 +45,7 @@ pub fn process_instruction(
             expected_price_status,
         } => {
             let price_account = load_price_account(price_account_data.as_ref())?;
-            let price = price_account.to_price(&Pubkey::default());
+            let price = price_account.to_price_feed(&Pubkey::default());
 
             if price.status == expected_price_status {
                 Ok(())

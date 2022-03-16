@@ -56,29 +56,29 @@ For more detailed information, please see the crate documentation.
 To read the price from a price account on-chain, this library provides a `load_price_from_account_info` method that constructs `Price` struct from AccountInfo:
 
 ```rust
-use pyth_sdk_solana::{load_price_from_account_info, Price};
+use pyth_sdk_solana::{load_price_feed_from_account_info, PriceFeed};
 
 let price_account_info: AccountInfo = ...;
-let price: Price = load_price( &price_account_info ).unwrap();
+let price: PriceFeed = load_price_feed_from_account_info( &price_account_info ).unwrap();
 ```
 
 #### Off-chain
 To read the price from a price account off-chain in clients, this library provides a `load_price_from_account` method that constructs `Price` struct from Account:
 
 ```rust
-use pyth_sdk_solana::{load_price_from_account, Price};
+use pyth_sdk_solana::{load_price_feed_from_account, PriceFeed};
 
 let price_key: Pubkey = ...;
 let mut price_account: Account = ...;
-let price: Price = load_price_from_account( &price_key, &mut price_account ).unwrap();
+let price: PriceFeed = load_price_feed_from_account( &price_key, &mut price_account ).unwrap();
 ```
 
 ### Get the current price
 
-Read the current price from a `Price`: 
+Read the current price from a `PriceFeed`:
 
 ```rust
-let current_price: PriceConf = price.get_current_price().unwrap();
+let current_price: Price = price_feed.get_current_price().unwrap();
 println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 
@@ -92,10 +92,10 @@ Most assets in Pyth are priced in USD.
 Applications can combine two USD prices to price an asset in a different quote currency:
 
 ```rust
-let btc_usd: Price = ...;
-let eth_usd: Price = ...;
+let btc_usd: PriceFeed = ...;
+let eth_usd: PriceFeed = ...;
 // -8 is the desired exponent for the result 
-let btc_eth: PriceConf = btc_usd.get_price_in_quote(&eth_usd, -8);
+let btc_eth: Price = btc_usd.get_price_in_quote(&eth_usd, -8);
 println!("BTC/ETH price: ({} +- {}) x 10^{}", price.price, price.conf, price.expo);
 ```
 
@@ -104,12 +104,12 @@ println!("BTC/ETH price: ({} +- {}) x 10^{}", price.price, price.conf, price.exp
 Applications can also compute the value of a basket of multiple assets:
 
 ```rust
-let btc_usd: Price = ...;
-let eth_usd: Price = ...;
+let btc_usd: PriceFeed = ...;
+let eth_usd: PriceFeed = ...;
 // Quantity of each asset in fixed-point a * 10^e.
 // This represents 0.1 BTC and .05 ETH.
 // -8 is desired exponent for result
-let basket_price: PriceConf = Price::price_basket(&[
+let basket_price: Price = Price::price_basket(&[
     (btc_usd, 10, -2),
     (eth_usd, 5, -2)
   ], -8);
@@ -121,7 +121,7 @@ This function additionally propagates any uncertainty in the price into uncertai
 
 ### Solana Account Structure
 
-> :warning: The Solana account structure is an internal API that is subject to change. Prefer to use `load_price` when possible.
+> :warning: The Solana account structure is an internal API that is subject to change. Prefer to use `load_price_feed_*` when possible.
 
 This library also provides several `load_*` methods that allow users to translate the binary data in each account into an appropriate struct:
 

@@ -1,13 +1,13 @@
 use solana_program_test::*;
 use test_contract::instruction;
 
-use pyth_sdk_solana::PriceConf;
+use pyth_sdk_solana::Price;
 
 mod common;
 use common::test_instr_exec_ok;
 
-fn pc(price: i64, conf: u64, expo: i32) -> PriceConf {
-    PriceConf {
+fn pc(price: i64, conf: u64, expo: i32) -> Price {
+    Price {
         price: price,
         conf:  conf,
         expo:  expo,
