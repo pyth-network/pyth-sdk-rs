@@ -92,8 +92,8 @@ Most assets in Pyth are priced in USD.
 Applications can combine two USD prices to price an asset in a different quote currency:
 
 ```rust
-let btc_usd: PriceFeed = ...;
-let eth_usd: PriceFeed = ...;
+let btc_usd: Price = ...;
+let eth_usd: Price = ...;
 // -8 is the desired exponent for the result 
 let btc_eth: Price = btc_usd.get_price_in_quote(&eth_usd, -8);
 println!("BTC/ETH price: ({} +- {}) x 10^{}", price.price, price.conf, price.expo);
@@ -104,8 +104,8 @@ println!("BTC/ETH price: ({} +- {}) x 10^{}", price.price, price.conf, price.exp
 Applications can also compute the value of a basket of multiple assets:
 
 ```rust
-let btc_usd: PriceFeed = ...;
-let eth_usd: PriceFeed = ...;
+let btc_usd: Price = ...;
+let eth_usd: Price = ...;
 // Quantity of each asset in fixed-point a * 10^e.
 // This represents 0.1 BTC and .05 ETH.
 // -8 is desired exponent for result
