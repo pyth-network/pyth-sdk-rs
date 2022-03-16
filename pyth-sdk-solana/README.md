@@ -53,7 +53,7 @@ For more detailed information, please see the crate documentation.
 
 #### On-chain
 
-To read the price from a price account on-chain, this library provides a `load_price_from_account_info` method that constructs `Price` struct from Account Info:
+To read the price from a price account on-chain, this library provides a `load_price_from_account_info` method that constructs `Price` struct from AccountInfo:
 
 ```rust
 use pyth_sdk_solana::{load_price_from_account_info, Price};
