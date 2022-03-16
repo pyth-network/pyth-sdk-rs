@@ -88,15 +88,15 @@ impl PriceFeed {
     /// Constructs a new Price Feed
     pub fn new(
         id: PriceIdentifier,
-        price: i64,
-        conf: u64,
         status: PriceStatus,
         expo: i32,
         max_num_publishers: u32,
         num_publishers: u32,
+        product_id: ProductIdentifier,
+        price: i64,
+        conf: u64,
         ema_price: i64,
         ema_conf: u64,
-        product_id: ProductIdentifier,
     ) -> PriceFeed {
         PriceFeed {
             id,
