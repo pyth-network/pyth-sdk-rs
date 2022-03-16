@@ -4,7 +4,7 @@ use bytemuck::bytes_of;
 
 use pyth_sdk_solana::state::PriceAccount;
 use pyth_sdk_solana::{
-    PriceConf,
+    Price,
     PriceStatus,
 };
 
@@ -20,23 +20,23 @@ use solana_program::instruction::Instruction;
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
 pub enum PythClientInstruction {
     Divide {
-        numerator:   PriceConf,
-        denominator: PriceConf,
+        numerator:   Price,
+        denominator: Price,
     },
     Multiply {
-        x: PriceConf,
-        y: PriceConf,
+        x: Price,
+        y: Price,
     },
     Add {
-        x: PriceConf,
-        y: PriceConf,
+        x: Price,
+        y: Price,
     },
     ScaleToExponent {
-        x:    PriceConf,
+        x:    Price,
         expo: i32,
     },
     Normalize {
-        x: PriceConf,
+        x: Price,
     },
     /// Don't do anything for comparison
     ///
@@ -44,14 +44,15 @@ pub enum PythClientInstruction {
     Noop,
 
     PriceStatusCheck {
-        // A Price serialized as a vector of bytes. This field is stored as a vector of bytes (instead of a Price)
-        // so that we do not have to add Borsh serialization to all structs, which is expensive.
+        // A Price serialized as a vector of bytes. This field is stored as a vector of bytes
+        // (instead of a Price) so that we do not have to add Borsh serialization to all
+        // structs, which is expensive.
         price_account_data:    Vec<u8>,
         expected_price_status: PriceStatus,
     },
 }
 
-pub fn divide(numerator: PriceConf, denominator: PriceConf) -> Instruction {
+pub fn divide(numerator: Price, denominator: Price) -> Instruction {
     Instruction {
         program_id: id(),
         accounts:   vec![],
@@ -64,7 +65,7 @@ pub fn divide(numerator: PriceConf, denominator: PriceConf) -> Instruction {
     }
 }
 
-pub fn multiply(x: PriceConf, y: PriceConf) -> Instruction {
+pub fn multiply(x: Price, y: Price) -> Instruction {
     Instruction {
         program_id: id(),
         accounts:   vec![],
@@ -74,7 +75,7 @@ pub fn multiply(x: PriceConf, y: PriceConf) -> Instruction {
     }
 }
 
-pub fn add(x: PriceConf, y: PriceConf) -> Instruction {
+pub fn add(x: Price, y: Price) -> Instruction {
     Instruction {
         program_id: id(),
         accounts:   vec![],
@@ -82,7 +83,7 @@ pub fn add(x: PriceConf, y: PriceConf) -> Instruction {
     }
 }
 
-pub fn scale_to_exponent(x: PriceConf, expo: i32) -> Instruction {
+pub fn scale_to_exponent(x: Price, expo: i32) -> Instruction {
     Instruction {
         program_id: id(),
         accounts:   vec![],
@@ -92,7 +93,7 @@ pub fn scale_to_exponent(x: PriceConf, expo: i32) -> Instruction {
     }
 }
 
-pub fn normalize(x: PriceConf) -> Instruction {
+pub fn normalize(x: Price) -> Instruction {
     Instruction {
         program_id: id(),
         accounts:   vec![],

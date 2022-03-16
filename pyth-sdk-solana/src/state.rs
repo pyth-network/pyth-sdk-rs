@@ -12,11 +12,12 @@ use bytemuck::{
     PodCastError,
     Zeroable,
 };
+use solana_program::pubkey::Pubkey;
 use std::mem::size_of;
 
 pub use pyth_sdk::{
     Price,
-    PriceConf,
+    PriceFeed,
     PriceStatus,
 };
 
@@ -27,7 +28,7 @@ use solana_program::{
 };
 
 #[cfg(target_arch = "bpf")]
-use crate::MAX_SLOT_DIFFERENCE;
+use crate::VALID_SLOT_PERIOD;
 
 use crate::PythError;
 
@@ -89,7 +90,8 @@ impl Default for CorpAction {
     }
 }
 
-/// The type of prices associated with a product -- each product may have multiple price feeds of different types.
+/// The type of prices associated with a product -- each product may have multiple price feeds of
+/// different types.
 #[derive(
     Copy,
     Clone,
@@ -210,10 +212,12 @@ unsafe impl Pod for ProductAccount {
 #[repr(C)]
 pub struct PriceInfo {
     /// the current price.
-    /// For the aggregate price use price.get_current_price() whenever possible. It has more checks to make sure price is valid.
+    /// For the aggregate price use price.get_current_price() whenever possible. It has more checks
+    /// to make sure price is valid.
     pub price:    i64,
     /// confidence interval around the price.
-    /// For the aggregate confidence use price.get_current_price() whenever possible. It has more checks to make sure price is valid.
+    /// For the aggregate confidence use price.get_current_price() whenever possible. It has more
+    /// checks to make sure price is valid.
     pub conf:     u64,
     /// status of price (Trading is valid).
     /// For the aggregate status use price.get_current_status() whenever possible.
@@ -296,9 +300,9 @@ pub struct PriceAccount {
     /// valid slot-time of agg. price
     pub valid_slot: u64,
     /// exponentially moving average price
-    pub ema_price:       Rational,
+    pub ema_price:  Rational,
     /// exponentially moving average confidence interval
-    pub ema_conf:       Rational,
+    pub ema_conf:   Rational,
     /// space for future derived values
     pub drv1:       i64,
     /// space for future derived values
@@ -330,28 +334,29 @@ unsafe impl Pod for PriceAccount {
 }
 
 impl PriceAccount {
-    pub fn to_price(&self) -> Price {
+    pub fn to_price_feed(&self, price_key: &Pubkey) -> PriceFeed {
         #[allow(unused_mut)]
         let mut status = self.agg.status;
-    
+
         #[cfg(target_arch = "bpf")]
         if matches!(status, PriceStatus::Trading)
-            && Clock::get().unwrap().slot - self.agg.pub_slot > MAX_SLOT_DIFFERENCE
+            && Clock::get().unwrap().slot - self.agg.pub_slot > VALID_SLOT_PERIOD
         {
             status = PriceStatus::Unknown;
         }
-    
-        Price {
-            price: self.agg.price,
-            conf: self.agg.conf,
+
+        PriceFeed::new(
+            price_key.to_bytes(),
             status,
-            max_num_publishers: self.num,
-            num_publishers: self.num_qt,
-            ema_price: self.ema_price.val,
-            ema_conf: self.ema_conf.val as u64,
-            expo: self.expo,
-            product_id: self.prod.val,
-        }
+            self.expo,
+            self.num,
+            self.num_qt,
+            self.prod.val,
+            self.agg.price,
+            self.agg.conf,
+            self.ema_price.val,
+            self.ema_conf.val as u64,
+        )
     }
 }
 
@@ -388,7 +393,7 @@ fn load<T: Pod>(data: &[u8]) -> Result<&T, PodCastError> {
     }
 }
 
-/** Get a `Mapping` account from the raw byte value of a Solana account. */
+/// Get a `Mapping` account from the raw byte value of a Solana account.
 pub fn load_mapping_account(data: &[u8]) -> Result<&MappingAccount, PythError> {
     let pyth_mapping = load::<MappingAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
 
@@ -405,7 +410,7 @@ pub fn load_mapping_account(data: &[u8]) -> Result<&MappingAccount, PythError> {
     return Ok(pyth_mapping);
 }
 
-/** Get a `Product` account from the raw byte value of a Solana account. */
+/// Get a `Product` account from the raw byte value of a Solana account.
 pub fn load_product_account(data: &[u8]) -> Result<&ProductAccount, PythError> {
     let pyth_product = load::<ProductAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
 
@@ -422,7 +427,7 @@ pub fn load_product_account(data: &[u8]) -> Result<&ProductAccount, PythError> {
     return Ok(pyth_product);
 }
 
-/** Get a `Price` account from the raw byte value of a Solana account. */
+/// Get a `Price` account from the raw byte value of a Solana account.
 pub fn load_price_account(data: &[u8]) -> Result<&PriceAccount, PythError> {
     let pyth_price = load::<PriceAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
 
