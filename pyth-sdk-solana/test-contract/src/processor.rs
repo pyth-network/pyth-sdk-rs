@@ -7,7 +7,7 @@ use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 
 use crate::instruction::PythClientInstruction;
-use pyth_sdk_solana::load_price;
+use pyth_sdk_solana::state::load_price_account;
 
 pub fn process_instruction(
     _program_id: &Pubkey,
@@ -44,7 +44,8 @@ pub fn process_instruction(
             price_account_data,
             expected_price_status,
         } => {
-            let price = load_price(&price_account_data[..])?;
+            let price_account = load_price_account(price_account_data.as_ref())?;
+            let price = price_account.to_price(&Pubkey::default());
 
             if price.status == expected_price_status {
                 Ok(())

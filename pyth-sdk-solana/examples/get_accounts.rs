@@ -70,7 +70,7 @@ fn main() {
                 loop {
                     let price_data = clnt.get_account_data(&px_pkey).unwrap();
                     let price_account = load_price_account(&price_data).unwrap();
-                    let price = price_account.to_price();
+                    let price = price_account.to_price(&px_pkey);
 
                     println!("  price_account .. {:?}", px_pkey);
 
