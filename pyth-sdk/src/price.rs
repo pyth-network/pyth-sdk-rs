@@ -52,6 +52,67 @@ pub struct Price {
 }
 
 impl Price {
+    /// Get the current price of this account in a different quote currency.
+    /// 
+    /// If this account represents the price of the product X/Z, and `quote` represents the price
+    /// of the product Y/Z, this method returns the price of X/Y. Use this method to get the
+    /// price of e.g., mSOL/SOL from the mSOL/USD and SOL/USD accounts.
+    /// 
+    /// `result_expo` determines the exponent of the result, i.e., the number of digits below the
+    /// decimal point. This method returns `None` if either the price or confidence are too
+    /// large to be represented with the requested exponent.
+    /// 
+    /// Example:
+    /// ```ignore
+    /// let btc_usd: Price = ...;
+    /// let eth_usd: Price = ...;
+    /// // -8 is the desired exponent for the result
+    /// let btc_eth: Price = btc_usd.get_price_in_quote(&eth_usd, -8);
+    /// println!("BTC/ETH price: ({} +- {}) x 10^{}", price.price, price.conf, price.expo);
+    /// ```
+    pub fn get_price_in_quote(&self, quote: &Price, result_expo: i32) -> Option<Price> {
+        self.div(quote)?.scale_to_exponent(result_expo)
+    }
+
+    /// Get the price of a basket of currencies.
+    ///
+    /// Each entry in `amounts` is of the form `(price, qty, qty_expo)`, and the result is the sum 
+    /// of `price * qty * 10^qty_expo`. The result is returned with exponent `result_expo`.
+    ///
+    /// An example use case for this function is to get the value of an LP token.
+    ///
+    /// Example:
+    /// ```ignore
+    /// let btc_usd: Price = ...;
+    /// let eth_usd: Price = ...;
+    /// // Quantity of each asset in fixed-point a * 10^e.
+    /// // This represents 0.1 BTC and .05 ETH.
+    /// // -8 is desired exponent for result
+    /// let basket_price: Price = Price::price_basket(&[
+    ///     (btc_usd, 10, -2),
+    ///     (eth_usd, 5, -2)
+    ///   ], -8);
+    /// println!("0.1 BTC and 0.05 ETH are worth: ({} +- {}) x 10^{} USD",
+    ///          basket_price.price, basket_price.conf, basket_price.expo);
+    /// ```
+    pub fn price_basket(amounts: &[(Price, i64, i32)], result_expo: i32) -> Option<Price> {
+        assert!(amounts.len() > 0);
+        let mut res = Price {
+            price: 0,
+            conf:  0,
+            expo:  result_expo,
+        };
+        for i in 0..amounts.len() {
+            res = res.add(
+                &amounts[i]
+                    .0
+                    .cmul(amounts[i].1, amounts[i].2)?
+                    .scale_to_exponent(result_expo)?,
+            )?
+        }
+        Some(res)
+    }
+
     /// Divide this price by `other` while propagating the uncertainty in both prices into the
     /// result.
     /// 
