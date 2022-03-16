@@ -15,8 +15,8 @@ use bytemuck::{
 use std::mem::size_of;
 
 pub use pyth_sdk::{
+    PriceFeed,
     Price,
-    PriceConf,
     PriceStatus,
 };
 
@@ -333,7 +333,7 @@ unsafe impl Pod for PriceAccount {
 }
 
 impl PriceAccount {
-    pub fn to_price(&self) -> Price {
+    pub fn to_price_feed(&self) -> PriceFeed {
         #[allow(unused_mut)]
         let mut status = self.agg.status;
 
@@ -344,7 +344,7 @@ impl PriceAccount {
             status = PriceStatus::Unknown;
         }
 
-        Price {
+        PriceFeed {
             price: self.agg.price,
             conf: self.agg.conf,
             status,

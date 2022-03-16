@@ -10,8 +10,8 @@ pub mod state;
 use state::load_price_account;
 
 pub use pyth_sdk::{
+    PriceFeed,
     Price,
-    PriceConf,
     PriceStatus,
     ProductIdentifier,
 };
@@ -20,8 +20,8 @@ pub use pyth_sdk::{
 pub const VALID_SLOT_PERIOD: u64 = 25;
 
 /// Loads Pyth Price from the raw byte value of a Solana account.
-pub fn load_price(data: &[u8]) -> Result<Price, PythError> {
+pub fn load_price_feed(data: &[u8]) -> Result<PriceFeed, PythError> {
     let price_account = load_price_account(data)?;
 
-    Ok(price_account.to_price())
+    Ok(price_account.to_price_feed())
 }

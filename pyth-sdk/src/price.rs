@@ -17,12 +17,12 @@ const MAX_PD_V_U64: u64 = (1 << 28) - 1;
 /// 10^expo`, where `expo` is the exponent. For example:
 /// 
 /// ```
-/// use pyth_sdk::PriceConf;
-/// PriceConf { price: 12345, conf: 267, expo: -2 }; // represents 123.45 +- 2.67
-/// PriceConf { price: 123, conf: 1, expo: 2 }; // represents 12300 +- 100
+/// use pyth_sdk::Price;
+/// Price { price: 12345, conf: 267, expo: -2 }; // represents 123.45 +- 2.67
+/// Price { price: 123, conf: 1, expo: 2 }; // represents 12300 +- 100
 /// ```
 /// 
-/// `PriceConf` supports a limited set of mathematical operations. All of these operations will
+/// `Price` supports a limited set of mathematical operations. All of these operations will
 /// propagate any uncertainty in the arguments into the result. However, the uncertainty in the
 /// result may overestimate the true uncertainty (by at most a factor of `sqrt(2)`) due to
 /// computational limitations. Furthermore, all of these operations may return `None` if their
@@ -42,7 +42,7 @@ const MAX_PD_V_U64: u64 = (1 << 28) - 1;
     serde::Deserialize,
     JsonSchema,
 )]
-pub struct PriceConf {
+pub struct Price {
     /// Price.
     pub price: i64,
     /// Confidence Interval.
@@ -51,7 +51,7 @@ pub struct PriceConf {
     pub expo:  i32,
 }
 
-impl PriceConf {
+impl Price {
     /// Divide this price by `other` while propagating the uncertainty in both prices into the
     /// result.
     /// 
@@ -61,8 +61,8 @@ impl PriceConf {
     /// normalized, this method will normalize them, resulting in an unpredictable result
     /// exponent. If the result is used in a context that requires a specific exponent,
     /// please call `scale_to_exponent` on it.
-    pub fn div(&self, other: &PriceConf) -> Option<PriceConf> {
-        // PriceConf is not guaranteed to store its price/confidence in normalized form.
+    pub fn div(&self, other: &Price) -> Option<Price> {
+        // Price is not guaranteed to store its price/confidence in normalized form.
         // Normalize them here to bound the range of price/conf, which is required to perform
         // arithmetic operations.
         let base = self.normalize()?;
@@ -73,8 +73,8 @@ impl PriceConf {
         }
 
         // These use at most 27 bits each
-        let (base_price, base_sign) = PriceConf::to_unsigned(base.price);
-        let (other_price, other_sign) = PriceConf::to_unsigned(other.price);
+        let (base_price, base_sign) = Price::to_unsigned(base.price);
+        let (other_price, other_sign) = Price::to_unsigned(other.price);
 
         // Compute the midprice, base in terms of other.
         // Uses at most 57 bits
@@ -109,7 +109,7 @@ impl PriceConf {
         // in which case None is a reasonable result, as we have essentially 0 information about the
         // price.
         if conf < (u64::MAX as u128) {
-            Some(PriceConf {
+            Some(Price {
                 price: (midprice as i64)
                     .checked_mul(base_sign)?
                     .checked_mul(other_sign)?,
@@ -123,43 +123,43 @@ impl PriceConf {
  
     /// Add `other` to this, propagating uncertainty in both prices.
     /// 
-    /// Requires both `PriceConf`s to have the same exponent -- use `scale_to_exponent` on
+    /// Requires both `Price`s to have the same exponent -- use `scale_to_exponent` on
     /// the arguments if necessary.
     /// 
     /// TODO: could generalize this method to support different exponents.
-    pub fn add(&self, other: &PriceConf) -> Option<PriceConf> {
+    pub fn add(&self, other: &Price) -> Option<Price> {
         assert_eq!(self.expo, other.expo);
 
         let price = self.price.checked_add(other.price)?;
         // The conf should technically be sqrt(a^2 + b^2), but that's harder to compute.
         let conf = self.conf.checked_add(other.conf)?;
-        Some(PriceConf {
+        Some(Price {
             price,
             conf,
             expo: self.expo,
         })
     }
 
-    /// Multiply this `PriceConf` by a constant `c * 10^e`.
-    pub fn cmul(&self, c: i64, e: i32) -> Option<PriceConf> {
-        self.mul(&PriceConf {
+    /// Multiply this `Price` by a constant `c * 10^e`.
+    pub fn cmul(&self, c: i64, e: i32) -> Option<Price> {
+        self.mul(&Price {
             price: c,
             conf:  0,
             expo:  e,
         })
     }
 
-    /// Multiply this `PriceConf` by `other`, propagating any uncertainty.
-    pub fn mul(&self, other: &PriceConf) -> Option<PriceConf> {
-        // PriceConf is not guaranteed to store its price/confidence in normalized form.
+    /// Multiply this `Price` by `other`, propagating any uncertainty.
+    pub fn mul(&self, other: &Price) -> Option<Price> {
+        // Price is not guaranteed to store its price/confidence in normalized form.
         // Normalize them here to bound the range of price/conf, which is required to perform
         // arithmetic operations.
         let base = self.normalize()?;
         let other = other.normalize()?;
 
         // These use at most 27 bits each
-        let (base_price, base_sign) = PriceConf::to_unsigned(base.price);
-        let (other_price, other_sign) = PriceConf::to_unsigned(other.price);
+        let (base_price, base_sign) = Price::to_unsigned(base.price);
+        let (other_price, other_sign) = Price::to_unsigned(other.price);
 
         // Uses at most 27*2 = 54 bits
         let midprice = base_price.checked_mul(other_price)?;
@@ -174,7 +174,7 @@ impl PriceConf {
             .checked_mul(other_price)?
             .checked_add(other.conf.checked_mul(base_price)?)?;
 
-        Some(PriceConf {
+        Some(Price {
             price: (midprice as i64)
                 .checked_mul(base_sign)?
                 .checked_mul(other_sign)?,
@@ -185,9 +185,9 @@ impl PriceConf {
 
     /// Get a copy of this struct where the price and confidence
     /// have been normalized to be between `MIN_PD_V_I64` and `MAX_PD_V_I64`.
-    pub fn normalize(&self) -> Option<PriceConf> {
+    pub fn normalize(&self) -> Option<Price> {
         // signed division is very expensive in op count
-        let (mut p, s) = PriceConf::to_unsigned(self.price);
+        let (mut p, s) = Price::to_unsigned(self.price);
         let mut c = self.conf;
         let mut e = self.expo;
 
@@ -197,7 +197,7 @@ impl PriceConf {
             e = e.checked_add(1)?;
         }
 
-        Some(PriceConf {
+        Some(Price {
             price: (p as i64).checked_mul(s)?,
             conf:  c,
             expo:  e,
@@ -211,7 +211,7 @@ impl PriceConf {
     /// 
     /// Warning: if `target_expo` is significantly larger than the current exponent, this
     /// function will return 0 +- 0.
-    pub fn scale_to_exponent(&self, target_expo: i32) -> Option<PriceConf> {
+    pub fn scale_to_exponent(&self, target_expo: i32) -> Option<Price> {
         let mut delta = target_expo.checked_sub(self.expo)?;
         if delta >= 0 {
             let mut p = self.price;
@@ -223,7 +223,7 @@ impl PriceConf {
                 delta = delta.checked_sub(1)?;
             }
 
-            Some(PriceConf {
+            Some(Price {
                 price: p,
                 conf:  c,
                 expo:  target_expo,
@@ -239,7 +239,7 @@ impl PriceConf {
                 delta = delta.checked_add(1)?;
             }
 
-            Some(PriceConf {
+            Some(Price {
                 price: p,
                 conf:  c,
                 expo:  target_expo,
@@ -263,8 +263,8 @@ impl PriceConf {
 
 #[cfg(test)]
 mod test {
-    use crate::price_conf::{
-        PriceConf,
+    use crate::price::{
+        Price,
         MAX_PD_V_U64,
         PD_EXPO,
         PD_SCALE,
@@ -273,16 +273,16 @@ mod test {
     const MAX_PD_V_I64: i64 = MAX_PD_V_U64 as i64;
     const MIN_PD_V_I64: i64 = -MAX_PD_V_I64;
 
-    fn pc(price: i64, conf: u64, expo: i32) -> PriceConf {
-        PriceConf {
+    fn pc(price: i64, conf: u64, expo: i32) -> Price {
+        Price {
             price: price,
             conf:  conf,
             expo:  expo,
         }
     }
 
-    fn pc_scaled(price: i64, conf: u64, cur_expo: i32, expo: i32) -> PriceConf {
-        PriceConf {
+    fn pc_scaled(price: i64, conf: u64, cur_expo: i32, expo: i32) -> Price {
+        Price {
             price: price,
             conf:  conf,
             expo:  cur_expo,
@@ -293,11 +293,11 @@ mod test {
 
     #[test]
     fn test_normalize() {
-        fn succeeds(price1: PriceConf, expected: PriceConf) {
+        fn succeeds(price1: Price, expected: Price) {
             assert_eq!(price1.normalize().unwrap(), expected);
         }
 
-        fn fails(price1: PriceConf) {
+        fn fails(price1: Price) {
             assert_eq!(price1.normalize(), None);
         }
 
@@ -339,11 +339,11 @@ mod test {
 
     #[test]
     fn test_scale_to_exponent() {
-        fn succeeds(price1: PriceConf, target: i32, expected: PriceConf) {
+        fn succeeds(price1: Price, target: i32, expected: Price) {
             assert_eq!(price1.scale_to_exponent(target).unwrap(), expected);
         }
 
-        fn fails(price1: PriceConf, target: i32) {
+        fn fails(price1: Price, target: i32) {
             assert_eq!(price1.scale_to_exponent(target), None);
         }
 
@@ -366,11 +366,11 @@ mod test {
 
     #[test]
     fn test_div() {
-        fn succeeds(price1: PriceConf, price2: PriceConf, expected: PriceConf) {
+        fn succeeds(price1: Price, price2: Price, expected: Price) {
             assert_eq!(price1.div(&price2).unwrap(), expected);
         }
 
-        fn fails(price1: PriceConf, price2: PriceConf) {
+        fn fails(price1: Price, price2: Price) {
             let result = price1.div(&price2);
             assert_eq!(result, None);
         }
@@ -602,11 +602,11 @@ mod test {
 
     #[test]
     fn test_mul() {
-        fn succeeds(price1: PriceConf, price2: PriceConf, expected: PriceConf) {
+        fn succeeds(price1: Price, price2: Price, expected: Price) {
             assert_eq!(price1.mul(&price2).unwrap(), expected);
         }
 
-        fn fails(price1: PriceConf, price2: PriceConf) {
+        fn fails(price1: Price, price2: Price) {
             let result = price1.mul(&price2);
             assert_eq!(result, None);
         }

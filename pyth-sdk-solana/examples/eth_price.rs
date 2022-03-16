@@ -1,6 +1,6 @@
 // example usage of reading pyth price from solana price account
 
-use pyth_sdk_solana::load_price;
+use pyth_sdk_solana::load_price_feed;
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use std::str::FromStr;
@@ -19,14 +19,14 @@ fn main() {
 
     loop {
         // get price data from key
-        let eth_price_data = clnt.get_account_data(&eth_price_key).unwrap();
-        let eth_price = load_price(&eth_price_data).unwrap();
+        let eth_price_account_data = clnt.get_account_data(&eth_price_key).unwrap();
+        let eth_price_feed = load_price_feed(&eth_price_account_data).unwrap();
 
         println!(".....ETH/USD.....");
-        println!("status .......... {:?}", eth_price.status);
-        println!("num_publishers .. {}", eth_price.num_publishers);
+        println!("status .......... {:?}", eth_price_feed.status);
+        println!("num_publishers .. {}", eth_price_feed.num_publishers);
 
-        let maybe_price = eth_price.get_current_price();
+        let maybe_price = eth_price_feed.get_current_price();
         match maybe_price {
             Some(p) => {
                 println!("price ........... {} x 10^{}", p.price, p.expo);
@@ -39,7 +39,7 @@ fn main() {
         }
 
 
-        let maybe_ema_price = eth_price.get_ema_price();
+        let maybe_ema_price = eth_price_feed.get_ema_price();
         match maybe_ema_price {
             Some(ema_price) => {
                 println!(
