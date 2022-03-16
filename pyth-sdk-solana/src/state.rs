@@ -16,8 +16,8 @@ use solana_program::pubkey::Pubkey;
 use std::mem::size_of;
 
 pub use pyth_sdk::{
-    PriceFeed,
     Price,
+    PriceFeed,
     PriceStatus,
 };
 
@@ -347,15 +347,15 @@ impl PriceAccount {
 
         PriceFeed::new(
             price_key.to_bytes(),
-            self.agg.price,
-            self.agg.conf,
             status,
             self.expo,
             self.num,
             self.num_qt,
+            self.prod.val,
+            self.agg.price,
+            self.agg.conf,
             self.ema_price.val,
             self.ema_conf.val as u64,
-            self.prod.val,
         )
     }
 }
