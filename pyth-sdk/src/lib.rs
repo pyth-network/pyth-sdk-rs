@@ -81,7 +81,7 @@ pub struct PriceFeed {
     /// Exponentially moving average price.
     ema_price:              i64,
     /// Exponentially moving average confidence interval.
-    ema_conf:               u64,    
+    ema_conf:               u64,
 }
 
 impl PriceFeed {

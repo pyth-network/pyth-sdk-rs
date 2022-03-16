@@ -20,7 +20,8 @@ fn main() {
     loop {
         // get price data from key
         let mut eth_price_account = clnt.get_account(&eth_price_key).unwrap();
-        let eth_price_feed = load_price_feed_from_account(&eth_price_key, &mut eth_price_account).unwrap();
+        let eth_price_feed =
+            load_price_feed_from_account(&eth_price_key, &mut eth_price_account).unwrap();
 
         println!(".....ETH/USD.....");
         println!("status .......... {:?}", eth_price_feed.status);

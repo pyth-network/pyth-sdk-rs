@@ -11,17 +11,17 @@ const PD_SCALE: u64 = 1_000_000_000;
 const MAX_PD_V_U64: u64 = (1 << 28) - 1;
 
 /// A price with a degree of uncertainty, represented as a price +- a confidence interval.
-/// 
+///
 /// The confidence interval roughly corresponds to the standard error of a normal distribution.
 /// Both the price and confidence are stored in a fixed-point numeric representation, `x *
 /// 10^expo`, where `expo` is the exponent. For example:
-/// 
+///
 /// ```
 /// use pyth_sdk::Price;
 /// Price { price: 12345, conf: 267, expo: -2 }; // represents 123.45 +- 2.67
 /// Price { price: 123, conf: 1, expo: 2 }; // represents 12300 +- 100
 /// ```
-/// 
+///
 /// `Price` supports a limited set of mathematical operations. All of these operations will
 /// propagate any uncertainty in the arguments into the result. However, the uncertainty in the
 /// result may overestimate the true uncertainty (by at most a factor of `sqrt(2)`) due to
@@ -53,15 +53,15 @@ pub struct Price {
 
 impl Price {
     /// Get the current price of this account in a different quote currency.
-    /// 
+    ///
     /// If this account represents the price of the product X/Z, and `quote` represents the price
     /// of the product Y/Z, this method returns the price of X/Y. Use this method to get the
     /// price of e.g., mSOL/SOL from the mSOL/USD and SOL/USD accounts.
-    /// 
+    ///
     /// `result_expo` determines the exponent of the result, i.e., the number of digits below the
     /// decimal point. This method returns `None` if either the price or confidence are too
     /// large to be represented with the requested exponent.
-    /// 
+    ///
     /// Example:
     /// ```ignore
     /// let btc_usd: Price = ...;
@@ -76,7 +76,7 @@ impl Price {
 
     /// Get the price of a basket of currencies.
     ///
-    /// Each entry in `amounts` is of the form `(price, qty, qty_expo)`, and the result is the sum 
+    /// Each entry in `amounts` is of the form `(price, qty, qty_expo)`, and the result is the sum
     /// of `price * qty * 10^qty_expo`. The result is returned with exponent `result_expo`.
     ///
     /// An example use case for this function is to get the value of an LP token.
@@ -118,7 +118,7 @@ impl Price {
 
     /// Divide this price by `other` while propagating the uncertainty in both prices into the
     /// result.
-    /// 
+    ///
     /// This method will automatically select a reasonable exponent for the result. If both
     /// `self` and `other` are normalized, the exponent is `self.expo + PD_EXPO - other.expo`
     /// (i.e., the fraction has `PD_EXPO` digits of additional precision). If they are not
@@ -184,12 +184,12 @@ impl Price {
             None
         }
     }
- 
+
     /// Add `other` to this, propagating uncertainty in both prices.
-    /// 
+    ///
     /// Requires both `Price`s to have the same exponent -- use `scale_to_exponent` on
     /// the arguments if necessary.
-    /// 
+    ///
     /// TODO: could generalize this method to support different exponents.
     pub fn add(&self, other: &Price) -> Option<Price> {
         assert_eq!(self.expo, other.expo);
@@ -269,10 +269,10 @@ impl Price {
     }
 
     /// Scale this price/confidence so that its exponent is `target_expo`.
-    /// 
+    ///
     /// Return `None` if this number is outside the range of numbers representable in `target_expo`,
     /// which will happen if `target_expo` is too small.
-    /// 
+    ///
     /// Warning: if `target_expo` is significantly larger than the current exponent, this
     /// function will return 0 +- 0.
     pub fn scale_to_exponent(&self, target_expo: i32) -> Option<Price> {
