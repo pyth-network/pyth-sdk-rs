@@ -96,17 +96,20 @@ impl Price {
     ///          basket_price.price, basket_price.conf, basket_price.expo);
     /// ```
     pub fn price_basket(amounts: &[(Price, i64, i32)], result_expo: i32) -> Option<Price> {
-        assert!(amounts.len() > 0);
+        if amounts.is_empty() {
+            return None;
+        }
+
         let mut res = Price {
             price: 0,
             conf:  0,
             expo:  result_expo,
         };
-        for i in 0..amounts.len() {
+        for amount in amounts {
             res = res.add(
-                &amounts[i]
+                &amount
                     .0
-                    .cmul(amounts[i].1, amounts[i].2)?
+                    .cmul(amount.1, amount.2)?
                     .scale_to_exponent(result_expo)?,
             )?
         }
