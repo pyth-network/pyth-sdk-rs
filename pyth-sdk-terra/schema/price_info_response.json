@@ -3,29 +3,29 @@
   "title": "PriceInfoResponse",
   "type": "object",
   "required": [
-    "arrival_time",
-    "price"
+    "price_feed",
+    "time"
   ],
   "properties": {
-    "arrival_time": {
-      "description": "Price arrival time in Terra",
+    "price_feed": {
+      "description": "Pyth Price Feed",
+      "allOf": [
+        {
+          "$ref": "#/definitions/PriceFeed"
+        }
+      ]
+    },
+    "time": {
+      "description": "The timestamp that the price was published to the wormhole",
       "allOf": [
         {
           "$ref": "#/definitions/Timestamp"
         }
       ]
-    },
-    "price": {
-      "description": "Pyth Price",
-      "allOf": [
-        {
-          "$ref": "#/definitions/Price"
-        }
-      ]
     }
   },
   "definitions": {
-    "Price": {
+    "PriceFeed": {
       "description": "Represents a current aggregation price from pyth publisher feeds.",
       "type": "object",
       "required": [
@@ -33,6 +33,7 @@
         "ema_conf",
         "ema_price",
         "expo",
+        "id",
         "max_num_publishers",
         "num_publishers",
         "price",
@@ -47,29 +48,40 @@
           "minimum": 0.0
         },
         "ema_conf": {
-          "description": "exponentially moving average confidence interval",
+          "description": "Exponentially moving average confidence interval.",
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0
         },
         "ema_price": {
-          "description": "exponentially moving average price",
+          "description": "Exponentially moving average price.",
           "type": "integer",
           "format": "int64"
         },
         "expo": {
-          "description": "price exponent",
+          "description": "Price exponent.",
           "type": "integer",
           "format": "int32"
         },
+        "id": {
+          "description": "Unique identifier for this price.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "maxItems": 32,
+          "minItems": 32
+        },
         "max_num_publishers": {
-          "description": "maximum number of allowed publishers that can contribute to a price",
+          "description": "Maximum number of allowed publishers that can contribute to a price.",
           "type": "integer",
           "format": "uint32",
           "minimum": 0.0
         },
         "num_publishers": {
-          "description": "number of publishers that made up current aggregate",
+          "description": "Number of publishers that made up current aggregate.",
           "type": "integer",
           "format": "uint32",
           "minimum": 0.0
@@ -80,7 +92,7 @@
           "format": "int64"
         },
         "product_id": {
-          "description": "product account key",
+          "description": "Product account key.",
           "type": "array",
           "items": {
             "type": "integer",
