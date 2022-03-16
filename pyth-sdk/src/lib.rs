@@ -11,7 +11,8 @@ pub use price_conf::PriceConf;
 /// Unique identifier for a price.
 pub type PriceIdentifier = [u8; 32];
 
-/// Consists of 32 bytes and it is currently based on largest Public Key size on various blockchains.
+/// Consists of 32 bytes and it is currently based on largest Public Key size on various
+/// blockchains.
 pub type ProductIdentifier = [u8; 32];
 
 /// Represents availability status of a price feed.
