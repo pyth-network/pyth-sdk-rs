@@ -345,18 +345,18 @@ impl PriceAccount {
             status = PriceStatus::Unknown;
         }
 
-        PriceFeed {
-            id: price_key.to_bytes(),
-            price: self.agg.price,
-            conf: self.agg.conf,
+        PriceFeed::new(
+            price_key.to_bytes(),
+            self.agg.price,
+            self.agg.conf,
             status,
-            max_num_publishers: self.num,
-            num_publishers: self.num_qt,
-            ema_price: self.ema_price.val,
-            ema_conf: self.ema_conf.val as u64,
-            expo: self.expo,
-            product_id: self.prod.val,
-        }
+            self.expo,
+            self.num,
+            self.num_qt,
+            self.ema_price.val,
+            self.ema_conf.val as u64,
+            self.prod.val,
+        )
     }
 }
 
