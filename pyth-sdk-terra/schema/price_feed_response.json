@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PriceFeedResponse",
+  "type": "object",
+  "required": [
+    "price_feed"
+  ],
+  "properties": {
+    "price_feed": {
+      "description": "Pyth Price Feed",
+      "allOf": [
+        {
+          "$ref": "#/definitions/PriceFeed"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "PriceFeed": {
+      "description": "Represents a current aggregation price from pyth publisher feeds.",
+      "type": "object",
+      "required": [
+        "conf",
+        "ema_conf",
+        "ema_price",
+        "expo",
+        "id",
+        "max_num_publishers",
+        "num_publishers",
+        "price",
+        "product_id",
+        "status"
+      ],
+      "properties": {
+        "conf": {
+          "description": "Confidence interval around the price.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "ema_conf": {
+          "description": "Exponentially moving average confidence interval.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "ema_price": {
+          "description": "Exponentially moving average price.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "expo": {
+          "description": "Price exponent.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "id": {
+          "description": "Unique identifier for this price.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "maxItems": 32,
+          "minItems": 32
+        },
+        "max_num_publishers": {
+          "description": "Maximum number of allowed publishers that can contribute to a price.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "num_publishers": {
+          "description": "Number of publishers that made up current aggregate.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "price": {
+          "description": "The current price.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "product_id": {
+          "description": "Product account key.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "maxItems": 32,
+          "minItems": 32
+        },
+        "status": {
+          "description": "Status of price (Trading is valid).",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PriceStatus"
+            }
+          ]
+        }
+      }
+    },
+    "PriceStatus": {
+      "description": "Represents availability status of a price feed.",
+      "type": "string",
+      "enum": [
+        "Unknown",
+        "Trading",
+        "Halted",
+        "Auction"
+      ]
+    }
+  }
+}
