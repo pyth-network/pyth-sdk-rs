@@ -14,8 +14,8 @@ use serde::{
 pub use pyth_sdk::{
     Price,
     PriceFeed,
-    PriceStatus,
     PriceIdentifier,
+    PriceStatus,
     ProductIdentifier,
 };
 
@@ -29,7 +29,7 @@ pub enum QueryMsg {
 #[serde(rename_all = "snake_case")]
 pub struct PriceFeedResponse {
     /// Pyth Price Feed
-    pub price_feed:        PriceFeed,
+    pub price_feed: PriceFeed,
 }
 
 /// Queries the price on-chain

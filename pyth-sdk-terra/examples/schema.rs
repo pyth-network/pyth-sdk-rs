@@ -1,8 +1,15 @@
-use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
+use cosmwasm_schema::{
+    export_schema,
+    remove_schemas,
+    schema_for,
+};
 use std::env::current_dir;
 use std::fs::create_dir_all;
 
-use pyth_sdk_terra::{QueryMsg, PriceFeedResponse};
+use pyth_sdk_terra::{
+    PriceFeedResponse,
+    QueryMsg,
+};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
