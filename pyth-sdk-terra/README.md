@@ -5,6 +5,8 @@ The crate includes a library for reading and using Pyth data feeds in Terra.
 
 ## Usage
 
+> :grey_exclamation: Please follow [the best practices](https://docs.pyth.network/consumers/best-practices) when using this crate.
+
 ### Read price
 
 For reading the price you just need to call `query_price_feed` function within your contract with the id of the price.
@@ -25,7 +27,7 @@ For more detailed information, please see the crate documentation.
 Read the current price from a `PriceFeed`: 
 
 ```rust
-let current_price: Price = price.get_current_price().unwrap();
+let current_price: Price = price_feed.get_current_price().unwrap();
 println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 
