@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FetchPriceResponse",
+  "type": "object",
+  "required": [
+    "price"
+  ],
+  "properties": {
+    "price": {
+      "type": "integer",
+      "format": "int64"
+    }
+  }
+}
