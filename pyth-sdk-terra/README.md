@@ -5,7 +5,7 @@ The crate includes a library for reading and using Pyth data feeds in Terra.
 
 ## Usage
 
-> :grey_exclamation: Please follow [the best practices](https://docs.pyth.network/consumers/best-practices) when using this crate.
+> :grey_exclamation: Please follow [consumer best practices](https://docs.pyth.network/consumers/best-practices) when consuming Pyth data.
 
 ### Read price
 
