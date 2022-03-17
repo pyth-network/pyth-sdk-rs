@@ -11,10 +11,10 @@
         "price_feed": {
           "type": "object",
           "required": [
-            "price_id"
+            "id"
           ],
           "properties": {
-            "price_id": {
+            "id": {
               "type": "array",
               "items": {
                 "type": "integer",

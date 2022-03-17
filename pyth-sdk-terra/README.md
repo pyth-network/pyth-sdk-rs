@@ -9,12 +9,12 @@ The crate includes a library for reading and using Pyth data feeds in Terra.
 
 ### Read price
 
-For reading the price you just need to call `query_price_feed` function within your contract with the id of the price.
+For reading the price you just need to call `query_price_feed` function within your contract with the id of the price feed.
 
-You can find the contract address and price ids in the section [Contracts and Price Feeds](#contracts-and-price-feeds) below.
+You can find the contract address and price feed ids in the section [Contracts and Price Feeds](#contracts-and-price-feeds) below.
 
 ```rust
-let price_feed: PriceFeed = query_price_feed(deps.querier, contract_addr, price_id).unwrap().price_feed;
+let price_feed: PriceFeed = query_price_feed(deps.querier, contract_addr, id).unwrap().price_feed;
 ```
 
 The `PriceFeed` struct contains several useful functions for working with the price.
@@ -68,17 +68,33 @@ println!("0.1 BTC and 0.05 ETH are worth: ({} +- {}) x 10^{} USD",
 
 This function additionally propagates any uncertainty in the price into uncertainty in the value of the basket.
 
+## Client-side Usage
+
+You can use the provided schemas in the `schema` directory to query the terra contract client side.
+
+The query looks like this:
+
+```json
+{
+    "price_feed": {
+        "id": [249, 192, 23, ..., 163, 27] // id of the price feed as an array of bytes
+    }
+}
+```
+
+You can use 
+
 ## Contracts and Price Feeds
 
 Currently Pyth is only available in testnet network.
 
 ### Testnet
 
-The contract address is `terra1hdc8q4ejy82kd9w7wj389dlul9z5zz9a36jflh`
+The contract address is [`terra1hdc8q4ejy82kd9w7wj389dlul9z5zz9a36jflh`](https://finder.terra.money/testnet/address/terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc).
 
 List of available Price Feeds and their ids:
 
-| Symbol          | price_id (hex)                                                       |
+| Symbol          | id (hex)                                                             |
 |-----------------|----------------------------------------------------------------------|
 | Crypto.BTC/USD  | `0xf9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b` |
 | Crypto.ETH/USD  | `0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6` |

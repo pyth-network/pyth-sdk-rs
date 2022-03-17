@@ -22,7 +22,7 @@ pub use pyth_sdk::{
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    PriceFeed { price_id: PriceIdentifier },
+    PriceFeed { id: PriceIdentifier },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -36,11 +36,11 @@ pub struct PriceFeedResponse {
 pub fn query_price_feed(
     querier: &QuerierWrapper,
     contract_addr: String,
-    price_id: PriceIdentifier,
+    id: PriceIdentifier,
 ) -> StdResult<PriceFeedResponse> {
     let price_feed_response = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr,
-        msg: to_binary(&QueryMsg::PriceFeed { price_id })?,
+        msg: to_binary(&QueryMsg::PriceFeed { id })?,
     }))?;
     Ok(price_feed_response)
 }
