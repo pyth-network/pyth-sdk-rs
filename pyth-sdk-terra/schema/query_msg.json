@@ -3,13 +3,12 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "description": "price_id is currently the price public_key in Solana. It is available in https://pyth.network/markets/",
       "type": "object",
       "required": [
-        "price_info"
+        "price_feed"
       ],
       "properties": {
-        "price_info": {
+        "price_feed": {
           "type": "object",
           "required": [
             "price_id"
