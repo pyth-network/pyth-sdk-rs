@@ -72,9 +72,9 @@ This function additionally propagates any uncertainty in the price into uncertai
 
 You can use the provided schemas in the `schema` directory to query the terra contract client side.
 
-The query looks like this:
+The query should look like:
 
-```json
+```
 {
     "price_feed": {
         "id": [249, 192, 23, ..., 163, 27] // id of the price feed as an array of bytes
@@ -82,7 +82,7 @@ The query looks like this:
 }
 ```
 
-You can use 
+By going to the contract address in [Terra Finder](https://finder.terra.money/) you can try and make a query for a price feed and see the result.
 
 ## Contracts and Price Feeds
 
