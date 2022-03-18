@@ -10,7 +10,9 @@ use pyth_sdk_terra::PriceIdentifier;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct State {
+    // Available price feeds and their ids are listed in pyth-sdk-terra Readme.
     pub price_feed_id:      PriceIdentifier,
+    // Contract address of Pyth in different networks are listed in pyth-sdk-terra Readme.
     pub pyth_contract_addr: Addr,
 }
 

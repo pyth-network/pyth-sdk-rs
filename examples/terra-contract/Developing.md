@@ -21,15 +21,12 @@ rustup target add wasm32-unknown-unknown
 
 ## Compiling
 
-Now that you created your custom contract, make sure you can compile and run it before
+After changing the contract, make sure you can compile and run it before
 making any changes. Go into the repository and do:
 
 ```sh
-# this will produce a wasm build in ./target/wasm32-unknown-unknown/release/YOUR_NAME_HERE.wasm
+# this will produce a wasm build in ./target/wasm32-unknown-unknown/release/exxamle_terra_contract.wasm
 cargo build --release --target wasm32-unknown-unknown
-
-# auto-generate json schema
-cargo run --example schema
 ```
 ## Generating JSON Schema
 

@@ -17,10 +17,15 @@ You can find the contract address and price feed ids in the section [Contracts a
 let price_feed: PriceFeed = query_price_feed(deps.querier, contract_addr, id).unwrap().price_feed;
 ```
 
+### Example contract
+
+Checkout [Example Terra Contract](../examples/terra-contract/) as an example which uses Pyth Terra contract to fetch a price. This example also includes guidance for how to [write](../examples/terra-contract/Developing.md), and [deploy and query](../examples/terra-contract/tools/README.md) contracts.
+
+## Price Feed and Price API
+
 The `PriceFeed` struct contains several useful functions for working with the price.
 Some of these functions are described below.
 For more detailed information, please see the crate documentation.
-
 
 ### Get the current price
 
@@ -104,7 +109,3 @@ List of available Price Feeds and their ids:
 
 #### Notes
 - :warning: `num_publishers` and `max_num_publishers` in `PriceFeed` are currrently unavailable and set to 0. 
-
-## Examples
-
-Please checkout [Example Terra Contract](../examples/terra-contract/) as an example which uses Pyth Terra contract to fetch a price. This example also includes guidance for how to [write](../examples/terra-contract/Developing.md), and [deploy and query](../examples/terra-contract/tools/README.md) contracts.
