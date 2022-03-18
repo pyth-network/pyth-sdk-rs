@@ -1,5 +1,5 @@
 [package]
-name = "pyth-sdk-terra-example-contract"
+name = "example-terra-contract"
 version = "0.1.0"
 authors = ["Ali Behjati <bahjatia@gmail.com>"]
 edition = "2018"

@@ -42,16 +42,16 @@ First build the contracts as mentioned in [Developing](../Developing.md).
 
 This command will builds and saves all the contracts in the `artifact` directory.
 
-Then, for example, to deploy `pyth_sdk_terra_example_contract.wasm`, run in the `tools` directory:
+Then, for example, to deploy `example_terra_contract.wasm`, run in the `tools` directory:
 
 ``` sh
-npm run deploy -- --network testnet --artifact ../artifacts/pyth_sdk_terra_example_contract.wasm --mnemonic "..."
+npm run deploy -- --network testnet --artifact ../artifacts/example_terra_contract.wasm --mnemonic "..."
 ```
 
 which will print something along the lines of:
 
 ``` sh
-Storing WASM: ../artifacts/pyth_sdk_terra_example_contract.wasm (367689 bytes)
+Storing WASM: ../artifacts/example_terra_contract.wasm (367689 bytes)
 Deploy fee:  88446uluna
 Code ID:  2435
 ```
@@ -59,17 +59,17 @@ Code ID:  2435
 If you do not pass any additional arguments to the script it will only upload the code and returns the code id. If you want to create a 
 new contract or upgrade an existing contract you should pass more arguments that are described below.
 
-## Instantiating new contract
+## Instantiating a new contract
 If you want instantiate a new contract after your deployment pass `--instantiate` argument to the above command.
-It will upload the code and with the resulting code id instantiates a new pyth contract:
+It will upload the code and with the resulting code id instantiates a new example contract:
 
 ``` sh
-npm run deploy -- --network testnet --artifact ../artifacts/pyth_sdk_terra_example_contract.wasm --mnemonic "..." --instantiate
+npm run deploy -- --network testnet --artifact ../artifacts/example_terra_contract.wasm --mnemonic "..." --instantiate
 ```
 
 If successful, the output should look like:
 ```
-Storing WASM: ../artifacts/pyth_sdk_terra_example_contract.wasm (183749 bytes)
+Storing WASM: ../artifacts/example_terra_contract.wasm (183749 bytes)
 Deploy fee:  44682uluna
 Code ID:  53199
 Instantiating a contract
@@ -80,17 +80,17 @@ Deployed pyth example contract at terra123456789yelw23uh22nadqlyjvtl7s5527er97
 
 This scripts currently set the example contract price to `Crypto.LUNA/USD` but you can change it within `deploy.js`.
 
-## Migrating existing contract
+## Migrating an existing contract
 If you want to upgrade an existing contract pass `--migrate --contract terra123456xyzqwe..` arguments to the above command.
 It will upload the code and with the resulting code id migrates the existing contract to the new one:
 
 ``` sh
-npm run deploy -- --network testnet --artifact ../artifacts/pyth_sdk_terra_example_contract.wasm --mnemonic "..." --migrate --contract "terra123..."
+npm run deploy -- --network testnet --artifact ../artifacts/example_terra_contract.wasm --mnemonic "..." --migrate --contract "terra123..."
 ```
 
 If successful, the output should look like:
 ```
-Storing WASM: ../artifacts/pyth_sdk_terra_example_contract.wasm (183749 bytes)
+Storing WASM: ../artifacts/example_terra_contract.wasm (183749 bytes)
 Deploy fee:  44682uluna
 Code ID:  53227
 Sleeping for 10 seconds for store transaction to finalize.
