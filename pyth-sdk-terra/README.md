@@ -14,7 +14,7 @@ For reading the price you just need to call `query_price_feed` function within y
 You can find the contract address and price feed ids in the section [Contracts and Price Feeds](#contracts-and-price-feeds) below.
 
 ```rust
-let price_feed: PriceFeed = query_price_feed(deps.querier, contract_addr, id).unwrap().price_feed;
+let price_feed: PriceFeed = query_price_feed(deps.querier, contract_addr, id)?.price_feed;
 ```
 
 The `PriceFeed` struct contains several useful functions for working with the price.
