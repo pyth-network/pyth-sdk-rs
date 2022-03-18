@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "price_feed_id",
+    "pyth_contract_addr"
+  ],
+  "properties": {
+    "price_feed_id": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "format": "uint8",
+        "minimum": 0.0
+      },
+      "maxItems": 32,
+      "minItems": 32
+    },
+    "pyth_contract_addr": {
+      "type": "string"
+    }
+  }
+}
