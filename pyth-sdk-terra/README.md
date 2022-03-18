@@ -19,7 +19,7 @@ let price_feed: PriceFeed = query_price_feed(deps.querier, contract_addr, id)?.p
 
 ### Example contract
 
-Checkout [Example Terra Contract](../examples/terra-contract/) as an example which uses Pyth Terra contract to fetch a price. This example also includes guidance for how to [write](../examples/terra-contract/Developing.md), and [deploy and query](../examples/terra-contract/tools/README.md) contracts.
+Checkout [Example Terra Contract](../examples/terra-contract/) as an example which uses Pyth Terra contract to fetch a price.
 
 ## Price Feed and Price API
 
