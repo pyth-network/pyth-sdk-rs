@@ -30,7 +30,7 @@ jobs:
           override: true
 
       - name: Compile WASM contract
-        run: cargo build --release --target wasm32-unknown-unknown --locked
+        run: cargo build --release --target wasm32-unknown-unknown
         env:
           RUSTFLAGS: "-C link-arg=-s"
 
@@ -53,7 +53,7 @@ jobs:
           components: clippy
 
       - name: Generate Schema
-        run: cargo run --example schema --locked
+        run: cargo run --example schema
 
       - name: Schema Changes
         # fails if any changes not committed
