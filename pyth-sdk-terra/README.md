@@ -107,4 +107,4 @@ List of available Price Feeds and their ids:
 
 ## Examples
 
-Please checkout [Example Terra Contract](../examples/terra-contract/) as an example which uses Pyth Terra contract to fetch a price.
+Please checkout [Example Terra Contract](../examples/terra-contract/) as an example which uses Pyth Terra contract to fetch a price. This example also includes guidance for how to [write](../examples/terra-contract/Developing.md), and [deploy and query](../examples/terra-contract/tools/README.md) contracts.
