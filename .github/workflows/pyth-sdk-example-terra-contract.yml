@@ -1,17 +1,21 @@
 # Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-name: Pyth SDK Terra Example Contract
+name: Pyth SDK Example Terra Contract
 
 jobs:
 
   test:
-    name: Test Suite
+    name: Build
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./pyth-sdk-terra-example-contract
+        working-directory: ./examples/terra-contract
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -23,15 +27,6 @@ jobs:
           toolchain: 1.58.1
           target: wasm32-unknown-unknown
           override: true
-
-      - name: Run unit tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: unit-test
-          args: --locked
-        env:
-          RUST_BACKTRACE: 1
-
       - name: Compile WASM contract
         uses: actions-rs/cargo@v1
         with:
@@ -45,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./pyth-sdk-terra-example-contract
+        working-directory: ./examples/terra-contract
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2

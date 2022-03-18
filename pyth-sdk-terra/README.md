@@ -104,3 +104,7 @@ List of available Price Feeds and their ids:
 
 #### Notes
 - :warning: `num_publishers` and `max_num_publishers` in `PriceFeed` are currrently unavailable and set to 0. 
+
+## Examples
+
+Please checkout [Example Terra Contract](../examples/terra-contract/) as an example which uses Pyth Terra contract to fetch a price.

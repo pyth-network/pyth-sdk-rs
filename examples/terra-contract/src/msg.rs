@@ -1,9 +1,14 @@
+use cosmwasm_std::Decimal;
 use pyth_sdk_terra::PriceIdentifier;
 use schemars::JsonSchema;
 use serde::{
     Deserialize,
     Serialize,
 };
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct MigrateMsg {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -25,5 +30,5 @@ pub enum QueryMsg {
 // We define a custom struct for each query response
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct FetchPriceResponse {
-    pub price: i64,
+    pub price: Decimal,
 }

@@ -179,7 +179,7 @@ if (argv.instantiate) {
   }
 
   const contractAddress = await instantiate(codeId, {
-    price_feed_id: Buffer.from(pythLunaPriceFeedId, "hex").toJSON().data,
+    price_feed_id: Array.from(Buffer.from(pythLunaPriceFeedId, "hex")),
     pyth_contract_addr: pythContractAddress
   });
 

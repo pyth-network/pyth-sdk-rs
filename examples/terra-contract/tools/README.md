@@ -1,4 +1,32 @@
-# Intro
+# Tools
+This javascript package contains tools for querying and deploying the example contract.
+
+If this is the first time running the code, run the below command to install required packages: 
+
+```
+npm ci
+```
+
+## Query
+In order to query the contract you can call:
+
+```sh
+npm run query -- --network testnet --contract terra123xyzqwerty...
+```
+
+If successful the output should look like:
+```
+{ price: '83.6885' }
+```
+
+If the price is not available you will get:
+```
+rpc error: code = Unknown desc = Generic error: Current price is not available: contract query failed
+```
+
+You can use `terra1fm4ssxq39m355pdv2wzxggf5uxs2ase4vga9qs` as a live deployment of the example contract. This contract
+is configured to return price of `Crypto.LUNA/USD` if it is available.
+## Deployment
 
 Deploying a contract in terra consists of two steps:
 1. Uploading the code. This step will give you a code id.
@@ -8,16 +36,15 @@ Deploying a contract in terra consists of two steps:
 
 This script can do both steps at the same time. Read below for the details.
 
-# Uploading the code
+## Uploading the code
 
-First build the contracts as mentioned in `Developing.md`. 
+First build the contracts as mentioned in [Developing](../Developing.md).
 
 This command will builds and saves all the contracts in the `artifact` directory.
 
 Then, for example, to deploy `pyth_sdk_terra_example_contract.wasm`, run in the `tools` directory:
 
 ``` sh
-npm ci # Do it only once to install required packages
 npm run deploy -- --network testnet --artifact ../artifacts/pyth_sdk_terra_example_contract.wasm --mnemonic "..."
 ```
 
@@ -32,7 +59,7 @@ Code ID:  2435
 If you do not pass any additional arguments to the script it will only upload the code and returns the code id. If you want to create a 
 new contract or upgrade an existing contract you should pass more arguments that are described below.
 
-# Instantiating new contract
+## Instantiating new contract
 If you want instantiate a new contract after your deployment pass `--instantiate` argument to the above command.
 It will upload the code and with the resulting code id instantiates a new pyth contract:
 
@@ -51,7 +78,9 @@ Instantiated Pyth Example at terra123456789yelw23uh22nadqlyjvtl7s5527er97 (0x000
 Deployed pyth example contract at terra123456789yelw23uh22nadqlyjvtl7s5527er97
 ```
 
-# Migrating existing contract
+This scripts currently set the example contract price to `Crypto.LUNA/USD` but you can change it within `deploy.js`.
+
+## Migrating existing contract
 If you want to upgrade an existing contract pass `--migrate --contract terra123456xyzqwe..` arguments to the above command.
 It will upload the code and with the resulting code id migrates the existing contract to the new one:
 
@@ -69,7 +98,7 @@ Migrating contract terra1rhjej5gkyelw23uh22nadqlyjvtl7s5527er97 to 53227
 Contract terra1rhjej5gkyelw23uh22nadqlyjvtl7s5527er97 code_id successfully updated to 53227
 ```
 
-# Notes
+## Notes
 
 You might encounter gateway timeout or account sequence mismatch in errors. In is good to double check with terra finder as sometimes
 transactions succeed despite being timed out.
@@ -80,5 +109,5 @@ by passing `--code-id <codeId>` instead of `--artifact` and it will only do the 
 An example is:
 
 ``` sh
-npm run deploy-pyth -- --network testnet --code-id 50123 --mnemonic "..." --migrate --contract "terra123..."
+npm run deploy -- --network testnet --code-id 50123 --mnemonic "..." --migrate --contract "terra123..."
 ```

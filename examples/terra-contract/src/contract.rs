@@ -3,6 +3,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary,
     Binary,
+    Decimal,
     Deps,
     DepsMut,
     Env,
@@ -18,6 +19,7 @@ use crate::msg::{
     ExecuteMsg,
     FetchPriceResponse,
     InstantiateMsg,
+    MigrateMsg,
     QueryMsg,
 };
 use crate::state::{
@@ -25,9 +27,10 @@ use crate::state::{
     STATE,
 };
 
-// version info for migration info
-const CONTRACT_NAME: &str = "crates.io:pyth-sdk-terra-example-contract";
-const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new().add_attribute("method", "migrate"))
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -68,16 +71,29 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 fn query_fetch_price(deps: Deps) -> StdResult<FetchPriceResponse> {
     let state = STATE.load(deps.storage)?;
 
-    let price_feed = query_price_feed(&deps.querier, state.pyth_contract_addr.into_string(), state.price_feed_id)
-        .unwrap()
-        .price_feed;
+    let price_feed = query_price_feed(
+        &deps.querier,
+        state.pyth_contract_addr.into_string(),
+        state.price_feed_id,
+    )?
+    .price_feed;
 
     match price_feed.get_current_price() {
-        Some(current_price) => Ok(FetchPriceResponse {
-            price: current_price.price,
-        }),
-        None => Err(StdError::GenericErr {
-            msg: String::from("Current price is not available"),
-        }),
+        Some(current_price) => {
+            let price = if current_price.expo < 0 {
+                Decimal::from_ratio(
+                    current_price.price as u128,
+                    10u128.pow((-current_price.expo) as u32),
+                )
+            } else {
+                Decimal::from_ratio(
+                    (current_price.price as u128) * 10u128.pow(current_price.expo as u32),
+                    1u128,
+                )
+            };
+
+            Ok(FetchPriceResponse { price })
+        }
+        None => Err(StdError::generic_err("Current price is not available")),
     }
 }

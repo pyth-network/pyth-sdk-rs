@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "node deploy.js"
+    "deploy": "node deploy.js",
+    "query": "node query.js"
   },
   "author": "",
   "license": "ISC",

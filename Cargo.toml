@@ -5,4 +5,5 @@ members = [
     "pyth-sdk-solana",
     "pyth-sdk-solana/test-contract",
     "pyth-sdk-terra",
+    "examples/terra-contract",
 ]
