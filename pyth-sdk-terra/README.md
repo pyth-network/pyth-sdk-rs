@@ -27,7 +27,7 @@ For more detailed information, please see the crate documentation.
 Read the current price from a `PriceFeed`: 
 
 ```rust
-let current_price: Price = price_feed.get_current_price().unwrap();
+let current_price: Price = price_feed.get_current_price().ok_or(StdError::not_found("Current Price is not available"))?;
 println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 
