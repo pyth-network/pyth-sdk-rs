@@ -31,6 +31,8 @@ pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Respons
     Ok(Response::new().add_attribute("method", "migrate"))
 }
 
+/// The instantiate function is invoked when the contract is first deployed.
+/// This function sets configuration values that are used by the query function.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -62,6 +64,7 @@ pub fn execute(
     Ok(Response::new().add_attribute("method", "execute"))
 }
 
+/// Query the Pyth contract the current price of the configured price feed.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -72,6 +75,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 fn query_fetch_price(deps: Deps) -> StdResult<FetchPriceResponse> {
     let state = STATE.load(deps.storage)?;
 
+    // query_price_feed is the standard way to read the current price from a Pyth price feed.
+    // It takes the address of the Pyth contract (which is fixed for each network) and the id of the price feed.
+    // The result is a PriceFeed object with fields for the current price and other useful information.
+    // The function will fail if the contract address or price feed id are invalid.
     let price_feed = query_price_feed(
         &deps.querier,
         state.pyth_contract_addr.into_string(),
@@ -79,15 +86,20 @@ fn query_fetch_price(deps: Deps) -> StdResult<FetchPriceResponse> {
     )?
     .price_feed;
 
-    // This examples throws an error if the price is not available. Price could be
-    // unavailable if the number of publishers are low or it has not been updated
-    // for a while due to network errors and etc. It is recommended that you handle
-    // the scenarios which price is not available in a better way.
-    // Make sure to read [consumer best practices](https://docs.pyth.network/consumers/best-practices)
-    // when using pyth data.
+    // Get the current price and confidence interval from the price feed.
+    // This function returns None if the price is not currently available.
+    // This condition can happen for various reasons. For example, some products only trade at specific times, or
+    // network outages may prevent the price feed from updating.
+    //
+    // The example code below throws an error if the price is not available. It is recommended that you handle
+    // this scenario more carefully. Consult the [consumer best practices](https://docs.pyth.network/consumers/best-practices)
+    // for recommendations.
     let current_price = price_feed
         .get_current_price()
         .ok_or(StdError::not_found("Current price is not available"))?;
+
+    // Get an exponentially-weighted moving average price and confidence interval.
+    // The same notes about availability apply to this price.
     let ema_price = price_feed
         .get_ema_price()
         .ok_or(StdError::not_found("EMA price is not available"))?;
