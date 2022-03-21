@@ -68,15 +68,17 @@ const CONFIG = {
       name: "testnet",
     },
     pythContractAddress: "terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc",
-    pythLunaPriceFeedId: "6de025a4cf28124f8ea6cb8085f860096dbc36d9c40002e221fc449337e065b2"
+    // Change this field to change which price feed is read by the deployed contract.
+    // The current value is the LUNA/USD price feed.
+    pythPriceFeedId: "6de025a4cf28124f8ea6cb8085f860096dbc36d9c40002e221fc449337e065b2"
   }
 }
 
 const terraHost = CONFIG[argv.network].terraHost;
 const pythContractAddress = CONFIG[argv.network].pythContractAddress;
-const pythLunaPriceFeedId = CONFIG[argv.network].pythLunaPriceFeedId;
+const pythPriceFeedId = CONFIG[argv.network].pythPriceFeedId;
 
-  
+
 const lcd = new LCDClient(terraHost);
 
 const feeDenoms = ["uluna"];
@@ -93,7 +95,7 @@ const wallet = lcd.wallet(
 
 /* Deploy artifacts */
 
-var codeId; 
+var codeId;
 
 if (argv.codeId !== undefined) {
   codeId = argv.codeId;
@@ -168,7 +170,7 @@ if (argv.instantiate) {
       .then((rs) => {
         try {
           address = /"contract_address","value":"([^"]+)/gm.exec(rs.raw_log)[1];
-        } catch (e) { 
+        } catch (e) {
           console.error("Encountered an error in parsing instantiation result. Printing raw log")
           console.error(rs.raw_log);
           throw(e);
@@ -179,7 +181,7 @@ if (argv.instantiate) {
   }
 
   const contractAddress = await instantiate(codeId, {
-    price_feed_id: Array.from(Buffer.from(pythLunaPriceFeedId, "hex")),
+    price_feed_id: Array.from(Buffer.from(pythPriceFeedId, "hex")),
     pyth_contract_addr: pythContractAddress
   });
 
@@ -209,7 +211,7 @@ if (argv.migrate) {
     feeDenoms,
     gasPrices,
   });
-  
+
   const rs = await lcd.tx.broadcast(tx);
   var resultCodeId;
   try {
