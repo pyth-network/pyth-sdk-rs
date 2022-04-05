@@ -5,13 +5,13 @@ This crate is typically used in combination with a platform-specific crate such 
 
 ## Usage
 
-The Pyth Network SDK has two core data types:
+The SDK has two core data types:
 
 * `PriceFeed` is a container for all currently-available pricing information about a product (e.g., BTC/USD).
 * `Price` represents a price with a degree of uncertainty.
 
 The typical usage of this SDK is to first retrieve a `PriceFeed` for one or more products required by your application.
-This step typically uses one of the platform-specific crates referenced above, which provide retrieval methods for specific blockchains.
+This step typically uses one of the platform-specific crates (referenced above), which provide retrieval methods for specific blockchains.
 Once you have a `PriceFeed`, you can call one of the methods below to get the prices your application needs:
 
 ### Get the Current Price
@@ -19,15 +19,15 @@ Once you have a `PriceFeed`, you can call one of the methods below to get the pr
 Get the current price of the product from its `PriceFeed`: 
 
 ```rust
-let current_price: Price = price_feed.get_current_price().ok_or(StdError::not_found("Current Price is not available"))?;
+let current_price: Price = price_feed.get_current_price().ok_or(StdError::not_found("Current price is not available"))?;
 println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 
 The price is returned along with a confidence interval that represents the degree of uncertainty in the price.
 Both values are represented as fixed-point numbers, `a * 10^e`.
-The method will return `None` if the price is not currently available; this can happen for various reasons, e.g., US equities only trade during market hours.
+The method will return `None` if the current price is not available.
 
-Please see the [consumer best practices guide](https://docs.pyth.network/consumers/best-practices) for additional recommendations on how to consume Pyth Network prices, such as how to use the confidence interval.
+Please see the [consumer best practices guide](https://docs.pyth.network/consumers/best-practices) for additional recommendations on how to consume Pyth Network prices, such as how to use the confidence interval, and what to do if the price is not currently available.
 
 ### EMA Price
 
@@ -35,17 +35,16 @@ Please see the [consumer best practices guide](https://docs.pyth.network/consume
 The EMA price can be retrieved as follows:
 
 ```rust
-let current_price: Price = price_feed.get_ema_price().ok_or(StdError::not_found("Current Price is not available"))?;
-println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
+let ema_price: Price = price_feed.get_ema_price().ok_or(StdError::not_found("EMA price is not available"))?;
+println!("price: ({} +- {}) x 10^{}", ema_price.price, ema_price.conf, ema_price.expo);
 ```
 
-## Prices
+## Manipulating Prices
 
-The `Price` object supports arithmetic operations (e.g., multiplication).
-These operations automatically propagate any uncertainty in the inputs into uncertainty in the output.
-These operations allow you to combine prices in several useful ways:
+The `Price` struct supports arithmetic operations that allow you to combine prices from multiple products.
+These operations can be used to price some products that aren't directly listed on Pyth Network:
 
-### Change the Quote Currency
+### Non-USD Prices
 
 Most assets listed on Pyth Network are quoted in terms of USD, e.g., the BTC/USD price feed provides the number of dollars per BTC.
 However, some applications would like prices in other quote currencies, such as the number of ETH per BTC.
