@@ -35,4 +35,4 @@ To release a new version of any of these crates, perform the following steps wit
    You may use a version number with a `-beta.x` suffix such as `0.0.1-beta.0` to create opt-in test versions.
 2. Merge your change into `main` on github.
 3. Create and publish a new github release.
-   This step will trigger a Github Action that publishes a new version of the crate to [crates.io](https://crates.io).
+   We currently don't have a Github Action to automatically push releases to [crates.io](https://crates.io), but should set one up.
