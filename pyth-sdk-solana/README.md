@@ -1,16 +1,7 @@
-# Pyth SDK Solana
+# Pyth Network Solana SDK 
 
 This crate provides utilities for reading price feeds from the [pyth.network](https://pyth.network/) oracle on the Solana network.
-The crate includes a library for reading and using Pyth data feeds in Solana both on-chain (Solana programs) and off-chain (clients interacting with Solana blockchain). It also includes multiple off-chain example programs.
-
-Key features of this library include:
-
-* Get the current price of over [50 products](https://pyth.network/markets/), including cryptocurrencies,
-  US equities, forex and more.
-* Combine listed products to create new price feeds, e.g., for baskets of tokens or non-USD quote currencies.
-* Consume prices in on-chain Solana programs or off-chain applications.
-
-Please see the [pyth.network documentation](https://docs.pyth.network/) for more information about pyth.network.
+It also includes several [off-chain example programs](examples/).
 
 ## Installation
 
@@ -30,96 +21,51 @@ Pyth Network stores its price feeds in a collection of Solana accounts of variou
 * Product accounts store metadata about a product, such as its symbol (e.g., "BTC/USD").
 * Mapping accounts store a listing of all Pyth accounts
 
-> :warning: This structure is designed for Pyth Oracle internal program. In most of the use cases only Price account is needed.
-
-For more information on the different types of Pyth accounts, see the [account structure documentation](https://docs.pyth.network/how-pyth-works/account-structure).
-The pyth.network website also lists the public keys of the accounts (e.g., [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)). 
-
-This crate provides utilities for interpreting and manipulating the content of these accounts.
+Most users of this SDK only need to access the content of price accounts; the other two account types are implementation details of the oracle.
 Applications can obtain the content of these accounts in two different ways:
 * On-chain programs should pass these accounts to the instructions that require price feeds.
 * Off-chain programs can access these accounts using the Solana RPC client (as in the [eth price example program](examples/eth_price.rs)).
 
-In both cases, the content of the account will be provided to the application as a binary blob (`Vec<u8>`).
-The examples below assume that the user has already obtained this account data.
+The pyth.network website can be used to identify the public keys of the various Pyth Network accounts (e.g., [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)).
 
-### Parse price data
-Each price feed (e.g: `Crypto.BTC/USD`) is stored in a Solana price account.
-You can find price accounts in the pyth.network website (e.g.: [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)).  
+### On-chain
 
-The `Price` struct contains several useful functions for working with the price.
-Some of these functions are described below.
-For more detailed information, please see the crate documentation.
-
-#### On-chain
-
-To read the price from a price account on-chain, this library provides a `load_price_from_account_info` method that constructs `Price` struct from AccountInfo:
+On-chain applications should pass the relevant Pyth Network price account to the Solana instruction that consumes it.
+This price account will be represented as an `AccountInfo` in the code for the Solana instruction.
+The `load_price_feed_from_account_info` function will construct a `PriceFeed` struct from `AccountInfo`:
 
 ```rust
 use pyth_sdk_solana::{load_price_feed_from_account_info, PriceFeed};
 
 let price_account_info: AccountInfo = ...;
-let price: PriceFeed = load_price_feed_from_account_info( &price_account_info ).unwrap();
+let price_feed: PriceFeed = load_price_feed_from_account_info( &price_account_info ).unwrap();
+let current_price: Price = price_feed.get_current_price().unwrap();
+println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 
-#### Off-chain
-To read the price from a price account off-chain in clients, this library provides a `load_price_from_account` method that constructs `Price` struct from Account:
+The `PriceFeed` object returned by `load_price_feed_from_account_info` contains all currently-available pricing information about the product.
+This struct also has some useful functions for manipulating and combining prices; see the [common SDK documentation](../pyth-sdk) for more details.
+
+Note that your application should also validate the address of the passed-in price account before using it.
+Otherwise, an attacker could pass in a different account and set the price to an arbitrary value.
+
+### Off-chain
+
+Off-chain applications can read the current value of a Pyth Network price account using the Solana RPC client.
+This client will return the content of the account as an `Account` struct.
+The `load_price_feed_from_account` function will construct a `PriceFeed` struct from `Account`:
 
 ```rust
 use pyth_sdk_solana::{load_price_feed_from_account, PriceFeed};
 
 let price_key: Pubkey = ...;
 let mut price_account: Account = ...;
-let price: PriceFeed = load_price_feed_from_account( &price_key, &mut price_account ).unwrap();
-```
-
-### Get the current price
-
-Read the current price from a `PriceFeed`:
-
-```rust
+let price_feed: PriceFeed = load_price_feed_from_account( &price_key, &mut price_account ).unwrap();
 let current_price: Price = price_feed.get_current_price().unwrap();
 println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 
-The price is returned along with a confidence interval that represents the degree of uncertainty in the price.
-Both values are represented as fixed-point numbers, `a * 10^e`. 
-The method will return `None` if the price is not currently available.
-
-### Non-USD prices 
-
-Most assets in Pyth are priced in USD.
-Applications can combine two USD prices to price an asset in a different quote currency:
-
-```rust
-let btc_usd: Price = ...;
-let eth_usd: Price = ...;
-// -8 is the desired exponent for the result 
-let btc_eth: Price = btc_usd.get_price_in_quote(&eth_usd, -8);
-println!("BTC/ETH price: ({} +- {}) x 10^{}", price.price, price.conf, price.expo);
-```
-
-### Price a basket of assets
-
-Applications can also compute the value of a basket of multiple assets:
-
-```rust
-let btc_usd: Price = ...;
-let eth_usd: Price = ...;
-// Quantity of each asset in fixed-point a * 10^e.
-// This represents 0.1 BTC and .05 ETH.
-// -8 is desired exponent for result
-let basket_price: Price = Price::price_basket(&[
-    (btc_usd, 10, -2),
-    (eth_usd, 5, -2)
-  ], -8);
-println!("0.1 BTC and 0.05 ETH are worth: ({} +- {}) x 10^{} USD",
-         basket_price.price, basket_price.conf, basket_price.expo);
-```
-
-This function additionally propagates any uncertainty in the price into uncertainty in the value of the basket.
-
-### Solana Account Structure
+## Low-Level Solana Account Structure
 
 > :warning: The Solana account structure is an internal API that is subject to change. Prefer to use `load_price_feed_*` when possible.
 
@@ -139,8 +85,9 @@ let mapping_account_data: Vec<u8> = ...;
 let mapping_account: &MappingAccount = load_mapping_account( &mapping_account_data ).unwrap();
 ```
 
+For more information on the different types of Pyth accounts, see the [account structure documentation](https://docs.pyth.network/how-pyth-works/account-structure).
 
-### Off-chain example program
+## Off-chain Example Programs
 
 The example [eth_price](examples/eth_price.rs) program prints the product reference data and current price information for Pyth on Solana devnet.
 Run the following commands to try this example program:
