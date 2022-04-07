@@ -1,4 +1,4 @@
-// #![cfg(feature = "test-bpf")] // Only runs on bpf, where solana programs run
+#![cfg(feature = "test-bpf")] // Only runs on bpf, where solana programs run
 
 use pyth_sdk_solana::state::{
     AccountType,
