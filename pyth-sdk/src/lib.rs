@@ -15,6 +15,11 @@ pub type PriceIdentifier = [u8; 32];
 /// blockchains.
 pub type ProductIdentifier = [u8; 32];
 
+/// Unix Timestamp is represented as number of seconds passed since Unix epoch (00:00:00 UTC on 1
+/// Jan 1970). It is a signed integer because it's the standard in Unix systems and allows easier
+/// time difference.
+pub type UnixTimestamp = i64;
+
 /// Represents availability status of a price feed.
 #[derive(
     Copy,
@@ -66,6 +71,8 @@ pub struct PriceFeed {
     pub id:                 PriceIdentifier,
     /// Status of price (Trading is valid).
     pub status:             PriceStatus,
+    /// Current price aggregation publish time
+    pub publish_time:       UnixTimestamp,
     /// Price exponent.
     pub expo:               i32,
     /// Maximum number of allowed publishers that can contribute to a price.
@@ -74,14 +81,20 @@ pub struct PriceFeed {
     pub num_publishers:     u32,
     /// Product account key.
     pub product_id:         ProductIdentifier,
-    /// The current price.
+    /// The current aggregation price.
     price:                  i64,
-    /// Confidence interval around the price.
+    /// Confidence interval around the current aggregation price.
     conf:                   u64,
     /// Exponentially moving average price.
     ema_price:              i64,
     /// Exponentially moving average confidence interval.
     ema_conf:               u64,
+    /// Price of previous aggregate with Trading status.
+    prev_price:             i64,
+    /// Confidence interval of previous aggregate with Trading status.
+    prev_conf:              u64,
+    /// Publish time of previous aggregate with Trading status.
+    prev_publish_time:      UnixTimestamp,
 }
 
 impl PriceFeed {
@@ -89,6 +102,7 @@ impl PriceFeed {
     pub fn new(
         id: PriceIdentifier,
         status: PriceStatus,
+        publish_time: UnixTimestamp,
         expo: i32,
         max_num_publishers: u32,
         num_publishers: u32,
@@ -97,18 +111,25 @@ impl PriceFeed {
         conf: u64,
         ema_price: i64,
         ema_conf: u64,
+        prev_price: i64,
+        prev_conf: u64,
+        prev_publish_time: UnixTimestamp,
     ) -> PriceFeed {
         PriceFeed {
             id,
-            price,
-            conf,
             status,
+            publish_time,
             expo,
             max_num_publishers,
             num_publishers,
+            product_id,
+            price,
+            conf,
             ema_price,
             ema_conf,
-            product_id,
+            prev_price,
+            prev_conf,
+            prev_publish_time,
         }
     }
 
@@ -176,5 +197,23 @@ impl PriceFeed {
             conf:  self.ema_conf,
             expo:  self.expo,
         }
+    }
+
+    /// Get the "unchecked" previous price with Trading status,
+    /// along with the timestamp at which it was generated.
+    ///
+    /// WARNING:
+    /// We make no guarantees about the unchecked price and confidence returned by
+    /// this function: it could differ significantly from the current price.
+    /// We strongly encourage you to use `get_current_price` instead.
+    pub fn get_prev_price_unchecked(&self) -> (Price, UnixTimestamp) {
+        (
+            Price {
+                price: self.prev_price,
+                conf:  self.prev_conf,
+                expo:  self.expo,
+            },
+            self.prev_publish_time,
+        )
     }
 }
