@@ -27,13 +27,17 @@
         "id",
         "max_num_publishers",
         "num_publishers",
+        "prev_conf",
+        "prev_price",
+        "prev_timestamp",
         "price",
         "product_id",
-        "status"
+        "status",
+        "timestamp"
       ],
       "properties": {
         "conf": {
-          "description": "Confidence interval around the price.",
+          "description": "Confidence interval around the current aggregation price.",
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0
@@ -77,8 +81,24 @@
           "format": "uint32",
           "minimum": 0.0
         },
+        "prev_conf": {
+          "description": "Confidence interval of previous aggregate with Trading status.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "prev_price": {
+          "description": "Price of previous aggregate with Trading status.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "prev_timestamp": {
+          "description": "Unix timestamp of previous aggregate with Trading status.",
+          "type": "integer",
+          "format": "int64"
+        },
         "price": {
-          "description": "The current price.",
+          "description": "The current aggregation price.",
           "type": "integer",
           "format": "int64"
         },
@@ -100,6 +120,11 @@
               "$ref": "#/definitions/PriceStatus"
             }
           ]
+        },
+        "timestamp": {
+          "description": "Unix timestamp of current price aggregation time",
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
