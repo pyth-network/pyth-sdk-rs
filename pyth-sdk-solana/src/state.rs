@@ -280,49 +280,55 @@ pub struct Rational {
 #[repr(C)]
 pub struct PriceAccount {
     /// pyth magic number
-    pub magic:      u32,
+    pub magic:          u32,
     /// program version
-    pub ver:        u32,
+    pub ver:            u32,
     /// account type
-    pub atype:      u32,
+    pub atype:          u32,
     /// price account size
-    pub size:       u32,
+    pub size:           u32,
     /// price or calculation type
-    pub ptype:      PriceType,
+    pub ptype:          PriceType,
     /// price exponent
-    pub expo:       i32,
+    pub expo:           i32,
     /// number of component prices
-    pub num:        u32,
+    pub num:            u32,
     /// number of quoters that make up aggregate
-    pub num_qt:     u32,
+    pub num_qt:         u32,
     /// slot of last valid (not unknown) aggregate price
-    pub last_slot:  u64,
+    pub last_slot:      u64,
     /// valid slot-time of agg. price
-    pub valid_slot: u64,
+    pub valid_slot:     u64,
     /// exponentially moving average price
-    pub ema_price:  Rational,
+    pub ema_price:      Rational,
     /// exponentially moving average confidence interval
-    pub ema_conf:   Rational,
+    pub ema_conf:       Rational,
+    /// unix timestamp of aggregate price
+    pub timestamp:      i64,
+    /// min publishers for valid price
+    pub min_pub:        u8,
     /// space for future derived values
-    pub drv1:       i64,
+    pub drv2:           u8,
     /// space for future derived values
-    pub drv2:       i64,
+    pub drv3:           u16,
+    /// space for future derived values
+    pub drv4:           u32,
     /// product account key
-    pub prod:       AccKey,
+    pub prod:           AccKey,
     /// next Price account in linked list
-    pub next:       AccKey,
+    pub next:           AccKey,
     /// valid slot of previous update
-    pub prev_slot:  u64,
-    /// aggregate price of previous update
-    pub prev_price: i64,
-    /// confidence interval of previous update
-    pub prev_conf:  u64,
-    /// space for future derived values
-    pub drv3:       i64,
+    pub prev_slot:      u64,
+    /// aggregate price of previous update with TRADING status
+    pub prev_price:     i64,
+    /// confidence interval of previous update with TRADING status
+    pub prev_conf:      u64,
+    /// unix timestamp of previous aggregate with TRADING status
+    pub prev_timestamp: i64,
     /// aggregate price info
-    pub agg:        PriceInfo,
+    pub agg:            PriceInfo,
     /// price components one per quoter
-    pub comp:       [PriceComp; 32],
+    pub comp:           [PriceComp; 32],
 }
 
 #[cfg(target_endian = "little")]
@@ -348,6 +354,7 @@ impl PriceAccount {
         PriceFeed::new(
             price_key.to_bytes(),
             status,
+            self.timestamp,
             self.expo,
             self.num,
             self.num_qt,
@@ -356,6 +363,9 @@ impl PriceAccount {
             self.agg.conf,
             self.ema_price.val,
             self.ema_conf.val as u64,
+            self.prev_price,
+            self.prev_conf,
+            self.prev_timestamp,
         )
     }
 }
