@@ -16,7 +16,8 @@ pub type PriceIdentifier = [u8; 32];
 pub type ProductIdentifier = [u8; 32];
 
 /// Unix Timestamp is represented as number of seconds passed since Unix epoch (00:00:00 UTC on 1
-/// Jan 1970)
+/// Jan 1970). It is a signed integer because it's the standard in Unix systems and allows easier
+/// time difference.
 pub type UnixTimestamp = i64;
 
 /// Represents availability status of a price feed.
