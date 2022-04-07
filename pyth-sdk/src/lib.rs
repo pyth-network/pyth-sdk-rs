@@ -71,8 +71,8 @@ pub struct PriceFeed {
     pub id:                 PriceIdentifier,
     /// Status of price (Trading is valid).
     pub status:             PriceStatus,
-    /// Unix timestamp of current price aggregation time
-    pub timestamp:          UnixTimestamp,
+    /// Current price aggregation publish time
+    pub publish_time:       UnixTimestamp,
     /// Price exponent.
     pub expo:               i32,
     /// Maximum number of allowed publishers that can contribute to a price.
@@ -93,8 +93,8 @@ pub struct PriceFeed {
     prev_price:             i64,
     /// Confidence interval of previous aggregate with Trading status.
     prev_conf:              u64,
-    /// Unix timestamp of previous aggregate with Trading status.
-    prev_timestamp:         UnixTimestamp,
+    /// Publish time of previous aggregate with Trading status.
+    prev_publish_time:      UnixTimestamp,
 }
 
 impl PriceFeed {
@@ -102,7 +102,7 @@ impl PriceFeed {
     pub fn new(
         id: PriceIdentifier,
         status: PriceStatus,
-        timestamp: UnixTimestamp,
+        publish_time: UnixTimestamp,
         expo: i32,
         max_num_publishers: u32,
         num_publishers: u32,
@@ -113,12 +113,12 @@ impl PriceFeed {
         ema_conf: u64,
         prev_price: i64,
         prev_conf: u64,
-        prev_timestamp: UnixTimestamp,
+        prev_publish_time: UnixTimestamp,
     ) -> PriceFeed {
         PriceFeed {
             id,
             status,
-            timestamp,
+            publish_time,
             expo,
             max_num_publishers,
             num_publishers,
@@ -129,7 +129,7 @@ impl PriceFeed {
             ema_conf,
             prev_price,
             prev_conf,
-            prev_timestamp,
+            prev_publish_time,
         }
     }
 
@@ -199,11 +199,13 @@ impl PriceFeed {
         }
     }
 
-    /// Get the "unchecked" previous aggregate price with Trading status.
+    /// Get the "unchecked" previous price with Trading status,
+    /// along with the timestamp at which it was generated.
     ///
-    /// Returns the previous aggregate price with the timestamp it was generated. The price might
-    /// be invalid or inaccurate at the current time; You need to check timestamp when using it.
-    /// Please use `get_current_price` where possible.
+    /// WARNING:
+    /// We make no guarantees about the unchecked price and confidence returned by
+    /// this function: it could differ significantly from the current price.
+    /// We strongly encourage you to use `get_current_price` instead.
     pub fn get_prev_price_unchecked(&self) -> (Price, UnixTimestamp) {
         (
             Price {
@@ -211,7 +213,7 @@ impl PriceFeed {
                 conf:  self.prev_conf,
                 expo:  self.expo,
             },
-            self.prev_timestamp,
+            self.prev_publish_time,
         )
     }
 }
