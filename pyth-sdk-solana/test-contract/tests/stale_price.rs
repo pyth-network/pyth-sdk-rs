@@ -1,15 +1,9 @@
-#![cfg(feature = "test-bpf")] // Only runs on bpf, where solana programs run
+// #![cfg(feature = "test-bpf")] // Only runs on bpf, where solana programs run
 
 use pyth_sdk_solana::state::{
-    AccKey,
     AccountType,
-    CorpAction,
     PriceAccount,
-    PriceComp,
-    PriceInfo,
     PriceStatus,
-    PriceType,
-    Rational,
     MAGIC,
     VERSION_2,
 };
@@ -21,51 +15,11 @@ mod common;
 use common::test_instr_exec_ok;
 
 fn price_account_all_zero() -> PriceAccount {
-    let acc_key = AccKey { val: [0; 32] };
-
-    let rational = Rational {
-        val:   0,
-        numer: 0,
-        denom: 0,
-    };
-
-    let price_info = PriceInfo {
-        conf:     0,
-        corp_act: CorpAction::NoCorpAct,
-        price:    0,
-        pub_slot: 0,
-        status:   PriceStatus::Unknown,
-    };
-
-    let price_comp = PriceComp {
-        agg:       price_info,
-        latest:    price_info,
-        publisher: acc_key,
-    };
-
     PriceAccount {
         magic:      MAGIC,
         ver:        VERSION_2,
         atype:      AccountType::Price as u32,
-        size:       0,
-        ptype:      PriceType::Price,
-        expo:       0,
-        num:        0,
-        num_qt:     0,
-        last_slot:  0,
-        valid_slot: 0,
-        ema_price:  rational,
-        ema_conf:   rational,
-        drv1:       0,
-        drv2:       0,
-        prod:       acc_key,
-        next:       acc_key,
-        prev_slot:  0,
-        prev_price: 0,
-        prev_conf:  0,
-        drv3:       0,
-        agg:        price_info,
-        comp:       [price_comp; 32],
+        ..Default::default()
     }
 }
 
