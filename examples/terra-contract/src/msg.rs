@@ -1,6 +1,6 @@
 use pyth_sdk_terra::{
     Price,
-    PriceIdentifier
+    PriceIdentifier,
 };
 use schemars::JsonSchema;
 use serde::{
@@ -31,5 +31,5 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct FetchPriceResponse {
     pub current_price: Price,
-    pub ema_price: Price,
+    pub ema_price:     Price,
 }
