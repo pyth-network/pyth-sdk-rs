@@ -29,7 +29,7 @@ const CONFIG = {
     },
   }
 }
-  
+
 const lcd = new LCDClient(CONFIG[argv.network].terraHost);
 
 

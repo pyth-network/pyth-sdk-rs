@@ -16,7 +16,7 @@ Once you have a `PriceFeed`, you can call one of the methods below to get the pr
 
 ### Get the Current Price
 
-Get the current price of the product from its `PriceFeed`: 
+Get the current price of the product from its `PriceFeed`:
 
 ```rust
 let current_price: Price = price_feed.get_current_price().ok_or(StdError::not_found("Current price is not available"))?;
@@ -53,7 +53,7 @@ Applications can combine two USD prices to price an asset in a different quote c
 ```rust
 let btc_usd: Price = ...;
 let eth_usd: Price = ...;
-// -8 is the desired exponent for the result 
+// -8 is the desired exponent for the result
 let btc_eth: Price = btc_usd.get_price_in_quote(&eth_usd, -8);
 println!("BTC/ETH price: ({} +- {}) x 10^{}", price.price, price.conf, price.expo);
 ```

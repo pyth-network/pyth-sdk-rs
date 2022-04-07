@@ -1,12 +1,12 @@
 # Pyth SDK Example Contract for Terra
 
-This repository contains an example contract that demonstrates how to read the Pyth price from the Pyth on-chain contract. 
-The example [contract](src/contract.rs) has two functions: 
+This repository contains an example contract that demonstrates how to read the Pyth price from the Pyth on-chain contract.
+The example [contract](src/contract.rs) has two functions:
 
-* `instantiate` sets the Pyth contract address and price feed id that the contract uses. 
+* `instantiate` sets the Pyth contract address and price feed id that the contract uses.
   This function is intended to be called once when the contract is deployed.
-  See the [Terra SDK README](../../pyth-sdk-terra/README.md) for the list of possible price feed ids. 
-* `query` queries the Pyth contract to get the current price for the configured price feed id. 
+  See the [Terra SDK README](../../pyth-sdk-terra/README.md) for the list of possible price feed ids.
+* `query` queries the Pyth contract to get the current price for the configured price feed id.
 
 ## Testnet Demo
 
@@ -40,7 +40,7 @@ rpc error: code = Unknown desc = Generic error: Current price is not available: 
 If you would like to deploy a changed version of this contract, the process consists of two steps:
 
 1. Build the WASM for the contract.
-2. Upload the code and instantiate a new contract. 
+2. Upload the code and instantiate a new contract.
 
 ### Build WASM
 
@@ -50,7 +50,7 @@ The instructions in that document will build a file called `example_terra_contra
 ### Upload and Instantiate Contract
 
 The tools directory contains a deployment script that will upload a WASM file and instantiate a new contract with it.
-You can run that script on the built WASM file as follows: 
+You can run that script on the built WASM file as follows:
 
 ``` sh
 cd tools/
@@ -76,7 +76,7 @@ By default, the deployment script sets the price feed to `Crypto.LUNA/USD` but y
 
 ### Querying the Contract
 
-Once the contract is instantiated, you can query it by running: 
+Once the contract is instantiated, you can query it by running:
 
 ```sh
 npm run query -- --network testnet --contract <contract address>
@@ -106,4 +106,4 @@ Contract terra1rhjej5gkyelw23uh22nadqlyjvtl7s5527er97 code_id successfully updat
 When deploying the contract, you may encounter gateway timeout or account sequence mismatch errors.
 If this happens, check terra finder to determine if your transaction succeeded -- sometimes transactions succeed despite timing out.
 Note that the deployment script submits multiple transactions.
-If any of them fails, simply rerun the entire script; there is no problem re-running the successful transactions. 
+If any of them fails, simply rerun the entire script; there is no problem re-running the successful transactions.
