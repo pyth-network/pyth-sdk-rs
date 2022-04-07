@@ -29,11 +29,11 @@
         "num_publishers",
         "prev_conf",
         "prev_price",
-        "prev_timestamp",
+        "prev_publish_time",
         "price",
         "product_id",
-        "status",
-        "timestamp"
+        "publish_time",
+        "status"
       ],
       "properties": {
         "conf": {
@@ -92,8 +92,8 @@
           "type": "integer",
           "format": "int64"
         },
-        "prev_timestamp": {
-          "description": "Unix timestamp of previous aggregate with Trading status.",
+        "prev_publish_time": {
+          "description": "Publish time of previous aggregate with Trading status.",
           "type": "integer",
           "format": "int64"
         },
@@ -113,6 +113,11 @@
           "maxItems": 32,
           "minItems": 32
         },
+        "publish_time": {
+          "description": "Current price aggregation publish time",
+          "type": "integer",
+          "format": "int64"
+        },
         "status": {
           "description": "Status of price (Trading is valid).",
           "allOf": [
@@ -120,11 +125,6 @@
               "$ref": "#/definitions/PriceStatus"
             }
           ]
-        },
-        "timestamp": {
-          "description": "Unix timestamp of current price aggregation time",
-          "type": "integer",
-          "format": "int64"
         }
       }
     },
