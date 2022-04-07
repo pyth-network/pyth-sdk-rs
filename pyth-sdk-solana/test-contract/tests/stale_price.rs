@@ -17,7 +17,7 @@ use common::test_instr_exec_ok;
 fn price_account_all_zero() -> PriceAccount {
     PriceAccount {
         magic: MAGIC,
-        ver:   VERSION_2,
+        ver: VERSION_2,
         atype: AccountType::Price as u32,
         ..Default::default()
     }
