@@ -8,16 +8,14 @@
   ],
   "properties": {
     "price_feed_id": {
-      "type": "array",
-      "items": {
-        "type": "integer",
-        "format": "uint8",
-        "minimum": 0.0
-      },
-      "maxItems": 32,
-      "minItems": 32
+      "$ref": "#/definitions/Identifier"
     },
     "pyth_contract_addr": {
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "Identifier": {
       "type": "string"
     }
   }
