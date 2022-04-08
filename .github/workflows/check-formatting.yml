@@ -1,4 +1,4 @@
-name: pre-commit
+name: Check Formatting
 
 on:
   pull_request:
