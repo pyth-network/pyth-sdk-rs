@@ -3,17 +3,59 @@ use borsh::{
     BorshSerialize,
 };
 
+use hex::FromHexError;
 use schemars::JsonSchema;
+
+pub mod utils;
 
 mod price;
 pub use price::Price;
 
-/// Unique identifier for a price.
-pub type PriceIdentifier = [u8; 32];
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    BorshSerialize,
+    BorshDeserialize,
+    serde::Serialize,
+    serde::Deserialize,
+    JsonSchema,
+)]
+#[repr(C)]
+pub struct Identifier(
+    #[serde(with = "hex")]
+    #[schemars(with = "String")]
+    [u8; 32],
+);
+
+impl Identifier {
+    pub fn new(bytes: [u8; 32]) -> Identifier {
+        Identifier(bytes)
+    }
+
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.0
+    }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.0)
+    }
+
+    pub fn from_hex<T: AsRef<[u8]>>(s: T) -> Result<Identifier, FromHexError> {
+        let mut bytes = [0u8; 32];
+        hex::decode_to_slice(s, &mut bytes)?;
+        Ok(Identifier::new(bytes))
+    }
+}
+
+pub type PriceIdentifier = Identifier;
 
 /// Consists of 32 bytes and it is currently based on largest Public Key size on various
 /// blockchains.
-pub type ProductIdentifier = [u8; 32];
+pub type ProductIdentifier = Identifier;
 
 /// Unix Timestamp is represented as number of seconds passed since Unix epoch (00:00:00 UTC on 1
 /// Jan 1970). It is a signed integer because it's the standard in Unix systems and allows easier
@@ -82,16 +124,28 @@ pub struct PriceFeed {
     /// Product account key.
     pub product_id:         ProductIdentifier,
     /// The current aggregation price.
+    #[serde(with = "utils::as_string")] // To ensure accuracy on conversion to json.
+    #[schemars(with = "String")]
     price:                  i64,
     /// Confidence interval around the current aggregation price.
+    #[serde(with = "utils::as_string")]
+    #[schemars(with = "String")]
     conf:                   u64,
     /// Exponentially moving average price.
+    #[serde(with = "utils::as_string")]
+    #[schemars(with = "String")]
     ema_price:              i64,
     /// Exponentially moving average confidence interval.
+    #[serde(with = "utils::as_string")]
+    #[schemars(with = "String")]
     ema_conf:               u64,
     /// Price of previous aggregate with Trading status.
+    #[serde(with = "utils::as_string")]
+    #[schemars(with = "String")]
     prev_price:             i64,
     /// Confidence interval of previous aggregate with Trading status.
+    #[serde(with = "utils::as_string")]
+    #[schemars(with = "String")]
     prev_conf:              u64,
     /// Publish time of previous aggregate with Trading status.
     prev_publish_time:      UnixTimestamp,
