@@ -99,6 +99,7 @@ pub struct PriceFeed {
 
 impl PriceFeed {
     /// Constructs a new Price Feed
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: PriceIdentifier,
         status: PriceStatus,
