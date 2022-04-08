@@ -27,6 +27,6 @@ pub mod as_string {
         let string = String::deserialize(deserializer)?;
         string
             .parse()
-            .map_err(|_| D::Error::custom("Input was not valid"))
+            .map_err(|_| D::Error::custom("Input is not valid"))
     }
 }
