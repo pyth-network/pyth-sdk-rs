@@ -65,10 +65,10 @@ List of available Price Feeds and their ids:
 | Crypto.BTC/USD  | `0xf9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b` |
 | Crypto.ETH/USD  | `0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6` |
 | Crypto.LUNA/USD | `0x6de025a4cf28124f8ea6cb8085f860096dbc36d9c40002e221fc449337e065b2` |
-| Crypto.UST/USD  | `0x026d1f1cf9f1c0ee92eb55696d3bd2393075b611c4f468ae5b967175edc4c25c` | 
+| Crypto.UST/USD  | `0x026d1f1cf9f1c0ee92eb55696d3bd2393075b611c4f468ae5b967175edc4c25c` |
 | Crypto.ALGO/USD | `0x08f781a893bc9340140c5f89c8a96f438bcfae4d1474cc0f688e3a52892c7318` |
 
 Testnet price feeds update once per minute.
 
 #### Notes
-- :warning: `num_publishers` and `max_num_publishers` in `PriceFeed` are currently unavailable and set to 0. 
+- :warning: `num_publishers` and `max_num_publishers` in `PriceFeed` are currently unavailable and set to 0.

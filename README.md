@@ -36,3 +36,8 @@ To release a new version of any of these crates, perform the following steps wit
 2. Merge your change into `main` on github.
 3. Create and publish a new github release.
    We currently don't have a Github Action to automatically push releases to [crates.io](https://crates.io), but should set one up.
+
+### pre-commit hooks
+pre-commit is a tool that checks and fixes simple issues (formatting, ...) before each commit. You can install it by following [their website](https://pre-commit.com/). In order to enable checks for this repo run `pre-commit install` from command-line in the root of this repo.
+
+The checks are also performed in the CI to ensure the code follows consistent formatting.
