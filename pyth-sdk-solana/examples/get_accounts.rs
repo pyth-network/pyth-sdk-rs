@@ -59,7 +59,7 @@ fn main() {
             // print key and reference data for this Product
             println!("product_account .. {:?}", prod_pkey);
             for (key, val) in prod_acct.iter() {
-                if key.len() > 0 {
+                if !key.is_empty() {
                     println!("  {:.<16} {}", key, val);
                 }
             }

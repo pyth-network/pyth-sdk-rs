@@ -338,18 +338,14 @@ mod test {
     const MIN_PD_V_I64: i64 = -MAX_PD_V_I64;
 
     fn pc(price: i64, conf: u64, expo: i32) -> Price {
-        Price {
-            price: price,
-            conf:  conf,
-            expo:  expo,
-        }
+        Price { price, conf, expo }
     }
 
     fn pc_scaled(price: i64, conf: u64, cur_expo: i32, expo: i32) -> Price {
         Price {
-            price: price,
-            conf:  conf,
-            expo:  cur_expo,
+            price,
+            conf,
+            expo: cur_expo,
         }
         .scale_to_exponent(expo)
         .unwrap()

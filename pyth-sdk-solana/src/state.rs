@@ -405,7 +405,7 @@ fn load<T: Pod>(data: &[u8]) -> Result<&T, PodCastError> {
 
 /// Get a `Mapping` account from the raw byte value of a Solana account.
 pub fn load_mapping_account(data: &[u8]) -> Result<&MappingAccount, PythError> {
-    let pyth_mapping = load::<MappingAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
+    let pyth_mapping = load::<MappingAccount>(data).map_err(|_| PythError::InvalidAccountData)?;
 
     if pyth_mapping.magic != MAGIC {
         return Err(PythError::InvalidAccountData);
@@ -417,12 +417,12 @@ pub fn load_mapping_account(data: &[u8]) -> Result<&MappingAccount, PythError> {
         return Err(PythError::WrongAccountType);
     }
 
-    return Ok(pyth_mapping);
+    Ok(pyth_mapping)
 }
 
 /// Get a `Product` account from the raw byte value of a Solana account.
 pub fn load_product_account(data: &[u8]) -> Result<&ProductAccount, PythError> {
-    let pyth_product = load::<ProductAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
+    let pyth_product = load::<ProductAccount>(data).map_err(|_| PythError::InvalidAccountData)?;
 
     if pyth_product.magic != MAGIC {
         return Err(PythError::InvalidAccountData);
@@ -434,12 +434,12 @@ pub fn load_product_account(data: &[u8]) -> Result<&ProductAccount, PythError> {
         return Err(PythError::WrongAccountType);
     }
 
-    return Ok(pyth_product);
+    Ok(pyth_product)
 }
 
 /// Get a `Price` account from the raw byte value of a Solana account.
 pub fn load_price_account(data: &[u8]) -> Result<&PriceAccount, PythError> {
-    let pyth_price = load::<PriceAccount>(&data).map_err(|_| PythError::InvalidAccountData)?;
+    let pyth_price = load::<PriceAccount>(data).map_err(|_| PythError::InvalidAccountData)?;
 
     if pyth_price.magic != MAGIC {
         return Err(PythError::InvalidAccountData);
@@ -451,7 +451,7 @@ pub fn load_price_account(data: &[u8]) -> Result<&PriceAccount, PythError> {
         return Err(PythError::WrongAccountType);
     }
 
-    return Ok(pyth_price);
+    Ok(pyth_price)
 }
 
 pub struct AttributeIter<'a> {
@@ -468,7 +468,7 @@ impl<'a> Iterator for AttributeIter<'a> {
         let (key, data) = get_attr_str(self.attrs);
         let (val, data) = get_attr_str(data);
         self.attrs = data;
-        return Some((key, val));
+        Some((key, val))
     }
 }
 

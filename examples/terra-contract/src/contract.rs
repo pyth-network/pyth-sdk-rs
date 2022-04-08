@@ -97,16 +97,16 @@ fn query_fetch_price(deps: Deps) -> StdResult<FetchPriceResponse> {
     // for recommendations.
     let current_price = price_feed
         .get_current_price()
-        .ok_or(StdError::not_found("Current price is not available"))?;
+        .ok_or_else(|| StdError::not_found("Current price is not available"))?;
 
     // Get an exponentially-weighted moving average price and confidence interval.
     // The same notes about availability apply to this price.
     let ema_price = price_feed
         .get_ema_price()
-        .ok_or(StdError::not_found("EMA price is not available"))?;
+        .ok_or_else(|| StdError::not_found("EMA price is not available"))?;
 
-    return Ok(FetchPriceResponse {
+    Ok(FetchPriceResponse {
         current_price,
         ema_price,
-    });
+    })
 }

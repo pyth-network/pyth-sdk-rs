@@ -58,7 +58,7 @@ fn main() {
             }
         }
 
-        println!("");
+        println!();
 
         thread::sleep(time::Duration::from_secs(1));
     }

@@ -35,7 +35,7 @@ pub fn load_price_feed_from_account_info(
         .map_err(|_| PythError::InvalidAccountData)?;
     let price_account = load_price_account(*data)?;
 
-    Ok(price_account.to_price_feed(&price_account_info.key))
+    Ok(price_account.to_price_feed(price_account_info.key))
 }
 
 /// Loads Pyth Price Feed from Account when using Solana Client.
