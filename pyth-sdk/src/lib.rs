@@ -53,6 +53,7 @@ impl Identifier {
 
 impl fmt::Debug for Identifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("0x")?;
         f.write_str(&self.to_hex())
     }
 }
@@ -362,7 +363,7 @@ mod test {
         let id_str = format!("{:?}", id);
         assert_eq!(
             id_str,
-            "0a00000000000000000000000000000000000000000000000000000000000000"
+            "0x0a00000000000000000000000000000000000000000000000000000000000000"
         );
     }
 }
