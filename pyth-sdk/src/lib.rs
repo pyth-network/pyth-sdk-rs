@@ -53,15 +53,13 @@ impl Identifier {
 
 impl fmt::Debug for Identifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("0x")?;
-        f.write_str(&self.to_hex())
+        write!(f, "0x{}", self.to_hex())
     }
 }
 
 impl fmt::Display for Identifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("0x")?;
-        f.write_str(&self.to_hex())
+        write!(f, "0x{}", self.to_hex())
     }
 }
 
