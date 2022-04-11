@@ -5,6 +5,7 @@ use borsh::{
 
 use hex::FromHexError;
 use schemars::JsonSchema;
+use std::fmt;
 
 pub mod utils;
 
@@ -14,7 +15,6 @@ pub use price::Price;
 #[derive(
     Copy,
     Clone,
-    Debug,
     Default,
     PartialEq,
     Eq,
@@ -51,6 +51,14 @@ impl Identifier {
     }
 }
 
+impl fmt::Debug for Identifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.to_hex())
+    }
+}
+
+/// Consists of 32 bytes and it is currently based on largest Public Key size on various
+/// blockchains.
 pub type PriceIdentifier = Identifier;
 
 /// Consists of 32 bytes and it is currently based on largest Public Key size on various
@@ -270,5 +278,91 @@ impl PriceFeed {
             },
             self.prev_publish_time,
         )
+    }
+}
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn test_ser_then_deser_default() {
+        let price_feed = PriceFeed::default();
+        let ser = serde_json::to_string(&price_feed).unwrap();
+        let deser: PriceFeed = serde_json::from_str(&ser).unwrap();
+        assert_eq!(price_feed, deser);
+    }
+
+    #[test]
+    pub fn test_ser_large_number() {
+        let price_feed = PriceFeed {
+            ema_conf: 1_234_567_000_000_000_789,
+            ..PriceFeed::default()
+        };
+        let price_feed_json = serde_json::to_value(price_feed).unwrap();
+        assert_eq!(
+            price_feed_json["ema_conf"].as_str(),
+            Some("1234567000000000789")
+        );
+    }
+
+    #[test]
+    pub fn test_deser_large_number() {
+        let mut price_feed_json = serde_json::to_value(PriceFeed::default()).unwrap();
+        price_feed_json["price"] = serde_json::Value::String(String::from("1000000000000000123"));
+        let p: PriceFeed = serde_json::from_value(price_feed_json).unwrap();
+        assert_eq!(p.price, 1_000_000_000_000_000_123);
+    }
+
+    #[test]
+    pub fn test_ser_id_length_32_bytes() {
+        let mut price_feed = PriceFeed::default();
+        price_feed.id.0[0] = 106; // 0x6a
+        let price_feed_json = serde_json::to_value(price_feed).unwrap();
+        let id_str = price_feed_json["id"].as_str().unwrap();
+        assert_eq!(id_str.len(), 64);
+        assert_eq!(
+            id_str,
+            "6a00000000000000000000000000000000000000000000000000000000000000"
+        );
+    }
+
+    #[test]
+    pub fn test_deser_invalid_id_length_fails() {
+        let mut price_feed_json = serde_json::to_value(PriceFeed::default()).unwrap();
+        price_feed_json["id"] = serde_json::Value::String(String::from("1234567890"));
+        assert!(serde_json::from_value::<PriceFeed>(price_feed_json).is_err());
+    }
+
+    #[test]
+    pub fn test_identifier_from_hex_ok() {
+        let id = Identifier::from_hex(
+            "0a3f000000000000000000000000000000000000000000000000000000000000",
+        )
+        .unwrap();
+        assert_eq!(id.to_bytes()[0], 10);
+    }
+
+    #[test]
+    pub fn test_identifier_from_hex_invalid_err() {
+        let try_parse_odd = Identifier::from_hex("010"); // odd length
+        assert_eq!(try_parse_odd, Err(FromHexError::OddLength));
+
+        let try_parse_invalid_len = Identifier::from_hex("0a"); // length should be 32 bytes, 64
+        assert_eq!(
+            try_parse_invalid_len,
+            Err(FromHexError::InvalidStringLength)
+        );
+    }
+
+    #[test]
+    pub fn test_identifier_debug_fmt() {
+        let mut id = Identifier::default();
+        id.0[0] = 10;
+
+        let id_str = format!("{:?}", id);
+        assert_eq!(
+            id_str,
+            "0a00000000000000000000000000000000000000000000000000000000000000"
+        );
     }
 }
