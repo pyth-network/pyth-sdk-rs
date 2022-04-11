@@ -58,6 +58,14 @@ impl fmt::Debug for Identifier {
     }
 }
 
+impl fmt::Display for Identifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("0x")?;
+        f.write_str(&self.to_hex())
+    }
+}
+
+
 /// Consists of 32 bytes and it is currently based on largest Public Key size on various
 /// blockchains.
 pub type PriceIdentifier = Identifier;
@@ -361,6 +369,18 @@ mod test {
         id.0[0] = 10;
 
         let id_str = format!("{:?}", id);
+        assert_eq!(
+            id_str,
+            "0x0a00000000000000000000000000000000000000000000000000000000000000"
+        );
+    }
+
+    #[test]
+    pub fn test_identifier_display_fmt() {
+        let mut id = Identifier::default();
+        id.0[0] = 10;
+
+        let id_str = format!("{}", id);
         assert_eq!(
             id_str,
             "0x0a00000000000000000000000000000000000000000000000000000000000000"
