@@ -12,6 +12,10 @@ use bytemuck::{
     PodCastError,
     Zeroable,
 };
+use pyth_sdk::{
+    PriceIdentifier,
+    ProductIdentifier,
+};
 use solana_program::pubkey::Pubkey;
 use std::mem::size_of;
 
@@ -352,13 +356,13 @@ impl PriceAccount {
         }
 
         PriceFeed::new(
-            price_key.to_bytes(),
+            PriceIdentifier::new(price_key.to_bytes()),
             status,
             self.timestamp,
             self.expo,
             self.num,
             self.num_qt,
-            self.prod.val,
+            ProductIdentifier::new(self.prod.val),
             self.agg.price,
             self.agg.conf,
             self.ema_price.val,

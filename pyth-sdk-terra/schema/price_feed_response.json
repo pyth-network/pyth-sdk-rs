@@ -16,6 +16,9 @@
     }
   },
   "definitions": {
+    "Identifier": {
+      "type": "string"
+    },
     "PriceFeed": {
       "description": "Represents a current aggregation price from pyth publisher feeds.",
       "type": "object",
@@ -38,20 +41,15 @@
       "properties": {
         "conf": {
           "description": "Confidence interval around the current aggregation price.",
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
+          "type": "string"
         },
         "ema_conf": {
           "description": "Exponentially moving average confidence interval.",
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
+          "type": "string"
         },
         "ema_price": {
           "description": "Exponentially moving average price.",
-          "type": "integer",
-          "format": "int64"
+          "type": "string"
         },
         "expo": {
           "description": "Price exponent.",
@@ -60,14 +58,11 @@
         },
         "id": {
           "description": "Unique identifier for this price.",
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint8",
-            "minimum": 0.0
-          },
-          "maxItems": 32,
-          "minItems": 32
+          "allOf": [
+            {
+              "$ref": "#/definitions/Identifier"
+            }
+          ]
         },
         "max_num_publishers": {
           "description": "Maximum number of allowed publishers that can contribute to a price.",
@@ -83,14 +78,11 @@
         },
         "prev_conf": {
           "description": "Confidence interval of previous aggregate with Trading status.",
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
+          "type": "string"
         },
         "prev_price": {
           "description": "Price of previous aggregate with Trading status.",
-          "type": "integer",
-          "format": "int64"
+          "type": "string"
         },
         "prev_publish_time": {
           "description": "Publish time of previous aggregate with Trading status.",
@@ -99,19 +91,15 @@
         },
         "price": {
           "description": "The current aggregation price.",
-          "type": "integer",
-          "format": "int64"
+          "type": "string"
         },
         "product_id": {
           "description": "Product account key.",
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint8",
-            "minimum": 0.0
-          },
-          "maxItems": 32,
-          "minItems": 32
+          "allOf": [
+            {
+              "$ref": "#/definitions/Identifier"
+            }
+          ]
         },
         "publish_time": {
           "description": "Current price aggregation publish time",

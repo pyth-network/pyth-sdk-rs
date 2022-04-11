@@ -5,6 +5,8 @@ use borsh::{
 
 use schemars::JsonSchema;
 
+use crate::utils;
+
 // Constants for working with pyth's number representation
 const PD_EXPO: i32 = -9;
 const PD_SCALE: u64 = 1_000_000_000;
@@ -44,8 +46,12 @@ const MAX_PD_V_U64: u64 = (1 << 28) - 1;
 )]
 pub struct Price {
     /// Price.
+    #[serde(with = "utils::as_string")] // To ensure accuracy on conversion to json.
+    #[schemars(with = "String")]
     pub price: i64,
     /// Confidence Interval.
+    #[serde(with = "utils::as_string")]
+    #[schemars(with = "String")]
     pub conf:  u64,
     /// Exponent.
     pub expo:  i32,
