@@ -26,9 +26,7 @@
       "properties": {
         "conf": {
           "description": "Confidence Interval.",
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
+          "type": "string"
         },
         "expo": {
           "description": "Exponent.",
@@ -37,8 +35,7 @@
         },
         "price": {
           "description": "Price.",
-          "type": "integer",
-          "format": "int64"
+          "type": "string"
         }
       }
     }
