@@ -51,7 +51,7 @@ pub fn instantiate(
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
-        .add_attribute("price_id", format!("{:#x?}", msg.price_feed_id)))
+        .add_attribute("price_id", format!("{}", msg.price_feed_id)))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
