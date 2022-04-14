@@ -22,7 +22,7 @@ Simply call the `query_price_feed` function in your Terra contract with a price 
 // Pyth network testnet contract address
 pyth_contract_addr: string = "terra1hdc8q4ejy82kd9w7wj389dlul9z5zz9a36jflh";
 // Price feed id for BTC/USD on testnet
-price_feed_id: string = "0xf9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b";
+price_feed_id = PriceIdentifier::from_hex("f9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b");
 
 let price_feed: PriceFeed = query_price_feed(deps.querier, pyth_contract_addr, price_feed_id)?.price_feed;
 let current_price: Price = price_feed.get_current_price().ok_or_else(|| StdError::not_found("price is not currently available"))?;
@@ -43,7 +43,7 @@ A typical query will look like:
 ```
 {
     "price_feed": {
-        "id": [249, 192, 23, ..., 163, 27] // id of the price feed as an array of bytes
+        "id": "f9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b" // id of the price feed (in hex format)
     }
 }
 ```

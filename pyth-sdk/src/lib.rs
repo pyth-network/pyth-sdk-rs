@@ -18,6 +18,9 @@ pub use price::Price;
     Default,
     PartialEq,
     Eq,
+    PartialOrd,
+    Ord,
+    Hash,
     BorshSerialize,
     BorshDeserialize,
     serde::Serialize,
@@ -63,6 +66,11 @@ impl fmt::Display for Identifier {
     }
 }
 
+impl AsRef<[u8]> for Identifier {
+    fn as_ref(&self) -> &[u8] {
+        &self.0[..]
+    }
+}
 
 /// Consists of 32 bytes and it is currently based on largest Public Key size on various
 /// blockchains.

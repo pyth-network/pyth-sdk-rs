@@ -181,7 +181,7 @@ if (argv.instantiate) {
   }
 
   const contractAddress = await instantiate(codeId, {
-    price_feed_id: Array.from(Buffer.from(pythPriceFeedId, "hex")),
+    price_feed_id: pythPriceFeedId,
     pyth_contract_addr: pythContractAddress
   });
 

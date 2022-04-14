@@ -25,8 +25,8 @@ npm run query -- --network testnet --contract terra1fm4ssxq39m355pdv2wzxggf5uxs2
 If the query is successful, the output should look like:
 ```
 {
-  current_price: { price: 8704350000, conf: 3150000, expo: -8 },
-  ema_price: { price: 8665158600, conf: 2965370, expo: -8 }
+  current_price: { price: "8704350000", conf: "3150000", expo: -8 },
+  ema_price: { price: "8665158600", conf: "2965370", expo: -8 }
 }
 ```
 
