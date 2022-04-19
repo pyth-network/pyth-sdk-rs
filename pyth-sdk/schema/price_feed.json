@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PriceFeed",
+  "description": "Represents a current aggregation price from pyth publisher feeds.",
+  "type": "object",
+  "required": [
+    "conf",
+    "ema_conf",
+    "ema_price",
+    "expo",
+    "id",
+    "max_num_publishers",
+    "num_publishers",
+    "prev_conf",
+    "prev_price",
+    "prev_publish_time",
+    "price",
+    "product_id",
+    "publish_time",
+    "status"
+  ],
+  "properties": {
+    "conf": {
+      "description": "Confidence interval around the current aggregation price.",
+      "type": "string"
+    },
+    "ema_conf": {
+      "description": "Exponentially moving average confidence interval.",
+      "type": "string"
+    },
+    "ema_price": {
+      "description": "Exponentially moving average price.",
+      "type": "string"
+    },
+    "expo": {
+      "description": "Price exponent.",
+      "type": "integer",
+      "format": "int32"
+    },
+    "id": {
+      "description": "Unique identifier for this price.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Identifier"
+        }
+      ]
+    },
+    "max_num_publishers": {
+      "description": "Maximum number of allowed publishers that can contribute to a price.",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "num_publishers": {
+      "description": "Number of publishers that made up current aggregate.",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "prev_conf": {
+      "description": "Confidence interval of previous aggregate with Trading status.",
+      "type": "string"
+    },
+    "prev_price": {
+      "description": "Price of previous aggregate with Trading status.",
+      "type": "string"
+    },
+    "prev_publish_time": {
+      "description": "Publish time of previous aggregate with Trading status.",
+      "type": "integer",
+      "format": "int64"
+    },
+    "price": {
+      "description": "The current aggregation price.",
+      "type": "string"
+    },
+    "product_id": {
+      "description": "Product account key.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Identifier"
+        }
+      ]
+    },
+    "publish_time": {
+      "description": "Current price aggregation publish time",
+      "type": "integer",
+      "format": "int64"
+    },
+    "status": {
+      "description": "Status of price (Trading is valid).",
+      "allOf": [
+        {
+          "$ref": "#/definitions/PriceStatus"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "Identifier": {
+      "type": "string"
+    },
+    "PriceStatus": {
+      "description": "Represents availability status of a price feed.",
+      "type": "string",
+      "enum": [
+        "Unknown",
+        "Trading",
+        "Halted",
+        "Auction"
+      ]
+    }
+  }
+}
