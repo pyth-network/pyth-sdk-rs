@@ -29,11 +29,9 @@ Use `cargo build` / `cargo test` to build and test natively.
 
 ### Schema Files
 
-When structs in some of the sdks (currently pyth-sdk, pyth-sdk-terra) change it is required to update JSON Schema files
-located in schema directory using `cargo run --example schema`. Schemas are further used in js packages to parse and verify
-Pyth structs. If such a change happens make sure to update the packages using it (such as pyth-sdk-js).
+JSON Schema files are provided to allow others to work with the various Pyth structures in languages other than Rust. These are also used within Pyth’s own repositories, for example within the pyth-sdk-js repo. Every time these structures change, new Schema’s must be generated and committed via the cargo run --example schema command.
 
-Also, there is a CI check which ensures the schema files remain up-to-date.
+There is currently a CI check which ensures the schema files remain up-to-date.
 
 ### Creating a Release
 
