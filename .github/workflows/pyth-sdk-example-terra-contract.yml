@@ -34,8 +34,8 @@ jobs:
         env:
           RUSTFLAGS: "-C link-arg=-s"
 
-  lints:
-    name: Lints
+  schema-check:
+    name: Check schema changes are committed
     runs-on: ubuntu-latest
     defaults:
       run:
