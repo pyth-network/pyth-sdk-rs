@@ -27,6 +27,12 @@ Please see the documentation for the relevant crate to get started using Pyth Ne
 All crates in this repository can be built for either your native platform or blockchain-specific platforms.
 Use `cargo build` / `cargo test` to build and test natively.
 
+### Schema Files
+
+JSON Schema files are provided to allow others to work with the various Pyth structures in languages other than Rust. These are also used within Pyth’s own repositories, for example within the pyth-sdk-js repo. Every time these structures change, new Schema’s must be generated and committed via the cargo run --example schema command.
+
+There is currently a CI check which ensures the schema files remain up-to-date.
+
 ### Creating a Release
 
 To release a new version of any of these crates, perform the following steps within the crate being released:
