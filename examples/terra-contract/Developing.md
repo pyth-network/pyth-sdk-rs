@@ -19,10 +19,12 @@ rustup target list --installed
 rustup target add wasm32-unknown-unknown
 ```
 
-Also in order to make using and compiling the project easier please modify `pyth-sdk-terra` dependency in [Cargo file](./Cargo.toml)
-and remove `path`. It should look like: `pyth-sdk-terra = { version = "x.x.x" }`.
+This example uses relative paths in `Cargo.toml`; you must remove any `path` components within `Cargo.toml` dependencies if you intend to compile this code outside of the `pyth-sdk-terra` repository, otherwise this will fail to compile. For example:
 
-If you don't do the above suggestion, you need to run the below commands in this repo root directory.
+```diff
+- pyth-sdk-terra = { version = "0.3.0", path = "../../pyth-sdk-terra" }
++ pyth-sdk-terra = { version = "0.3.0" }
+```
 
 ## Compiling
 
