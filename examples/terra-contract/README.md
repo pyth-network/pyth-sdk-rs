@@ -10,7 +10,7 @@ The example [contract](src/contract.rs) has two functions:
 
 ## Testnet Demo
 
-This example contract is running on Terra testnet at `terra1fm4ssxq39m355pdv2wzxggf5uxs2ase4vga9qs`.
+This example contract is running on Terra testnet at `terra16h868tx50d3w37ry7c5lzzg648f7yetu39p5pd`.
 This contract has been instantiated to return the price of `Crypto.LUNA/USD`.
 You can query the contract from this repo by running:
 
@@ -19,7 +19,7 @@ cd tools/
 # Install dependencies (if you haven't done so already)
 npm install
 # Query the contract
-npm run query -- --network testnet --contract terra1fm4ssxq39m355pdv2wzxggf5uxs2ase4vga9qs
+npm run query -- --network testnet --contract terra16h868tx50d3w37ry7c5lzzg648f7yetu39p5pd
 ```
 
 If the query is successful, the output should look like:
@@ -97,8 +97,8 @@ Storing WASM: ../artifacts/example_terra_contract.wasm (183749 bytes)
 Deploy fee:  44682uluna
 Code ID:  53227
 Sleeping for 10 seconds for store transaction to finalize.
-Migrating contract terra1rhjej5gkyelw23uh22nadqlyjvtl7s5527er97 to 53227
-Contract terra1rhjej5gkyelw23uh22nadqlyjvtl7s5527er97 code_id successfully updated to 53227
+Migrating contract terra123456789yelw23uh22nadqlyjvtl7s5527er97 to 53227
+Contract terra123456789yelw23uh22nadqlyjvtl7s5527er97 code_id successfully updated to 53227
 ```
 
 ### Troubleshooting

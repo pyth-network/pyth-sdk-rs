@@ -19,6 +19,11 @@ rustup target list --installed
 rustup target add wasm32-unknown-unknown
 ```
 
+Also in order to make using and compiling the project easier please modify `pyth-sdk-terra` dependency in [Cargo file](./Cargo.toml)
+and remove `path`. It should look like: `pyth-sdk-terra = { version = "x.x.x" }`.
+
+If you don't do the above suggestion, you need to run the below commands in this repo root directory.
+
 ## Compiling
 
 After changing the contract, make sure you can compile and run it before
@@ -52,18 +57,20 @@ produce an extremely small build output in a consistent manner. The suggested wa
 to run it is this:
 
 ```sh
+cd path/to/cargo/root
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.12.4
+  cosmwasm/rust-optimizer:0.12.6
 ```
 
 Or, If you're on an arm64 machine, you should use a docker image built with arm64.
 ```sh
+cd path/to/cargo/root
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer-arm64:0.12.4
+  cosmwasm/rust-optimizer-arm64:0.12.6
 ```
 
 You must mount the contract code to `/code`. You can use a absolute path instead
