@@ -24,7 +24,7 @@ Applications can obtain the content of these accounts in two different ways:
 * On-chain programs should pass these accounts to the instructions that require price feeds.
 * Off-chain programs can access these accounts using the Solana RPC client (as in the [eth price example program](examples/eth_price.rs)).
 
-The pyth.network website can be used to identify the public keys of the various Pyth Network accounts (e.g., [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)).
+To use the SDK, you will need to find the price feed account for the symbol you wish to consume. The [Pyth Network documentation](https://docs.pyth.network/consume-data/solana#price-feeds) explains how to do this. The public key of this account corresponds to the ID of the price feed.
 
 ### On-chain
 
