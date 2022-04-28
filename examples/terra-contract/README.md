@@ -22,6 +22,13 @@ npm install
 npm run query -- --network testnet --contract terra16h868tx50d3w37ry7c5lzzg648f7yetu39p5pd
 ```
 
+Or by going to the contract address in [Terra Finder](https://finder.terra.money/) you can query make a query like below:
+```
+{
+  "fetch_price": {}
+}
+```
+
 If the query is successful, the output should look like:
 ```
 {
