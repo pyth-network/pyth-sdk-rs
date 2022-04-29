@@ -20,7 +20,7 @@ Simply call the `query_price_feed` function in your Terra contract with a price 
 
 ```rust
 // Pyth network testnet contract address
-pyth_contract_addr: string = "terra1hdc8q4ejy82kd9w7wj389dlul9z5zz9a36jflh";
+pyth_contract_addr: string = "terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc";
 // Price feed id for BTC/USD on testnet
 price_feed_id = PriceIdentifier::from_hex("f9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b");
 
@@ -70,6 +70,3 @@ List of available Price Feeds and their ids:
 | Crypto.USDC/USD | `0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722` |
 
 Testnet price feeds update once per minute.
-
-#### Notes
-- :warning: `num_publishers` and `max_num_publishers` in `PriceFeed` are currently unavailable and set to 0.
