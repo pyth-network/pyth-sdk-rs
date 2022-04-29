@@ -19,6 +19,13 @@ rustup target list --installed
 rustup target add wasm32-unknown-unknown
 ```
 
+This example uses relative paths in `Cargo.toml`; you must remove any `path` components within `Cargo.toml` dependencies if you intend to compile this code outside of the `pyth-sdk-terra` repository, otherwise this will fail to compile. For example:
+
+```diff
+- pyth-sdk-terra = { version = "0.3.0", path = "../../pyth-sdk-terra" }
++ pyth-sdk-terra = { version = "0.3.0" }
+```
+
 ## Compiling
 
 After changing the contract, make sure you can compile and run it before
@@ -52,18 +59,20 @@ produce an extremely small build output in a consistent manner. The suggested wa
 to run it is this:
 
 ```sh
+cd path/to/cargo/root
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.12.4
+  cosmwasm/rust-optimizer:0.12.6
 ```
 
 Or, If you're on an arm64 machine, you should use a docker image built with arm64.
 ```sh
+cd path/to/cargo/root
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer-arm64:0.12.4
+  cosmwasm/rust-optimizer-arm64:0.12.6
 ```
 
 You must mount the contract code to `/code`. You can use a absolute path instead

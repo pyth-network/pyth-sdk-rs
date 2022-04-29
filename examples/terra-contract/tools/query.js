@@ -33,5 +33,5 @@ const CONFIG = {
 const lcd = new LCDClient(CONFIG[argv.network].terraHost);
 
 
-let queryResult = await lcd.wasm.contractQuery(argv.contract, "fetch_price")
+let queryResult = await lcd.wasm.contractQuery(argv.contract, { "fetch_price": {} })
 console.log(queryResult)

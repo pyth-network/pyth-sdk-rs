@@ -38,12 +38,12 @@ This struct also has some useful functions for manipulating and combining prices
 ## Off-Chain Queries
 
 You can use the provided schemas in the `schema` directory to directly query the terra contract from off-chain applications.
-A typical query will look like:
+A typical query requires to pass the price feed id as a hex string. it will look like:
 
 ```
 {
     "price_feed": {
-        "id": "f9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b" // id of the price feed (in hex format)
+        "id": "f9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b"
     }
 }
 ```
@@ -56,7 +56,7 @@ Pyth is currently only available in Terra testnet.
 
 ### Testnet
 
-The contract address is [`terra1hdc8q4ejy82kd9w7wj389dlul9z5zz9a36jflh`](https://finder.terra.money/testnet/address/terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc).
+The contract address is [`terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc`](https://finder.terra.money/testnet/address/terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc).
 
 List of available Price Feeds and their ids:
 
