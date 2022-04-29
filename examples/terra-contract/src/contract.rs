@@ -80,12 +80,8 @@ fn query_fetch_price(deps: Deps) -> StdResult<FetchPriceResponse> {
     // price feed. The result is a PriceFeed object with fields for the current price and other
     // useful information. The function will fail if the contract address or price feed id are
     // invalid.
-    let price_feed = query_price_feed(
-        &deps.querier,
-        state.pyth_contract_addr.into_string(),
-        state.price_feed_id,
-    )?
-    .price_feed;
+    let price_feed =
+        query_price_feed(&deps.querier, state.pyth_contract_addr, state.price_feed_id)?.price_feed;
 
     // Get the current price and confidence interval from the price feed.
     // This function returns None if the price is not currently available.
