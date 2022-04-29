@@ -20,7 +20,7 @@ Simply call the `query_price_feed` function in your Terra contract with a price 
 
 ```rust
 // Pyth network testnet contract address
-pyth_contract_addr: string = "terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc";
+pyth_contract_addr = deps.api.addr_validate("terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc")?;
 // Price feed id for BTC/USD on testnet
 price_feed_id = PriceIdentifier::from_hex("f9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b");
 

@@ -22,8 +22,8 @@ rustup target add wasm32-unknown-unknown
 This example uses relative paths in `Cargo.toml`; you must remove any `path` components within `Cargo.toml` dependencies if you intend to compile this code outside of the `pyth-sdk-terra` repository, otherwise this will fail to compile. For example:
 
 ```diff
-- pyth-sdk-terra = { version = "0.3.0", path = "../../pyth-sdk-terra" }
-+ pyth-sdk-terra = { version = "0.3.0" }
+- pyth-sdk-terra = { version = "0.4.0", path = "../../pyth-sdk-terra" }
++ pyth-sdk-terra = { version = "0.4.0" }
 ```
 
 ## Compiling
