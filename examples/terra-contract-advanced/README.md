@@ -1,50 +1,17 @@
 # Pyth SDK Example Contract for Terra
 
-This repository contains an example contract that demonstrates how to read the Pyth price from the Pyth on-chain contract.
-The example [contract](src/contract.rs) has two functions:
+This repository contains an example contract that demonstrates how to use and
+mock the Pyth oracle. This also includes a test showing an example of how to
+generate mocked Pyth Price values to test with.
 
-* `instantiate` sets the Pyth contract address and price feed id that the contract uses.
-  This function is intended to be called once when the contract is deployed.
-  See the [Terra SDK README](../../pyth-sdk-terra/README.md) for the list of possible price feed ids.
-* `query` queries the Pyth contract to get the current price for the configured price feed id.
+The test itself can be found in `contract.rs`, which feeds the contract with
+the following price action:
 
-## Testnet Demo
-
-This example contract is running on Terra testnet at `terra16h868tx50d3w37ry7c5lzzg648f7yetu39p5pd`.
-This contract has been instantiated to return the price of `Crypto.LUNA/USD`.
-You can query the contract from this repo by running:
-
-```sh
-cd tools/
-# Install dependencies (if you haven't done so already)
-npm install
-# Query the contract
-npm run query -- --network testnet --contract terra16h868tx50d3w37ry7c5lzzg648f7yetu39p5pd
-```
-
-Or by going to the contract address in [Terra Finder](https://finder.terra.money/) you can query make a query like below:
-```
-{
-  "fetch_price": {}
-}
-```
-
-If the query is successful, the output should look like:
-```
-{
-  current_price: { price: "8704350000", conf: "3150000", expo: -8 },
-  ema_price: { price: "8665158600", conf: "2965370", expo: -8 }
-}
-```
-
-If the price feed is currently not available you will see:
-```
-rpc error: code = Unknown desc = Generic error: Current price is not available: contract query failed
-```
+![](./prices.png)
 
 ## Developing
 
-If you would like to deploy a changed version of this contract, the process consists of two steps:
+If you would like to deploy this contract, the process consists of two steps:
 
 1. Build the WASM for the contract.
 2. Upload the code and instantiate a new contract.
@@ -56,8 +23,9 @@ The instructions in that document will build a file called `example_terra_contra
 
 ### Upload and Instantiate Contract
 
-The tools directory contains a deployment script that will upload a WASM file and instantiate a new contract with it.
-You can run that script on the built WASM file as follows:
+The tools directory contains a deployment script that will upload a WASM file
+and instantiate a new contract with it. You can run that script on the built
+WASM file as follows:
 
 ``` sh
 cd tools/
@@ -65,8 +33,10 @@ npm install
 npm run deploy -- --network testnet --artifact ../artifacts/example_terra_contract.wasm --mnemonic "..." --instantiate
 ```
 
-This command will deploy the contract to `testnet` and sets its owner to the wallet with the provided `mnemonic`.
-Note that you have to populate the `--mnemonic` flag with the seedphrase for a valid Terra wallet with some LUNA for the specified network.
+This command will deploy the contract to `testnet` and sets its owner to the
+wallet with the provided `mnemonic`. Note that you have to populate the
+`--mnemonic` flag with the seedphrase for a valid Terra wallet with some LUNA
+for the specified network.
 
 If successful, the output should look like:
 ```
@@ -78,8 +48,6 @@ Sleeping for 10 seconds for store transaction to finalize.
 Instantiated Pyth Example at terra123456789yelw23uh22nadqlyjvtl7s5527er97 (0x0000000000000000000000001234567896267ee5479752a7d683e49317ff4294)
 Deployed pyth example contract at terra123456789yelw23uh22nadqlyjvtl7s5527er97
 ```
-
-By default, the deployment script sets the price feed to `Crypto.LUNA/USD` but you can change it in [deploy.js](tools/deploy.js).
 
 ### Querying the Contract
 
