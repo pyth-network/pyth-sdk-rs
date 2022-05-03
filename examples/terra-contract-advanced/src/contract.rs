@@ -30,8 +30,16 @@ pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Respons
     Ok(Response::new().add_attribute("method", "migrate"))
 }
 
-/// The instantiate function is invoked when the contract is first deployed.
-/// This function sets configuration values that are used by the query function.
+/// The instantiate function is invoked when the contract is first deployed. This function sets
+/// configuration values that affect how the contract behaves. It is possible for deployers of
+/// this contract to set the Oracle here. In this example, we provide two oracles:
+///
+/// - Pyth (An address of a real on-chain contract to interact with)
+/// - Stub (An example Oracle that can be used for testing).
+///
+/// The Stub Oracle uses Pyth datastructures to simulate Pyth behaviour, see the tests in this file
+/// to see an example of how to write contract tests that rely on a stubbed Pyth oracle to model
+/// different simulated price oracle behaviours.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -68,7 +76,6 @@ pub fn execute(
     Ok(Response::new().add_attribute("method", "execute"))
 }
 
-/// Query the Pyth contract the current price of the configured price feed.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -76,6 +83,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
+/// Allow the caller to query the current (most recent) price the Oracle has observed, which is
+/// stored in the contract state.
 fn query_fetch_price(deps: Deps) -> StdResult<FetchPriceResponse> {
     let state = STATE.load(deps.storage)?;
 
@@ -102,6 +111,9 @@ mod tests {
 
     use super::query_fetch_price;
 
+    /// set_price provides a helper that mutates the terra state for the example contract. This can
+    /// be used to make modifications to the state before invoking the contract itself. This is
+    /// helpful for testing contract behaviour with various states.
     pub fn set_price(deps: DepsMut, maybe_price: Option<Price>) {
         STATE
             .save(
@@ -113,6 +125,8 @@ mod tests {
             .unwrap();
     }
 
+    /// Quick test to confirm that after calling set_price, querying the contract state produces
+    /// the new price.
     #[test]
     pub fn test_query_fetch_price_ok() {
         let mut deps = mock_dependencies(&[]);
@@ -131,6 +145,7 @@ mod tests {
         );
     }
 
+    /// Quick test to make sure that when removing any price, the query fails.
     #[test]
     pub fn test_query_fetch_price_unavailable() {
         let mut deps = mock_dependencies(&[]);

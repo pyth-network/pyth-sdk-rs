@@ -12,6 +12,12 @@ use serde::{
 #[serde(rename_all = "snake_case")]
 pub struct MigrateMsg {}
 
+/// InstantiateMsg is provided during contract initialization. In this example, we define the
+/// message as an choice of Oracle implementation that the deployer of the contract can pick from
+/// to instantiate with.
+///
+/// 1) PythOracle is simply an address of the Pyth contract to interact with.
+/// 2) StubOracle provides a mock oracle showing how to unit test the contract against Pyth.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum InstantiateMsg {
     StubOracle {
