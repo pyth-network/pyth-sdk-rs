@@ -58,4 +58,4 @@ Pyth is currently only available in Terra testnet.
 
 The contract address is [`terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc`](https://finder.terra.money/testnet/address/terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc).
 
-You can find lsit of available price feeds [here](https://pyth.network/developers/price-feeds/#terra-testnet)
+You can find a list of available price feeds [here](https://pyth.network/developers/price-feeds/#terra-testnet)
