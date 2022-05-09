@@ -58,15 +58,4 @@ Pyth is currently only available in Terra testnet.
 
 The contract address is [`terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc`](https://finder.terra.money/testnet/address/terra1wzs3rgzgjdde3kg7k3aaz6qx7sc5dcwxqe9fuc).
 
-List of available Price Feeds and their ids:
-
-| Symbol          | id (hex)                                                             |
-|-----------------|----------------------------------------------------------------------|
-| Crypto.BTC/USD  | `0xf9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b` |
-| Crypto.ETH/USD  | `0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6` |
-| Crypto.LUNA/USD | `0x6de025a4cf28124f8ea6cb8085f860096dbc36d9c40002e221fc449337e065b2` |
-| Crypto.UST/USD  | `0x026d1f1cf9f1c0ee92eb55696d3bd2393075b611c4f468ae5b967175edc4c25c` |
-| Crypto.ALGO/USD | `0x08f781a893bc9340140c5f89c8a96f438bcfae4d1474cc0f688e3a52892c7318` |
-| Crypto.USDC/USD | `0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722` |
-
-Testnet price feeds update once per minute.
+You can find lsit of available price feeds [here](https://pyth.network/developers/price-feeds/#terra-testnet)
