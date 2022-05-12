@@ -350,7 +350,7 @@ impl PriceAccount {
 
         #[cfg(target_arch = "bpf")]
         if matches!(status, PriceStatus::Trading)
-            && Clock::get().unwrap().slot - self.agg.pub_slot > VALID_SLOT_PERIOD
+            && Clock::get().unwrap().slot.saturating_sub(self.agg.pub_slot) > VALID_SLOT_PERIOD
         {
             status = PriceStatus::Unknown;
         }

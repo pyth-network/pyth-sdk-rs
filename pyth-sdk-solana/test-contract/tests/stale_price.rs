@@ -5,6 +5,7 @@ use pyth_sdk_solana::state::{
     MAGIC,
     VERSION_2,
 };
+use pyth_sdk_solana::VALID_SLOT_PERIOD;
 use solana_program_test::*;
 use test_contract::instruction;
 
@@ -25,6 +26,20 @@ fn price_account_all_zero() -> PriceAccount {
 #[tokio::test]
 async fn test_price_not_stale() {
     let mut price = price_account_all_zero();
+    price.agg.pub_slot = 1000 - 10;
+    price.agg.status = PriceStatus::Trading;
+    test_instr_exec_ok(instruction::price_status_check(
+        &price,
+        PriceStatus::Trading,
+    ))
+    .await;
+}
+
+
+#[tokio::test]
+async fn test_price_not_stale_future() {
+    let mut price = price_account_all_zero();
+    price.agg.pub_slot = 1000 + 10;
     price.agg.status = PriceStatus::Trading;
     test_instr_exec_ok(instruction::price_status_check(
         &price,
@@ -38,10 +53,7 @@ async fn test_price_not_stale() {
 async fn test_price_stale() {
     let mut price = price_account_all_zero();
     price.agg.status = PriceStatus::Trading;
-    // Value 100 will cause an overflow because this is bigger than Solana slot in the test suite
-    // (its ~1-5). As the check will be 5u - 100u ~= 1e18 > MAX_SLOT_DIFFERENCE. It can only
-    // break when Solana slot in the test suite becomes between 100 and 100+MAX_SLOT_DIFFERENCE.
-    price.agg.pub_slot = 100;
+    price.agg.pub_slot = 1000 - VALID_SLOT_PERIOD - 1;
 
     #[cfg(feature = "test-bpf")] // Only in BPF the clock check is performed
     let expected_status = PriceStatus::Unknown;
