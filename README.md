@@ -40,8 +40,8 @@ To release a new version of any of these crates, perform the following steps wit
 1. Increment the version number in `Cargo.toml`.
    You may use a version number with a `-beta.x` suffix such as `0.0.1-beta.0` to create opt-in test versions.
 2. Merge your change into `main` on github.
-3. Create and publish a new github release.
-   We currently don't have a Github Action to automatically push releases to [crates.io](https://crates.io), but should set one up.
+3. Create and publish a new github release with the structure of `package:vx.y.z` such as `pyth-sdk-solana:v1.3.2`. It will trigger a github action
+   and publishes the released package in [crates.io](https://crates.io)
 
 ### pre-commit hooks
 pre-commit is a tool that checks and fixes simple issues (formatting, ...) before each commit. You can install it by following [their website](https://pre-commit.com/). In order to enable checks for this repo run `pre-commit install` from command-line in the root of this repo.
