@@ -1,4 +1,4 @@
-name: Pyth SDK Example Terra Contract
+name: Pyth SDK Example CW Contract
 
 on:
   push:
