@@ -29,12 +29,12 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 """
 
 [dependencies]
-cosmwasm-std = { version = "0.16.2" }
-cosmwasm-storage = { version = "0.16.0" }
-cw-storage-plus = "0.8.0"
+cosmwasm-std = { version = "1.0.0" }
+cosmwasm-storage = { version = "1.0.0" }
+cw-storage-plus = "0.13.4"
 schemars = "0.8"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-pyth-sdk-terra = { version = "0.4.0", path = "../../pyth-sdk-terra" } # Remove path and use version only when you use this example on your own.
+pyth-sdk-cw = { version = "0.1.0", path = "../../pyth-sdk-cw" } # Remove path and use version only when you use this example on your own.
 
 [dev-dependencies]
-cosmwasm-schema = { version = "0.16.0" }
+cosmwasm-schema = { version = "1.0.0" }
