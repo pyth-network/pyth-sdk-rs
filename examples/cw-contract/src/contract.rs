@@ -12,7 +12,7 @@ use cosmwasm_std::{
     StdResult,
 };
 
-use pyth_sdk_terra::query_price_feed;
+use pyth_sdk_cw::query_price_feed;
 
 use crate::msg::{
     ExecuteMsg,

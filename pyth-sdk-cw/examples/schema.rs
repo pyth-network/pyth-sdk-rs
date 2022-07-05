@@ -6,7 +6,7 @@ use cosmwasm_schema::{
 use std::env::current_dir;
 use std::fs::create_dir_all;
 
-use pyth_sdk_terra::{
+use pyth_sdk_cw::{
     PriceFeedResponse,
     QueryMsg,
 };
