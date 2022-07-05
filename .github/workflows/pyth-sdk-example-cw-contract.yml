@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./examples/terra-contract
+        working-directory: ./examples/cw-contract
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./examples/terra-contract
+        working-directory: ./examples/cw-contract
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
