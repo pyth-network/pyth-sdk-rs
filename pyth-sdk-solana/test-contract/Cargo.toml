@@ -9,7 +9,7 @@ no-entrypoint = []
 
 [dependencies]
 pyth-sdk-solana = { path = "../", version = "0.4.0" }
-solana-program = "1.8.1, < 1.11"
+solana-program = "1.8.1, < 1.11" # Currently latest Solana 1.11 crate can't build bpf: https://github.com/solana-labs/solana/issues/26188
 bytemuck = "1.7.2"
 borsh = "0.9"
 borsh-derive = "0.9.0"
