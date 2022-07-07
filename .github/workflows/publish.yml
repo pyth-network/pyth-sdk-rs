@@ -7,7 +7,7 @@ on:
 jobs:
   publish-pyth-sdk:
     name: Publish Pyth SDK
-    if: ${{ startsWith(github.ref, 'refs/tags/pyth-sdk@v' }}
+    if: ${{ startsWith(github.ref, 'refs/tags/pyth-sdk@v') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
