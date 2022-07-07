@@ -1,6 +1,6 @@
 [package]
-name = "pyth-sdk-terra"
-version = "0.4.0"
+name = "pyth-sdk-cw"
+version = "0.1.0"
 authors = ["Pyth Data Foundation"]
 edition = "2018"
 license = "Apache-2.0"
@@ -11,14 +11,14 @@ keywords = [ "pyth", "terra", "oracle" ]
 readme = "README.md"
 
 [dependencies]
-cosmwasm-std = { version = "0.16.0" }
-cosmwasm-storage = { version = "0.16.0" }
+cosmwasm-std = { version = "1.0.0" }
+cosmwasm-storage = { version = "1.0.0" }
 serde = { version = "1.0.136", features = ["derive"] }
 pyth-sdk = { path = "../pyth-sdk", version = "0.4.1" }
 schemars = "0.8.1"
 
 [dev-dependencies]
-cosmwasm-schema = { version = "0.16.0" }
+cosmwasm-schema = { version = "1.0.0" }
 
 [lib]
 crate-type = ["cdylib", "lib"]
