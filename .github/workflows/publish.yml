@@ -44,8 +44,8 @@ jobs:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         working-directory: "pyth-sdk-solana"
   publish-pyth-sdk-terra:
-    name: Publish Pyth SDK Terra
-    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk-terra:v") }}
+    name: Publish Pyth SDK CW
+    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk-cw:v") }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -61,4 +61,4 @@ jobs:
       - run: cargo publish --token ${CARGO_REGISTRY_TOKEN}
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        working-directory: "pyth-sdk-terra"
+        working-directory: "pyth-sdk-cw"
