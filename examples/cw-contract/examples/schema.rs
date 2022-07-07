@@ -7,13 +7,13 @@ use cosmwasm_schema::{
     schema_for,
 };
 
-use example_terra_contract::msg::{
+use example_cw_contract::msg::{
     ExecuteMsg,
     FetchPriceResponse,
     InstantiateMsg,
     QueryMsg,
 };
-use example_terra_contract::state::State;
+use example_cw_contract::state::State;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();

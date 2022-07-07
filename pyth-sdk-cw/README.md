@@ -1,7 +1,7 @@
 # Pyth Network CosmWasm SDK
 
 This crate provides utilities for reading price feeds from the [pyth.network](https://pyth.network/) oracle on the CosmWasm ecosystem.
-It also includes an [example contract](../examples/terra-contract/) demonstrating how to read price feeds from on-chain CosmWasm applications.
+It also includes an [example contract](../examples/cw-contract/) demonstrating how to read price feeds from on-chain CosmWasm applications.
 
 ## Installation
 

@@ -1,5 +1,5 @@
 [package]
-name = "example-terra-contract"
+name = "example-cw-contract"
 version = "0.1.0"
 authors = ["Ali Behjati <bahjatia@gmail.com>"]
 edition = "2018"
