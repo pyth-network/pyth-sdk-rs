@@ -1,0 +1,64 @@
+name: Publish Pyth SDK to crates.io
+
+on:
+  release:
+    types:
+      - created
+jobs:
+  publish-pyth-sdk:
+    name: Publish Pyth SDK
+    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk:v") }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - run: cargo publish --token ${CARGO_REGISTRY_TOKEN}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        working-directory: "pyth-sdk"
+  publish-pyth-sdk-solana:
+    name: Publish Pyth SDK Solana
+    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk-solana:v") }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - run: cargo publish --token ${CARGO_REGISTRY_TOKEN}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        working-directory: "pyth-sdk-solana"
+  publish-pyth-sdk-terra:
+    name: Publish Pyth SDK CW
+    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk-cw:v") }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - run: cargo publish --token ${CARGO_REGISTRY_TOKEN}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        working-directory: "pyth-sdk-cw"
