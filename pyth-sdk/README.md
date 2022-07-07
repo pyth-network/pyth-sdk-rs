@@ -1,7 +1,7 @@
 # Pyth Network Common Rust SDK
 
 This crate contains Pyth Network data structures that are shared across all Rust-based consumers of Pyth Network data.
-This crate is typically used in combination with a platform-specific crate such as [pyth-sdk-solana](../pyth-sdk-solana) or [pyth-sdk-terra](../pyth-sdk-terra).
+This crate is typically used in combination with a platform-specific crate such as [pyth-sdk-solana](../pyth-sdk-solana) or [pyth-sdk-cw](../pyth-sdk-cw).
 
 ## Usage
 

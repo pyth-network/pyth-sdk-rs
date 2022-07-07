@@ -19,11 +19,11 @@ rustup target list --installed
 rustup target add wasm32-unknown-unknown
 ```
 
-This example uses relative paths in `Cargo.toml`; you must remove any `path` components within `Cargo.toml` dependencies if you intend to compile this code outside of the `pyth-sdk-terra` repository, otherwise this will fail to compile. For example:
+This example uses relative paths in `Cargo.toml`; you must remove any `path` components within `Cargo.toml` dependencies if you intend to compile this code outside of the `pyth-sdk-cw` repository, otherwise this will fail to compile. For example:
 
 ```diff
-- pyth-sdk-terra = { version = "0.4.0", path = "../../pyth-sdk-terra" }
-+ pyth-sdk-terra = { version = "0.4.0" }
+- pyth-sdk-cw = { version = "0.1.0", path = "../../pyth-sdk-cw" }
++ pyth-sdk-cw = { version = "0.1.0" }
 ```
 
 ## Compiling
@@ -32,7 +32,7 @@ After changing the contract, make sure you can compile and run it before
 making any changes. Go into the repository and do:
 
 ```sh
-# this will produce a wasm build in ./target/wasm32-unknown-unknown/release/exxamle_terra_contract.wasm
+# this will produce a wasm build in ./target/wasm32-unknown-unknown/release/example_cw_contract.wasm
 cargo build --release --target wasm32-unknown-unknown
 ```
 ## Generating JSON Schema

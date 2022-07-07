@@ -1,4 +1,4 @@
-use pyth_sdk_terra::{
+use pyth_sdk_cw::{
     Price,
     PriceIdentifier,
 };
