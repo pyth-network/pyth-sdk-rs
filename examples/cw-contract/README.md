@@ -1,11 +1,11 @@
-# Pyth SDK Example Contract for Terra
+# Pyth SDK Example Contract for CosmWasm
 
 This repository contains an example contract that demonstrates how to read the Pyth price from the Pyth on-chain contract.
 The example [contract](src/contract.rs) has two functions:
 
 * `instantiate` sets the Pyth contract address and price feed id that the contract uses.
   This function is intended to be called once when the contract is deployed.
-  See the [Terra SDK README](../../pyth-sdk-terra/README.md) for the list of possible price feed ids.
+  See the [CosmWasm SDK README](../../pyth-sdk-cw/README.md) for the list of possible price feed ids.
 * `query` queries the Pyth contract to get the current price for the configured price feed id.
 
 ## Testnet Demo
@@ -52,7 +52,7 @@ If you would like to deploy a changed version of this contract, the process cons
 ### Build WASM
 
 See the [Developing instructions](Developing.md) for how to build the WASM for the contract.
-The instructions in that document will build a file called `example_terra_contract.wasm` under the `artifacts/` directory.
+The instructions in that document will build a file called `example_cw_contract.wasm` under the `artifacts/` directory.
 
 ### Upload and Instantiate Contract
 
@@ -62,7 +62,7 @@ You can run that script on the built WASM file as follows:
 ``` sh
 cd tools/
 npm install
-npm run deploy -- --network testnet --artifact ../artifacts/example_terra_contract.wasm --mnemonic "..." --instantiate
+npm run deploy -- --network testnet --artifact ../artifacts/example_cw_contract.wasm --mnemonic "..." --instantiate
 ```
 
 This command will deploy the contract to `testnet` and sets its owner to the wallet with the provided `mnemonic`.
@@ -70,7 +70,7 @@ Note that you have to populate the `--mnemonic` flag with the seedphrase for a v
 
 If successful, the output should look like:
 ```
-Storing WASM: ../artifacts/example_terra_contract.wasm (183749 bytes)
+Storing WASM: ../artifacts/example_cw_contract.wasm (183749 bytes)
 Deploy fee:  44682uluna
 Code ID:  53199
 Instantiating a contract
@@ -93,14 +93,14 @@ npm run query -- --network testnet --contract <contract address>
 You can also migrate an existing contract by passing the `--migrate --contract terra123456xyzqwe..` arguments to the deploy command:
 
 ``` sh
-npm run deploy -- --network testnet --artifact ../artifacts/example_terra_contract.wasm --mnemonic "..." --migrate --contract "terra123..."
+npm run deploy -- --network testnet --artifact ../artifacts/example_cw_contract.wasm --mnemonic "..." --migrate --contract "terra123..."
 ```
 
 This command will replace the code for the given contract with the specified WASM artifact.
 If successful, the output should look like:
 
 ```
-Storing WASM: ../artifacts/example_terra_contract.wasm (183749 bytes)
+Storing WASM: ../artifacts/example_cw_contract.wasm (183749 bytes)
 Deploy fee:  44682uluna
 Code ID:  53227
 Sleeping for 10 seconds for store transaction to finalize.
@@ -111,6 +111,6 @@ Contract terra123456789yelw23uh22nadqlyjvtl7s5527er97 code_id successfully updat
 ### Troubleshooting
 
 When deploying the contract, you may encounter gateway timeout or account sequence mismatch errors.
-If this happens, check terra finder to determine if your transaction succeeded -- sometimes transactions succeed despite timing out.
+If this happens, check Terra Finder to determine if your transaction succeeded -- sometimes transactions succeed despite timing out.
 Note that the deployment script submits multiple transactions.
 If any of them fails, simply rerun the entire script; there is no problem re-running the successful transactions.

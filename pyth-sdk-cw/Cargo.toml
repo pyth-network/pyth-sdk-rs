@@ -7,7 +7,7 @@ license = "Apache-2.0"
 homepage = "https://pyth.network"
 repository = "https://github.com/pyth-network/pyth-sdk-rs"
 description = "pyth price oracle data structures and example usage"
-keywords = [ "pyth", "terra", "oracle" ]
+keywords = [ "pyth", "cw", "cosmwasm", "oracle" ]
 readme = "README.md"
 
 [dependencies]
