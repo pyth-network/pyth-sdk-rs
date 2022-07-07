@@ -7,7 +7,7 @@ on:
 jobs:
   publish-pyth-sdk:
     name: Publish Pyth SDK
-    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk:v") }}
+    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk@v") }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -26,7 +26,7 @@ jobs:
         working-directory: "pyth-sdk"
   publish-pyth-sdk-solana:
     name: Publish Pyth SDK Solana
-    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk-solana:v") }}
+    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk-solana@v") }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -45,7 +45,7 @@ jobs:
         working-directory: "pyth-sdk-solana"
   publish-pyth-sdk-terra:
     name: Publish Pyth SDK CW
-    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk-cw:v") }}
+    if: ${{ startsWith(github.ref, "refs/tags/pyth-sdk-cw@v") }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
