@@ -55,11 +55,7 @@ async fn test_price_stale() {
     price.agg.status = PriceStatus::Trading;
     price.agg.pub_slot = 1000 - VALID_SLOT_PERIOD - 1;
 
-    #[cfg(feature = "test-bpf")] // Only in BPF the clock check is performed
     let expected_status = PriceStatus::Unknown;
-
-    #[cfg(not(feature = "test-bpf"))]
-    let expected_status = PriceStatus::Trading;
 
     test_instr_exec_ok(instruction::price_status_check(&price, expected_status)).await;
 }
