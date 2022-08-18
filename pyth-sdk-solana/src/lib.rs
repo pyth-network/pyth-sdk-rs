@@ -19,6 +19,7 @@ use state::load_price_account;
 pub use pyth_sdk::{
     Price,
     PriceFeed,
+    PriceIdentifier,
     PriceStatus,
     ProductIdentifier,
 };

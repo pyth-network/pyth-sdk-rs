@@ -1,7 +1,7 @@
 [package]
 name = "example-cw-contract"
 version = "0.1.0"
-authors = ["Ali Behjati <bahjatia@gmail.com>"]
+authors = ["Pyth Data Foundation"]
 edition = "2018"
 
 exclude = [
@@ -34,7 +34,7 @@ cosmwasm-storage = { version = "1.0.0" }
 cw-storage-plus = "0.13.4"
 schemars = "0.8"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-pyth-sdk-cw = { version = "0.1.0", path = "../../pyth-sdk-cw" } # Remove path and use version only when you use this example on your own.
+pyth-sdk-cw = { version = "0.2.0", path = "../../pyth-sdk-cw" } # Remove path and use version only when you use this example on your own.
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }

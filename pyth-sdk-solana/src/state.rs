@@ -25,13 +25,9 @@ pub use pyth_sdk::{
     PriceStatus,
 };
 
-#[cfg(target_arch = "bpf")]
-use solana_program::{
-    clock::Clock,
-    sysvar::Sysvar,
-};
+use solana_program::clock::Clock;
+use solana_program::sysvar::Sysvar;
 
-#[cfg(target_arch = "bpf")]
 use crate::VALID_SLOT_PERIOD;
 
 use crate::PythError;
@@ -348,14 +344,20 @@ unsafe impl Pod for PriceAccount {
 
 impl PriceAccount {
     pub fn to_price_feed(&self, price_key: &Pubkey) -> PriceFeed {
-        #[allow(unused_mut)]
         let mut status = self.agg.status;
+        let mut prev_price = self.prev_price;
+        let mut prev_conf = self.prev_conf;
+        let mut prev_publish_time = self.prev_timestamp;
 
-        #[cfg(target_arch = "bpf")]
-        if matches!(status, PriceStatus::Trading)
-            && Clock::get().unwrap().slot.saturating_sub(self.agg.pub_slot) > VALID_SLOT_PERIOD
-        {
-            status = PriceStatus::Unknown;
+        if let Ok(clock) = Clock::get() {
+            if matches!(status, PriceStatus::Trading)
+                && clock.slot.saturating_sub(self.agg.pub_slot) > VALID_SLOT_PERIOD
+            {
+                status = PriceStatus::Unknown;
+                prev_price = self.agg.price;
+                prev_conf = self.agg.conf;
+                prev_publish_time = self.timestamp;
+            }
         }
 
         PriceFeed::new(
@@ -370,9 +372,9 @@ impl PriceAccount {
             self.agg.conf,
             self.ema_price.val,
             self.ema_conf.val as u64,
-            self.prev_price,
-            self.prev_conf,
-            self.prev_timestamp,
+            prev_price,
+            prev_conf,
+            prev_publish_time,
         )
     }
 }

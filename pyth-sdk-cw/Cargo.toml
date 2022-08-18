@@ -1,6 +1,6 @@
 [package]
 name = "pyth-sdk-cw"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Pyth Data Foundation"]
 edition = "2018"
 license = "Apache-2.0"
@@ -14,7 +14,7 @@ readme = "README.md"
 cosmwasm-std = { version = "1.0.0" }
 cosmwasm-storage = { version = "1.0.0" }
 serde = { version = "1.0.136", features = ["derive"] }
-pyth-sdk = { path = "../pyth-sdk", version = "0.4.1" }
+pyth-sdk = { path = "../pyth-sdk", version = "0.5.0" }
 schemars = "0.8.1"
 
 [dev-dependencies]

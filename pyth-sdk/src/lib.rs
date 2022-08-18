@@ -84,6 +84,7 @@ pub type ProductIdentifier = Identifier;
 /// Jan 1970). It is a signed integer because it's the standard in Unix systems and allows easier
 /// time difference.
 pub type UnixTimestamp = i64;
+pub type DurationInSeconds = u64;
 
 /// Represents availability status of a price feed.
 #[derive(
@@ -277,22 +278,67 @@ impl PriceFeed {
         }
     }
 
-    /// Get the "unchecked" previous price with Trading status,
-    /// along with the timestamp at which it was generated.
+    /// Get the latest available price, along with the timestamp when it was generated.
     ///
-    /// WARNING:
-    /// We make no guarantees about the unchecked price and confidence returned by
-    /// this function: it could differ significantly from the current price.
-    /// We strongly encourage you to use `get_current_price` instead.
-    pub fn get_prev_price_unchecked(&self) -> (Price, UnixTimestamp) {
-        (
-            Price {
-                price: self.prev_price,
-                conf:  self.prev_conf,
-                expo:  self.expo,
-            },
-            self.prev_publish_time,
-        )
+    /// This function returns the same price as `get_current_price` in the case where a price was
+    /// available at the time this `PriceFeed` was published (`publish_time`). However, if a
+    /// price was not available at that time, this function returns the price from the latest
+    /// time at which the price was available. The returned price can be from arbitrarily far in
+    /// the past; this function makes no guarantees that the returned price is recent or useful
+    /// for any particular application.
+    ///
+    /// Users of this function should check the returned timestamp to ensure that the returned price
+    /// is sufficiently recent for their application. If you are considering using this
+    /// function, it may be safer / easier to use either `get_current_price` or
+    /// `get_latest_available_price_within_duration`.
+    ///
+    /// Returns a struct containing the latest available price, confidence interval, and the
+    /// exponent for both numbers along with the timestamp when that price was generated.
+    pub fn get_latest_available_price_unchecked(&self) -> (Price, UnixTimestamp) {
+        match self.status {
+            PriceStatus::Trading => (
+                Price {
+                    price: self.price,
+                    conf:  self.conf,
+                    expo:  self.expo,
+                },
+                self.publish_time,
+            ),
+            _ => (
+                Price {
+                    price: self.prev_price,
+                    conf:  self.prev_conf,
+                    expo:  self.expo,
+                },
+                self.prev_publish_time,
+            ),
+        }
+    }
+
+    /// Get the latest price as long as it was updated within `duration` seconds of the
+    /// `current_time`.
+    ///
+    /// This function is a sanity-checked version of `get_latest_available_price_unchecked` which is
+    /// useful in applications that require a sufficiently-recent price. Returns `None` if the
+    /// price wasn't updated sufficiently recently.
+    ///
+    /// Returns a struct containing the latest available price, confidence interval and the exponent
+    /// for both numbers, or `None` if no price update occurred within `duration` seconds of the
+    /// `current_time`.
+    pub fn get_latest_available_price_within_duration(
+        &self,
+        current_time: UnixTimestamp,
+        duration: DurationInSeconds,
+    ) -> Option<Price> {
+        let (price, publish_time) = self.get_latest_available_price_unchecked();
+
+        let time_diff_abs = (publish_time - current_time).abs() as u64;
+
+        if time_diff_abs > duration {
+            return None;
+        }
+
+        Some(price)
     }
 }
 #[cfg(test)]
