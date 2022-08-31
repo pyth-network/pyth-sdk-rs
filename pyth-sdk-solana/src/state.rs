@@ -115,27 +115,6 @@ impl Default for PriceType {
     }
 }
 
-/// Public key of a Solana account
-#[derive(
-    Copy,
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    BorshSerialize,
-    BorshDeserialize,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-#[repr(C)]
-pub struct AccKey {
-    pub val: [u8; 32],
-}
-
 /// Mapping accounts form a linked-list containing the listing of all products on Pyth.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(C)]
@@ -152,8 +131,8 @@ pub struct MappingAccount {
     pub num:      u32,
     pub unused:   u32,
     /// next mapping account (if any)
-    pub next:     AccKey,
-    pub products: [AccKey; MAP_TABLE_SIZE],
+    pub next:     Pubkey,
+    pub products: [Pubkey; MAP_TABLE_SIZE],
 }
 
 #[cfg(target_endian = "little")]
@@ -179,7 +158,7 @@ pub struct ProductAccount {
     /// price account size
     pub size:   u32,
     /// first price account in list
-    pub px_acc: AccKey,
+    pub px_acc: Pubkey,
     /// key/value pairs of reference attr.
     pub attr:   [u8; PROD_ATTR_SIZE],
 }
@@ -247,7 +226,7 @@ pub struct PriceInfo {
 #[repr(C)]
 pub struct PriceComp {
     /// key of contributing publisher
-    pub publisher: AccKey,
+    pub publisher: Pubkey,
     /// the price used to compute the current aggregate price
     pub agg:       PriceInfo,
     /// The publisher's latest price. This price will be incorporated into the aggregate price
@@ -317,9 +296,9 @@ pub struct PriceAccount {
     /// space for future derived values
     pub drv4:           u32,
     /// product account key
-    pub prod:           AccKey,
+    pub prod:           Pubkey,
     /// next Price account in linked list
-    pub next:           AccKey,
+    pub next:           Pubkey,
     /// valid slot of previous update
     pub prev_slot:      u64,
     /// aggregate price of previous update with TRADING status
@@ -367,7 +346,7 @@ impl PriceAccount {
             self.expo,
             self.num,
             self.num_qt,
-            ProductIdentifier::new(self.prod.val),
+            ProductIdentifier::new(self.prod.to_bytes()),
             self.agg.price,
             self.agg.conf,
             self.ema_price.val,
@@ -390,15 +369,6 @@ unsafe impl Zeroable for AccKeyU64 {
 
 #[cfg(target_endian = "little")]
 unsafe impl Pod for AccKeyU64 {
-}
-
-impl AccKey {
-    pub fn is_valid(&self) -> bool {
-        match load::<AccKeyU64>(&self.val) {
-            Ok(k8) => k8.val[0] != 0 || k8.val[1] != 0 || k8.val[2] != 0 || k8.val[3] != 0,
-            Err(_) => false,
-        }
-    }
 }
 
 fn load<T: Pod>(data: &[u8]) -> Result<&T, PodCastError> {
