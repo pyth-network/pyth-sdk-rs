@@ -358,19 +358,6 @@ impl PriceAccount {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-struct AccKeyU64 {
-    pub val: [u64; 4],
-}
-
-#[cfg(target_endian = "little")]
-unsafe impl Zeroable for AccKeyU64 {
-}
-
-#[cfg(target_endian = "little")]
-unsafe impl Pod for AccKeyU64 {
-}
-
 fn load<T: Pod>(data: &[u8]) -> Result<&T, PodCastError> {
     let size = size_of::<T>();
     if data.len() >= size {
