@@ -51,8 +51,7 @@ fn main() {
 
         // iget and print each Product in Mapping directory
         let mut i = 0;
-        for prod_akey in &map_acct.products {
-            let prod_pkey = Pubkey::new(&prod_akey.val);
+        for prod_pkey in &map_acct.products {
             let prod_data = clnt.get_account_data(&prod_pkey).unwrap();
             let prod_acct = load_product_account(&prod_data).unwrap();
 
@@ -65,8 +64,8 @@ fn main() {
             }
 
             // print all Prices that correspond to this Product
-            if prod_acct.px_acc.is_valid() {
-                let mut px_pkey = Pubkey::new(&prod_acct.px_acc.val);
+            if prod_acct.px_acc != Pubkey::default() {
+                let mut px_pkey = prod_acct.px_acc;
                 loop {
                     let price_data = clnt.get_account_data(&px_pkey).unwrap();
                     let price_account = load_price_account(&price_data).unwrap();
@@ -120,8 +119,8 @@ fn main() {
                     }
 
                     // go to next price account in list
-                    if price_account.next.is_valid() {
-                        px_pkey = Pubkey::new(&price_account.next.val);
+                    if price_account.next != Pubkey::default() {
+                        px_pkey = price_account.next;
                     } else {
                         break;
                     }
@@ -135,9 +134,9 @@ fn main() {
         }
 
         // go to next Mapping account in list
-        if !map_acct.next.is_valid() {
+        if map_acct.next == Pubkey::default() {
             break;
         }
-        akey = Pubkey::new(&map_acct.next.val);
+        akey = map_acct.next;
     }
 }
