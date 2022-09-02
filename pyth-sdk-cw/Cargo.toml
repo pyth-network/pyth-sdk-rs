@@ -14,7 +14,7 @@ readme = "README.md"
 cosmwasm-std = { version = "1.0.0" }
 cosmwasm-storage = { version = "1.0.0" }
 serde = { version = "1.0.136", features = ["derive"] }
-pyth-sdk = { path = "../pyth-sdk", version = "0.6.0" }
+pyth-sdk = { path = "../pyth-sdk", version = "0.6.1" }
 schemars = "0.8.1"
 
 [dev-dependencies]
