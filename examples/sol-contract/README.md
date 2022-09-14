@@ -4,7 +4,7 @@ This repository contains a simple example demonstrating how to read the Pyth pri
 
 The key functionality of this contract is in the `Loan2Value` function in `src/processor.rs`. 
 This function compares the value of some loan and some collateral, which is important in many lending protocols.
-An example invocation of this contract on the Solana devnet can be find in `scripts/invoke.ts`.
+An example invocation of this contract on the Solana devnet can be found in `scripts/invoke.ts`.
 
 We assume that you have installed `cargo`, `solana`, `solana-keygen`, `npm` and `node`.
 
