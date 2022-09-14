@@ -32,18 +32,19 @@ export const invoke = async (loan: string, collateral: string) => {
     allocateStruct.layout.encode(layoutFields, data);
     
     /* Invoke transaction */
-    console.log("Invoking transaction...");
     let tx = new web3.Transaction({
         feePayer: payer.publicKey
     });
+    let contract = process.argv[2];
+    console.log("Invoking contract " + contract + "...");
     tx.add(new web3.TransactionInstruction({
         keys,
-        programId: "CD9PFy8satZh27JeEixunWjBqoYbpbLbUtZ6eWPbT1s6",
+        programId: contract,
         data
     }));
 
     let txSig = await web3.sendAndConfirmTransaction(conn, tx, [payer, keypair]);
-    console.log("Confirmed TxHash: " + txSig);
+    console.log("Confirmed TxHash " + txSig);
 }
 
 let ethToUSD = "EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw";
