@@ -10,7 +10,8 @@ We assume that you have installed `cargo`, `solana`, `solana-keygen`, `npm` and 
 
 ## Usage
 
-```
+```shell
+> cd examples/sol-contract
 # To build the example contract
 > scripts/build.sh
 # To deploy the example contract
