@@ -16,7 +16,7 @@ pub fn process_instruction(
     input: &[u8],
 ) -> ProgramResult {
     // Checking the validity of parameters is important.
-    // This checking step is skipped in this example contract.
+    // This important step is skipped in this example contract.
     let instruction = PythClientInstruction::try_from_slice(input);
     match instruction.unwrap() {
         PythClientInstruction::Loan2Value {} => {
@@ -28,7 +28,7 @@ pub fn process_instruction(
             let loan_cnt = 1;
             let collateral_cnt = 3000;
 
-            // Calculate the value of the loan
+            // Calculate the value of the loan.
             // Pyth is called to get the unit price of the loan.
             let loan_value;
             let feed1 = load_price_feed_from_account_info(&loan);
@@ -40,7 +40,7 @@ pub fn process_instruction(
                 return Err(ProgramError::Custom(0))
             }
 
-            // Calculate the value of the collateral
+            // Calculate the value of the collateral.
             // Pyth is called to get the unit price of the collateral.
             let collateral_value;
             let feed2 = load_price_feed_from_account_info(&collateral);
