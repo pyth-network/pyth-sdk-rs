@@ -12,7 +12,7 @@ The loan information structure is defined in `src/state.rs`, which also contains
 The two instructions are implemented in `src/processor.rs`.
 An example invocation of these instructions on the Solana devnet can be found in `scripts/invoke.ts`.
 
-## Where and how the Pyth SDK is used?
+## Where and how is the Pyth SDK used?
 Pyth SDK is used in the `Loan2Value` instruction in `src/processor.rs`.
 For the loan, the code first reads the unit price from the Pyth oracle.
 ```rust
