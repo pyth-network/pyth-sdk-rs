@@ -1,12 +1,14 @@
 //! Program instructions
+//! A solana program contains a number of instructions.
+//! There are 2 instructions in this example:
+//!     Init{} initializing some loan information,
+//!     Loan2Value{} checking the loan-to-value ratio of the loan.
 
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
-// A solana program contains a number of instructions.
-// And this example contract contains only one instruction.
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
-pub enum PythClientInstruction {
+pub enum ExampleInstructions {
     Init{},
     Loan2Value {},
 }
