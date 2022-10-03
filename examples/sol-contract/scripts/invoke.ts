@@ -1,13 +1,18 @@
 const web3 = require("@solana/web3.js");
 const {struct, b, u8, u32} = require("@solana/buffer-layout");
 
-const admin = web3.Keypair.fromSecretKey(new Uint8Array([223,143,8,70,205,100,4,197,222,158,132,43,89,182,188,243,24,213,136,120,189,209,235,13,167,45,132,41,17,243,58,158,114,230,85,178,27,22,80,213,200,96,166,64,152,163,191,112,35,197,55,219,24,254,117,129,227,39,37,232,106,30,178,193]))
+const contract = web3.Keypair.fromSecretKey(new Uint8Array([223,143,8,70,205,100,4,197,222,158,132,43,89,182,188,243,24,213,136,120,189,209,235,13,167,45,132,41,17,243,58,158,114,230,85,178,27,22,80,213,200,96,166,64,152,163,191,112,35,197,55,219,24,254,117,129,227,39,37,232,106,30,178,193]))
 
 export const invoke = async (loan: string, collateral: string) => {
+    if (contract.publicKey != process.argv[2]) {
+        console.info("Please update the contract key pair in invoke.ts.");
+        return;
+    }
+    console.info("Invoking contract " + contract.publicKey);
     let conn = new web3.Connection(web3.clusterApiUrl('devnet'));
 
     /* Prepare the payer account */
-    console.info("Airdropping...");
+    console.info("Airdropping to payer account...");
     let payer = web3.Keypair.generate();
     let airdropSig = await conn.requestAirdrop(
         payer.publicKey, web3.LAMPORTS_PER_SOL
@@ -16,14 +21,13 @@ export const invoke = async (loan: string, collateral: string) => {
 
     /* Prepare the createInst instruction: Create an account to store the
      * LoanInfo data, which will be passed to Init for initialization*/
-    let contract = admin.publicKey;
     let loanInfoSize = 1 + 32 + 8 + 32 + 8;
     let dataAccount = web3.Keypair.generate();
     let cost = await conn.getMinimumBalanceForRentExemption(loanInfoSize);
     const createInst = web3.SystemProgram.createAccount({
         lamports: cost,
         space: loanInfoSize,
-        programId: contract,
+        programId: contract.publicKey,
         fromPubkey: payer.publicKey,
         newAccountPubkey: dataAccount.publicKey,
     });
@@ -33,7 +37,7 @@ export const invoke = async (loan: string, collateral: string) => {
     const loanKey = new web3.PublicKey(loan);
     const collateralKey = new web3.PublicKey(collateral);
     let accounts =
-        [{pubkey: contract, isSigner: true, isWritable: false},
+        [{pubkey: contract.publicKey, isSigner: true, isWritable: false},
          {pubkey: dataKey, isSigner: false, isWritable: false},
          {pubkey: loanKey, isSigner: false, isWritable: false},
          {pubkey: collateralKey, isSigner: false, isWritable: false},
@@ -50,10 +54,10 @@ export const invoke = async (loan: string, collateral: string) => {
         new web3.TransactionInstruction({
             data: data,
             keys: accounts,
-            programId: contract
+            programId: contract.publicKey
         })
     );
-    let txInitSig = await web3.sendAndConfirmTransaction(conn, txInit, [payer, dataAccount, admin]);
+    let txInitSig = await web3.sendAndConfirmTransaction(conn, txInit, [payer, dataAccount, contract]);
     console.log("TxHash: " + txInitSig);
 
     /* Invoke the Loan2Value instruction (instruction #1) */
@@ -64,10 +68,10 @@ export const invoke = async (loan: string, collateral: string) => {
         new web3.TransactionInstruction({
             data: data,
             keys: accounts,
-            programId: contract
+            programId: contract.publicKey
         })
     );
-    let txCheckSig = await web3.sendAndConfirmTransaction(conn, txCheck, [payer, admin]);
+    let txCheckSig = await web3.sendAndConfirmTransaction(conn, txCheck, [payer, contract]);
     console.log("TxHash: " + txCheckSig);    
 
     /* Try to invoke the Init instruction without authority */
@@ -79,7 +83,7 @@ export const invoke = async (loan: string, collateral: string) => {
     const attackerCreateInst = web3.SystemProgram.createAccount({
         lamports: cost,
         space: loanInfoSize,
-        programId: contract,
+        programId: contract.publicKey,
         fromPubkey: payer.publicKey,
         newAccountPubkey: attackerDataAccount.publicKey,
     });
@@ -91,7 +95,7 @@ export const invoke = async (loan: string, collateral: string) => {
         new web3.TransactionInstruction({
             data: data,
             keys: accounts,
-            programId: contract
+            programId: contract.publicKey
         })
     );
     let txAttackerSig = await web3.sendAndConfirmTransaction(conn, txAttacker, [payer, attackerDataAccount, attacker]);
