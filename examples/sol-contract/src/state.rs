@@ -1,15 +1,19 @@
+//! Program states
+//! A data account would store a LoanInfo structure for the instructions.
+//! This file contains the serialization and deserialization of LoanInfo.
+
 use solana_program::{
+    pubkey::Pubkey,
     program_error::ProgramError,
     program_pack::{IsInitialized, Pack, Sealed},
-    pubkey::Pubkey,
 };
 
 use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
 
 pub struct LoanInfo {
     pub is_initialized: bool,
-    pub loan_key: Pubkey,
-    pub loan_qty: i64,
+    pub loan_key:       Pubkey,
+    pub loan_qty:       i64,
     pub collateral_key: Pubkey,
     pub collateral_qty: i64
 }
@@ -31,6 +35,7 @@ impl Pack for LoanInfo {
             src_loan_key, src_loan_qty,
             src_collateral_key, src_collateral_qty,
         ) = array_refs![src, 1, 32, 8, 32, 8];
+
         let is_initialized = match src_is_initialized {
             [0] => false,
             [1] => true,
