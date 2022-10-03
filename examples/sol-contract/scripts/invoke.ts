@@ -98,6 +98,7 @@ export const invoke = async (loan: string, collateral: string) => {
             programId: contract.publicKey
         })
     );
+    /* The code should crash here with custom program error 0 */
     let txAttackerSig = await web3.sendAndConfirmTransaction(conn, txAttacker, [payer, attackerDataAccount, attacker]);
     console.log("TxHash: " + txAttackerSig);
 }
