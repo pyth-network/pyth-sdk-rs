@@ -2,23 +2,31 @@
 //! A data account would store a LoanInfo structure for the instructions.
 //! This file contains the serialization and deserialization of LoanInfo.
 
-use solana_program::{
-    pubkey::Pubkey,
-    program_error::ProgramError,
-    program_pack::{IsInitialized, Pack, Sealed},
+use solana_program::program_error::ProgramError;
+use solana_program::program_pack::{
+    IsInitialized,
+    Pack,
+    Sealed,
 };
+use solana_program::pubkey::Pubkey;
 
-use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
+use arrayref::{
+    array_mut_ref,
+    array_ref,
+    array_refs,
+    mut_array_refs,
+};
 
 pub struct LoanInfo {
     pub is_initialized: bool,
     pub loan_key:       Pubkey,
     pub loan_qty:       i64,
     pub collateral_key: Pubkey,
-    pub collateral_qty: i64
+    pub collateral_qty: i64,
 }
 
-impl Sealed for LoanInfo {}
+impl Sealed for LoanInfo {
+}
 
 impl IsInitialized for LoanInfo {
     fn is_initialized(&self) -> bool {
@@ -32,8 +40,10 @@ impl Pack for LoanInfo {
         let src = array_ref![src, 0, LoanInfo::LEN];
         let (
             src_is_initialized,
-            src_loan_key, src_loan_qty,
-            src_collateral_key, src_collateral_qty,
+            src_loan_key,
+            src_loan_qty,
+            src_collateral_key,
+            src_collateral_qty,
         ) = array_refs![src, 1, 32, 8, 32, 8];
 
         let is_initialized = match src_is_initialized {
@@ -55,14 +65,18 @@ impl Pack for LoanInfo {
         let dst = array_mut_ref![dst, 0, LoanInfo::LEN];
         let (
             dst_is_initialized,
-            dst_loan_key, dst_loan_qty,
-            dst_collateral_key, dst_collateral_qty,
+            dst_loan_key,
+            dst_loan_qty,
+            dst_collateral_key,
+            dst_collateral_qty,
         ) = mut_array_refs![dst, 1, 32, 8, 32, 8];
 
         let LoanInfo {
             is_initialized,
-            loan_key, loan_qty,
-            collateral_key, collateral_qty,
+            loan_key,
+            loan_qty,
+            collateral_key,
+            collateral_qty,
         } = self;
 
         dst_is_initialized[0] = *is_initialized as u8;
