@@ -30,7 +30,7 @@ pub fn process_instruction(
         PythClientInstruction::Init {} => {
             // Only the program admin can initialize a loan.
             if !(signer.key == _program_id && signer.is_signer) {
-                return Err(ProgramError::Custom(1))
+                return Err(ProgramError::Custom(0))
             }
 
             let mut loan_info = LoanInfo::unpack_from_slice(
@@ -64,22 +64,22 @@ pub fn process_instruction(
 
             if loan_info.loan_key != *pyth_loan_account.key ||
                 loan_info.collateral_key != *pyth_collateral_account.key {
-                    return Err(ProgramError::Custom(1))
+                    return Err(ProgramError::Custom(2))
                 }
 
             // Calculate the value of the loan using Pyth price.
             let feed1 = load_price_feed_from_account_info(pyth_loan_account)?;
             let result1 = feed1.get_current_price()
-                .ok_or(ProgramError::Custom(0))?;
+                .ok_or(ProgramError::Custom(3))?;
             let loan_value = result1.price.checked_mul(loan_info.loan_qty)
-                .ok_or(ProgramError::Custom(0))?;
+                .ok_or(ProgramError::Custom(4))?;
 
             // Calculate the value of the loan using Pyth price.
             let feed2 = load_price_feed_from_account_info(pyth_collateral_account)?;
             let result2 = feed2.get_current_price()
-                .ok_or(ProgramError::Custom(0))?;
+                .ok_or(ProgramError::Custom(3))?;
             let collateral_value = result2.price.checked_mul(loan_info.collateral_qty)
-                .ok_or(ProgramError::Custom(1))?;
+                .ok_or(ProgramError::Custom(4))?;
 
             // Check whether the value of the collateral is higher.
             if collateral_value > loan_value {
@@ -89,7 +89,7 @@ pub fn process_instruction(
                 return Ok(())
             } else {
                 msg!("The value of loan is higher!");
-                return Err(ProgramError::Custom(2))
+                return Err(ProgramError::Custom(5))
             }
         }
     }
