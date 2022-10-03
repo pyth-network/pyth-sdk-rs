@@ -1,56 +1,85 @@
 //! Program instruction processor
 
+
 use solana_program::msg;
 use solana_program::pubkey::Pubkey;
-use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
+use solana_program::program_pack::{IsInitialized, Pack};
+use solana_program::account_info::{next_account_info, AccountInfo};
 
 use borsh::BorshDeserialize;
-use crate::instruction::PythClientInstruction;
 use pyth_sdk_solana::load_price_feed_from_account_info;
+
+use crate::state::LoanInfo;
+use crate::instruction::PythClientInstruction;
 
 pub fn process_instruction(
     _program_id: &Pubkey,
     _accounts: &[AccountInfo],
     input: &[u8],
 ) -> ProgramResult {
-    // Checking the validity of parameters is important.
-    // This important step is skipped in this example contract.
+    let account_iter = &mut _accounts.iter();
+    let signer = next_account_info(account_iter)?;
+    let data_account = next_account_info(account_iter)?;
+    let pyth_loan_account = next_account_info(account_iter)?;
+    let pyth_collateral_account = next_account_info(account_iter)?;
+
     let instruction = PythClientInstruction::try_from_slice(input)?;
     match instruction {
-        PythClientInstruction::Loan2Value {} => {
-            let loan = &_accounts[0];
-            let collateral = &_accounts[1];
-            msg!("The loan key is {}.", loan.key);
-            msg!("The collateral key is {}.", collateral.key);
+        PythClientInstruction::Init {} => {
+            // Only the program admin can initialize a loan.
+            if !(signer.key == _program_id && signer.is_signer) {
+                return Err(ProgramError::Custom(1))
+            }
+
+            let mut loan_info = LoanInfo::unpack_from_slice(
+                &data_account.try_borrow_data()?)?;
+
+            if loan_info.is_initialized() {
+                return Err(ProgramError::Custom(1))
+            }
+
+            loan_info.is_initialized = true;
+            loan_info.loan_key = *pyth_loan_account.key;
+            loan_info.collateral_key = *pyth_collateral_account.key;
+            // Give some dummy numbers for simplicity of this example.
+            loan_info.loan_qty = 1;
+            loan_info.collateral_qty = 3000;
+
+            msg!("The loan key is {}.", loan_info.loan_key);
+            msg!("The collateral key is {}.", loan_info.collateral_key);
             msg!("Assume 1 unit of loan and 3000 unit of collateral.");
-            let loan_cnt = 1;
-            let collateral_cnt = 3000;
+            LoanInfo::pack(loan_info, &mut data_account.try_borrow_mut_data()?)?;
+            Ok(())
+        },
+        PythClientInstruction::Loan2Value {} => {
+            // Anyone can check the loan to value ratio.
+            let loan_info = LoanInfo::unpack_from_slice(
+                &data_account.try_borrow_data()?)?;
 
-            // Calculate the value of the loan.
-            // Pyth is called to get the unit price of the loan.
-            let loan_value;
-            let feed1 = load_price_feed_from_account_info(loan)?;
-            let result1 = feed1.get_current_price().ok_or(ProgramError::Custom(0))?;
-            if let Some(v) = result1.price.checked_mul(loan_cnt) {
-                loan_value = v;
-            } else {
-                // An overflow occurs for result1.price * loan_cnt.
+            if !loan_info.is_initialized() {
                 return Err(ProgramError::Custom(1))
             }
 
-            // Calculate the value of the collateral.
-            // Pyth is called to get the unit price of the collateral.
-            let collateral_value;
-            let feed2 = load_price_feed_from_account_info(collateral)?;
-            let result2 = feed2.get_current_price().ok_or(ProgramError::Custom(0))?;
-            if let Some(v) = result2.price.checked_mul(collateral_cnt) {
-                collateral_value = v;
-            } else {
-                // An overflow occurs for result2.price * collateral_cnt.
-                return Err(ProgramError::Custom(1))
-            }
+            if loan_info.loan_key != *pyth_loan_account.key ||
+                loan_info.collateral_key != *pyth_collateral_account.key {
+                    return Err(ProgramError::Custom(1))
+                }
+
+            // Calculate the value of the loan using Pyth price.
+            let feed1 = load_price_feed_from_account_info(pyth_loan_account)?;
+            let result1 = feed1.get_current_price()
+                .ok_or(ProgramError::Custom(0))?;
+            let loan_value = result1.price.checked_mul(loan_info.loan_qty)
+                .ok_or(ProgramError::Custom(0))?;
+
+            // Calculate the value of the loan using Pyth price.
+            let feed2 = load_price_feed_from_account_info(pyth_collateral_account)?;
+            let result2 = feed2.get_current_price()
+                .ok_or(ProgramError::Custom(0))?;
+            let collateral_value = result2.price.checked_mul(loan_info.collateral_qty)
+                .ok_or(ProgramError::Custom(1))?;
 
             // Check whether the value of the collateral is higher.
             if collateral_value > loan_value {
