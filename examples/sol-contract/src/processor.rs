@@ -47,9 +47,6 @@ pub fn process_instruction(
             loan_info.loan_qty = 1;
             loan_info.collateral_qty = 3000;
 
-            msg!("The loan key is {}.", loan_info.loan_key);
-            msg!("The collateral key is {}.", loan_info.collateral_key);
-            msg!("Assume 1 unit of loan and 3000 unit of collateral.");
             LoanInfo::pack(loan_info, &mut data_account.try_borrow_mut_data()?)?;
             Ok(())
         },
@@ -67,28 +64,36 @@ pub fn process_instruction(
                     return Err(ProgramError::Custom(2))
                 }
 
-            // Calculate the value of the loan using Pyth price.
+            // Calculate the maximum value of the loan using Pyth.
             let feed1 = load_price_feed_from_account_info(pyth_loan_account)?;
             let result1 = feed1.get_current_price()
                 .ok_or(ProgramError::Custom(3))?;
             let loan_value = result1.price.checked_mul(loan_info.loan_qty)
                 .ok_or(ProgramError::Custom(4))?;
+            let loan_conf = (result1.conf as f64)
+                * (10 as f64).powf(result1.expo as f64)
+                * (loan_info.loan_qty as f64);
+            let loan_value_max = loan_value as f64 + loan_conf;
 
-            // Calculate the value of the loan using Pyth price.
+            // Calculate the minimum value of the collateral using Pyth.
             let feed2 = load_price_feed_from_account_info(pyth_collateral_account)?;
             let result2 = feed2.get_current_price()
                 .ok_or(ProgramError::Custom(3))?;
             let collateral_value = result2.price.checked_mul(loan_info.collateral_qty)
                 .ok_or(ProgramError::Custom(4))?;
+            let collateral_conf = (result2.conf as f64)
+                * (10 as f64).powf(result2.expo as f64)
+                * (loan_info.collateral_qty as f64);
+            let collateral_value_min = collateral_value as f64 - collateral_conf;
 
             // Check whether the value of the collateral is higher.
-            if collateral_value > loan_value {
-                msg!("Loan unit price is {}.", result1.price);
-                msg!("Collateral unit price is {}.", result2.price);
-                msg!("The value of collateral is higher.");
+            msg!("The maximum loan value is {}.", loan_value_max);
+            msg!("The minimum collateral value is {}.", collateral_value_min);
+            if collateral_value_min > loan_value_max {
+                msg!("The value of the collateral is higher.");
                 return Ok(())
             } else {
-                msg!("The value of loan is higher!");
+                msg!("The value of the loan is higher!");
                 return Err(ProgramError::Custom(5))
             }
         }
