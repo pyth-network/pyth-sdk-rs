@@ -1,6 +1,5 @@
 //! Program instruction processor
 
-
 use solana_program::msg;
 use solana_program::pubkey::Pubkey;
 use solana_program::entrypoint::ProgramResult;

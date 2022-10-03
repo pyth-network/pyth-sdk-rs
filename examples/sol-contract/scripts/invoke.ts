@@ -23,9 +23,9 @@ export const invoke = async (loan: string, collateral: string) => {
      * LoanInfo data, which will be passed to Init for initialization */
     let loanInfoSize = 1 + 32 + 8 + 32 + 8;
     let dataAccount = web3.Keypair.generate();
-    let cost = await conn.getMinimumBalanceForRentExemption(loanInfoSize);
+    let dataCost = await conn.getMinimumBalanceForRentExemption(loanInfoSize);
     const createInst = web3.SystemProgram.createAccount({
-        lamports: cost,
+        lamports: dataCost,
         space: loanInfoSize,
         programId: contract.publicKey,
         fromPubkey: payer.publicKey,
@@ -81,7 +81,7 @@ export const invoke = async (loan: string, collateral: string) => {
 
     let attackerDataAccount = web3.Keypair.generate();
     const attackerCreateInst = web3.SystemProgram.createAccount({
-        lamports: cost,
+        lamports: dataCost,
         space: loanInfoSize,
         programId: contract.publicKey,
         fromPubkey: payer.publicKey,
