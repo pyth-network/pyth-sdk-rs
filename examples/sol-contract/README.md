@@ -35,7 +35,7 @@ let loan_value_max = loan_value as f64 + loan_conf;
 This code says that, with high confidence, the maximum value of the loan does not exceed `loan_value_max`.
 In a similar way, the code then calculates the minimum value of the collateral and compare the two.
 
-## Run this example program
+## Run this program
 We assume that you have installed `cargo`, `solana`, `npm` and `node`.
 
 ```shell
