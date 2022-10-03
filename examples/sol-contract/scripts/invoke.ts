@@ -5,7 +5,7 @@ const contract = web3.Keypair.fromSecretKey(new Uint8Array([223,143,8,70,205,100
 
 export const invoke = async (loan: string, collateral: string) => {
     if (contract.publicKey != process.argv[2]) {
-        console.info("Please update the contract key pair in invoke.ts.");
+        console.info("Please update the contract keypair in invoke.ts with build/example_sol_contract-keypair.json.");
         return;
     }
     console.info("Invoking contract " + contract.publicKey);
@@ -20,7 +20,7 @@ export const invoke = async (loan: string, collateral: string) => {
     await conn.confirmTransaction(airdropSig);
 
     /* Prepare the createInst instruction: Create an account to store the
-     * LoanInfo data, which will be passed to Init for initialization*/
+     * LoanInfo data, which will be passed to Init for initialization */
     let loanInfoSize = 1 + 32 + 8 + 32 + 8;
     let dataAccount = web3.Keypair.generate();
     let cost = await conn.getMinimumBalanceForRentExemption(loanInfoSize);
