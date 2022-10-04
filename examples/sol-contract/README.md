@@ -43,6 +43,8 @@ We assume that you have installed `cargo`, `solana`, `npm` and `node`.
 > cd examples/sol-contract
 # Build the example contract
 > scripts/build.sh
+# Config solana CLI and set the url as devnet
+> solana config set --url https://api.devnet.solana.com
 # Deploy the example contract
 > scripts/deploy.sh
 # Invoke the example contract

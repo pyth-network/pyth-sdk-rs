@@ -28,7 +28,7 @@ export const invoke = async (loan: string, collateral: string) => {
     await conn.confirmTransaction(airdropSig);
 
     /* Prepare the createInst instruction which creates an
-     * account storing the LoanInfo data for the instructions */
+     * account storing the AdminConfig data for the instructions */
     let loanInfoSize = 1 + 32 + 8 + 32 + 8;
     let dataAccount = web3.Keypair.generate();
     let dataCost = await conn.getMinimumBalanceForRentExemption(loanInfoSize);
@@ -84,7 +84,7 @@ export const invoke = async (loan: string, collateral: string) => {
     let txCheckSig = await web3.sendAndConfirmTransaction(
         conn, txCheck, [payer, contract]
     );
-    console.log("TxHash: " + txCheckSig);    
+    console.log("TxHash: " + txCheckSig);
 
     /* Try to invoke the Init instruction without authority */
     console.log("Trying an unauthorized invocation of Init...");
@@ -103,7 +103,7 @@ export const invoke = async (loan: string, collateral: string) => {
     let txAttacker = new web3.Transaction({ feePayer: payer.publicKey });
     dataLayout.encode(Object.assign({instruction: 0}), data);
     txAttacker.add(
-        attackerCreateInst, 
+        attackerCreateInst,
         new web3.TransactionInstruction({
             data: data,
             keys: accounts,
