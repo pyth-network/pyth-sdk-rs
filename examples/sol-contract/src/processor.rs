@@ -19,7 +19,7 @@ use borsh::BorshDeserialize;
 use pyth_sdk_solana::load_price_feed_from_account_info;
 
 use crate::instruction::ExampleInstructions;
-use crate::state::LoanInfo;
+use crate::state::AdminConfig;
 
 pub fn process_instruction(
     _program_id: &Pubkey,
@@ -39,31 +39,31 @@ pub fn process_instruction(
                 return Err(ProgramError::Custom(0));
             }
 
-            let mut loan_info = LoanInfo::unpack_from_slice(&data_account.try_borrow_data()?)?;
+            let mut loan_info = AdminConfig::unpack_from_slice(&data_account.try_borrow_data()?)?;
 
             if loan_info.is_initialized() {
                 return Err(ProgramError::Custom(1));
             }
 
             loan_info.is_initialized = true;
-            loan_info.loan_key = *pyth_loan_account.key;
-            loan_info.collateral_key = *pyth_collateral_account.key;
+            loan_info.loan_price_feed_id = *pyth_loan_account.key;
+            loan_info.collateral_price_feed_id = *pyth_collateral_account.key;
             // Give some dummy numbers for simplicity of this example.
             loan_info.loan_qty = 1;
             loan_info.collateral_qty = 3000;
 
-            LoanInfo::pack(loan_info, &mut data_account.try_borrow_mut_data()?)?;
+            AdminConfig::pack(loan_info, &mut data_account.try_borrow_mut_data()?)?;
             Ok(())
         }
         ExampleInstructions::Loan2Value {} => {
-            let loan_info = LoanInfo::unpack_from_slice(&data_account.try_borrow_data()?)?;
+            let loan_info = AdminConfig::unpack_from_slice(&data_account.try_borrow_data()?)?;
 
             if !loan_info.is_initialized() {
                 return Err(ProgramError::Custom(1));
             }
 
-            if loan_info.loan_key != *pyth_loan_account.key
-                || loan_info.collateral_key != *pyth_collateral_account.key
+            if loan_info.loan_price_feed_id != *pyth_loan_account.key
+                || loan_info.collateral_price_feed_id != *pyth_collateral_account.key
             {
                 return Err(ProgramError::Custom(2));
             }
