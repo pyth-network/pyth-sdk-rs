@@ -29,7 +29,7 @@ export const invoke = async (loan: string, collateral: string) => {
 
     /* Prepare the createInst instruction which creates an
      * account storing the AdminConfig data for the instructions */
-    let loanInfoSize = 1 + 32 + 8 + 32 + 8;
+    let loanInfoSize = 1 + 32 + 32;
     let dataAccount = web3.Keypair.generate();
     let dataCost = await conn.getMinimumBalanceForRentExemption(loanInfoSize);
     const createInst = web3.SystemProgram.createAccount({

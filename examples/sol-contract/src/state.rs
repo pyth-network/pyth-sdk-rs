@@ -22,9 +22,7 @@ use arrayref::{
 pub struct AdminConfig {
     pub is_initialized:           bool,
     pub loan_price_feed_id:       Pubkey,
-    pub loan_qty:                 i64,
     pub collateral_price_feed_id: Pubkey,
-    pub collateral_qty:           i64,
 }
 
 impl Sealed for AdminConfig {
@@ -37,16 +35,11 @@ impl IsInitialized for AdminConfig {
 }
 
 impl Pack for AdminConfig {
-    const LEN: usize = 1 + 32 + 8 + 32 + 8;
+    const LEN: usize = 1 + 32 + 32;
     fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
         let src = array_ref![src, 0, AdminConfig::LEN];
-        let (
-            src_is_initialized,
-            src_loan_price_feed_id,
-            src_loan_qty,
-            src_collateral_price_feed_id,
-            src_collateral_qty,
-        ) = array_refs![src, 1, 32, 8, 32, 8];
+        let (src_is_initialized, src_loan_price_feed_id, src_collateral_price_feed_id) =
+            array_refs![src, 1, 32, 32];
 
         let is_initialized = match src_is_initialized {
             [0] => false,
@@ -57,34 +50,23 @@ impl Pack for AdminConfig {
         Ok(AdminConfig {
             is_initialized,
             loan_price_feed_id: Pubkey::new_from_array(*src_loan_price_feed_id),
-            loan_qty: i64::from_le_bytes(*src_loan_qty),
             collateral_price_feed_id: Pubkey::new_from_array(*src_collateral_price_feed_id),
-            collateral_qty: i64::from_le_bytes(*src_collateral_qty),
         })
     }
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let dst = array_mut_ref![dst, 0, AdminConfig::LEN];
-        let (
-            dst_is_initialized,
-            dst_loan_price_feed_id,
-            dst_loan_qty,
-            dst_collateral_price_feed_id,
-            dst_collateral_qty,
-        ) = mut_array_refs![dst, 1, 32, 8, 32, 8];
+        let (dst_is_initialized, dst_loan_price_feed_id, dst_collateral_price_feed_id) =
+            mut_array_refs![dst, 1, 32, 32];
 
         let AdminConfig {
             is_initialized,
             loan_price_feed_id,
-            loan_qty,
             collateral_price_feed_id,
-            collateral_qty,
         } = self;
 
         dst_is_initialized[0] = *is_initialized as u8;
         dst_loan_price_feed_id.copy_from_slice(loan_price_feed_id.as_ref());
-        *dst_loan_qty = loan_qty.to_le_bytes();
         dst_collateral_price_feed_id.copy_from_slice(collateral_price_feed_id.as_ref());
-        *dst_collateral_qty = collateral_qty.to_le_bytes();
     }
 }
