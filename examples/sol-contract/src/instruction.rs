@@ -12,5 +12,8 @@ use borsh::{
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize, PartialEq)]
 pub enum ExampleInstructions {
     Init {},
-    Loan2Value {},
+    Loan2Value {
+        loan_qty:       i64,
+        collateral_qty: i64,
+    },
 }
