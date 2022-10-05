@@ -52,7 +52,13 @@ pub fn process_instruction(
             AdminConfig::pack(loan_info, &mut data_account.try_borrow_mut_data()?)?;
             Ok(())
         }
-        ExampleInstructions::Loan2Value {} => {
+        ExampleInstructions::Loan2Value {
+            loan_qty,
+            collateral_qty,
+        } => {
+            msg!("Loan quantity is {}.", loan_qty);
+            msg!("Collateral quantity is {}.", collateral_qty);
+
             let loan_info = AdminConfig::unpack_from_slice(&data_account.try_borrow_data()?)?;
 
             if !loan_info.is_initialized() {
@@ -64,10 +70,6 @@ pub fn process_instruction(
             {
                 return Err(ProgramError::Custom(2));
             }
-
-            // Give some dummy numbers for simplicity of this example.
-            let loan_qty = 1;
-            let collateral_qty = 3000;
 
             // Calculate the maximum value of the loan using Pyth.
             let feed1 = load_price_feed_from_account_info(pyth_loan_account)?;

