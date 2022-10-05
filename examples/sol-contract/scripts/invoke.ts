@@ -60,8 +60,8 @@ export const invoke = async (loan: string, collateral: string) => {
 
     /* Invoke the Init instruction (instruction #0) */
     console.log("Creating data account and invoking Init...");
-    let txInit = new web3.Transaction({ feePayer: payer.publicKey });
     initLayout.encode({instruction: 0}, initData);
+    let txInit = new web3.Transaction({ feePayer: payer.publicKey });
     txInit.add(
         createInst,                        /* Create data account */
         new web3.TransactionInstruction({  /* Initialize data account */
@@ -81,12 +81,13 @@ export const invoke = async (loan: string, collateral: string) => {
     let loan_qty = Buffer.from('0100000000000000', 'hex');
     /* Encode 0xbb8 (3000) in big ending */
     let collateral_qty = Buffer.from('b80b000000000000', 'hex');
-    let txCheck = new web3.Transaction({ feePayer: payer.publicKey });
     loan2ValueLayout.encode(
         {instruction: 1,
          loan_qty: blob(8).decode(loan_qty),
          collateral_qty: blob(8).decode(collateral_qty)}
     , loan2ValueData);
+
+    let txCheck = new web3.Transaction({ feePayer: payer.publicKey });
     txCheck.add(
         new web3.TransactionInstruction({
             data: loan2ValueData,
