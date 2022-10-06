@@ -118,12 +118,35 @@
     },
     "PriceStatus": {
       "description": "Represents availability status of a price feed.",
-      "type": "string",
-      "enum": [
-        "Unknown",
-        "Trading",
-        "Halted",
-        "Auction"
+      "oneOf": [
+        {
+          "description": "The price feed is not currently updating for an unknown reason.",
+          "type": "string",
+          "enum": [
+            "Unknown"
+          ]
+        },
+        {
+          "description": "The price feed is updating as expected.",
+          "type": "string",
+          "enum": [
+            "Trading"
+          ]
+        },
+        {
+          "description": "The price feed is not currently updating because trading in the product has been halted.",
+          "type": "string",
+          "enum": [
+            "Halted"
+          ]
+        },
+        {
+          "description": "The price feed is not currently updating because an auction is setting the price.",
+          "type": "string",
+          "enum": [
+            "Auction"
+          ]
+        }
       ]
     }
   }
