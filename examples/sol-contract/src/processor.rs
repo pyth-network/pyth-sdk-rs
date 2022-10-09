@@ -74,31 +74,38 @@ pub fn process_instruction(
             // Calculate the maximum value of the loan using Pyth.
             let feed1 = load_price_feed_from_account_info(pyth_loan_account)?;
             let result1 = feed1.get_current_price().ok_or(ProgramError::Custom(3))?;
-            let loan_value = result1
+            let loan_max_price = result1
                 .price
+                .checked_add(result1.conf as i64)
+                .ok_or(ProgramError::Custom(4))?;
+            let loan_max_value = loan_max_price
                 .checked_mul(loan_qty)
                 .ok_or(ProgramError::Custom(4))?;
-            let loan_conf = (result1.conf as f64)       // confidence
-                * (10 as f64).powf(result1.expo as f64) // * 10 ^ exponent
-                * (loan_qty as f64); // * quantity
-            let loan_value_max = loan_value as f64 + loan_conf;
 
             // Calculate the minimum value of the collateral using Pyth.
             let feed2 = load_price_feed_from_account_info(pyth_collateral_account)?;
             let result2 = feed2.get_current_price().ok_or(ProgramError::Custom(3))?;
-            let collateral_value = result2
+            let collateral_min_price = result2
                 .price
+                .checked_sub(result2.conf as i64)
+                .ok_or(ProgramError::Custom(4))?;
+            let collateral_min_value = collateral_min_price
                 .checked_mul(collateral_qty)
                 .ok_or(ProgramError::Custom(4))?;
-            let collateral_conf = (result2.conf as f64) // confidence
-                * (10 as f64).powf(result2.expo as f64) // * 10 ^ exponent
-                * (collateral_qty as f64); // * quantity
-            let collateral_value_min = collateral_value as f64 - collateral_conf;
 
             // Check whether the value of the collateral is higher.
-            msg!("The maximum loan value is {}.", loan_value_max);
-            msg!("The minimum collateral value is {}.", collateral_value_min);
-            if collateral_value_min > loan_value_max {
+            msg!(
+                "The maximum loan value is {} * 10^({}).",
+                loan_max_value,
+                result1.expo
+            );
+            msg!(
+                "The minimum collateral value is {} * 10^({}).",
+                collateral_min_value,
+                result2.expo
+            );
+
+            if collateral_min_value > loan_max_value {
                 msg!("The value of the collateral is higher.");
                 return Ok(());
             } else {
