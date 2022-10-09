@@ -1,1 +1,1 @@
-cargo build-bpf --sbf-out-dir ./build
+cargo build-bpf --bpf-out-dir ./build
