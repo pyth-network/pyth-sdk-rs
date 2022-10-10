@@ -34,6 +34,8 @@ let loan_max_value = loan_max_price
 This code says that, with high confidence, the maximum value of the loan does not exceed `loan_max_value * 10^(result1.expo)` at the time of the query.
 In a similar way, the code then calculates the minimum value of the collateral and compare the two.
 
+More on Pyth best practice and price confidence interval can be found [here](https://docs.pyth.network/consume-data/best-practices).
+
 ## Run this program
 We assume that you have installed `cargo`, `solana`, `npm` and `node`.
 
