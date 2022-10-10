@@ -128,7 +128,7 @@ export const invoke = async (loan: string, collateral: string) => {
         let txAttackerSig = await web3.sendAndConfirmTransaction(
             conn, txAttacker, [payer, attackerDataAccount, attacker]
         );
-        console.error("Attacker succeeded with TxHash: " + txAttackerSig);
+        throw new Error("Attacker succeeded. TxHash: " + txAttackerSig);
     } catch (error) {
         console.log("Attacker failed to invoke unauthorized Init.");
     }

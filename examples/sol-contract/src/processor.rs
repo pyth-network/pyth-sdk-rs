@@ -22,38 +22,41 @@ use crate::instruction::ExampleInstructions;
 use crate::state::AdminConfig;
 
 pub fn process_instruction(
-    _program_id: &Pubkey,
-    _accounts: &[AccountInfo],
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
     input: &[u8],
 ) -> ProgramResult {
-    let account_iter = &mut _accounts.iter();
+    let account_iter = &mut accounts.iter();
     let signer = next_account_info(account_iter)?;
-    let data_account = next_account_info(account_iter)?;
+    let admin_config_account = next_account_info(account_iter)?;
     let pyth_loan_account = next_account_info(account_iter)?;
     let pyth_collateral_account = next_account_info(account_iter)?;
 
     let instruction = ExampleInstructions::try_from_slice(input)?;
     match instruction {
         ExampleInstructions::Init {} => {
-            if !(signer.key == _program_id && signer.is_signer) {
+            // Only an authorized / trusted key should be able to configure the price feed id for
+            // each asset
+            if !(signer.key == program_id && signer.is_signer) {
                 return Err(ProgramError::Custom(0));
             }
 
-            let mut loan_info = AdminConfig::try_from_slice(&data_account.try_borrow_data()?)?;
+            let mut config = AdminConfig::try_from_slice(&admin_config_account.try_borrow_data()?)?;
 
-            if loan_info.is_initialized {
+            if config.is_initialized {
                 return Err(ProgramError::Custom(1));
             }
 
-            loan_info.is_initialized = true;
-            loan_info.loan_price_feed_id = *pyth_loan_account.key;
-            loan_info.collateral_price_feed_id = *pyth_collateral_account.key;
+            config.is_initialized = true;
+            config.loan_price_feed_id = *pyth_loan_account.key;
+            config.collateral_price_feed_id = *pyth_collateral_account.key;
 
-            let loan_data = loan_info.try_to_vec()?;
-            let data_dst = &mut data_account.try_borrow_mut_data()?;
-            sol_memcpy(data_dst, &loan_data, 1 + 32 + 32);
+            let config_data = config.try_to_vec()?;
+            let config_dst = &mut admin_config_account.try_borrow_mut_data()?;
+            sol_memcpy(config_dst, &config_data, 1 + 32 + 32);
             Ok(())
         }
+
         ExampleInstructions::Loan2Value {
             loan_qty,
             collateral_qty,
@@ -61,14 +64,14 @@ pub fn process_instruction(
             msg!("Loan quantity is {}.", loan_qty);
             msg!("Collateral quantity is {}.", collateral_qty);
 
-            let loan_info = AdminConfig::try_from_slice(&data_account.try_borrow_data()?)?;
+            let config = AdminConfig::try_from_slice(&admin_config_account.try_borrow_data()?)?;
 
-            if !loan_info.is_initialized {
+            if !config.is_initialized {
                 return Err(ProgramError::Custom(1));
             }
 
-            if loan_info.loan_price_feed_id != *pyth_loan_account.key
-                || loan_info.collateral_price_feed_id != *pyth_collateral_account.key
+            if config.loan_price_feed_id != *pyth_loan_account.key
+                || config.collateral_price_feed_id != *pyth_collateral_account.key
             {
                 return Err(ProgramError::Custom(2));
             }
