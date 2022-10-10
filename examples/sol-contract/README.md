@@ -22,17 +22,16 @@ let result1 = feed1.get_current_price().ok_or(ProgramError::Custom(3))?;
 
 And then calculate the loan value given the quantity of the loan.
 ```rust
-let loan_value = result1
+let loan_max_price = result1
     .price
-    .checked_mul(loan_info.loan_qty)
+    .checked_add(result1.conf as i64)
     .ok_or(ProgramError::Custom(4))?;
-let loan_conf = (result1.conf as f64)       // confidence
-    * (10 as f64).powf(result1.expo as f64) // * 10 ^ exponent
-    * (loan_info.loan_qty as f64);          // * quantity
-let loan_value_max = loan_value as f64 + loan_conf;
+let loan_max_value = loan_max_price
+    .checked_mul(loan_qty)
+    .ok_or(ProgramError::Custom(4))?;
 ```
 
-This code says that, with high confidence, the maximum value of the loan does not exceed `loan_value_max`.
+This code says that, with high confidence, the maximum value of the loan does not exceed `loan_max_value * 10^(result1.expo)` at the time of the query.
 In a similar way, the code then calculates the minimum value of the collateral and compare the two.
 
 ## Run this program
