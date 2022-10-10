@@ -9,13 +9,13 @@ use solana_program::account_info::{
 use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
 use solana_program::program_error::ProgramError;
-use solana_program::program_pack::{
-    IsInitialized,
-    Pack,
-};
+use solana_program::program_memory::sol_memcpy;
 use solana_program::pubkey::Pubkey;
 
-use borsh::BorshDeserialize;
+use borsh::{
+    BorshDeserialize,
+    BorshSerialize,
+};
 use pyth_sdk_solana::load_price_feed_from_account_info;
 
 use crate::instruction::ExampleInstructions;
@@ -39,9 +39,9 @@ pub fn process_instruction(
                 return Err(ProgramError::Custom(0));
             }
 
-            let mut loan_info = AdminConfig::unpack_from_slice(&data_account.try_borrow_data()?)?;
+            let mut loan_info = AdminConfig::try_from_slice(&data_account.try_borrow_data()?)?;
 
-            if loan_info.is_initialized() {
+            if loan_info.is_initialized {
                 return Err(ProgramError::Custom(1));
             }
 
@@ -49,7 +49,9 @@ pub fn process_instruction(
             loan_info.loan_price_feed_id = *pyth_loan_account.key;
             loan_info.collateral_price_feed_id = *pyth_collateral_account.key;
 
-            AdminConfig::pack(loan_info, &mut data_account.try_borrow_mut_data()?)?;
+            let loan_data = loan_info.try_to_vec()?;
+            let data_dst = &mut data_account.try_borrow_mut_data()?;
+            sol_memcpy(data_dst, &loan_data, 1 + 32 + 32);
             Ok(())
         }
         ExampleInstructions::Loan2Value {
@@ -59,9 +61,9 @@ pub fn process_instruction(
             msg!("Loan quantity is {}.", loan_qty);
             msg!("Collateral quantity is {}.", collateral_qty);
 
-            let loan_info = AdminConfig::unpack_from_slice(&data_account.try_borrow_data()?)?;
+            let loan_info = AdminConfig::try_from_slice(&data_account.try_borrow_data()?)?;
 
-            if !loan_info.is_initialized() {
+            if !loan_info.is_initialized {
                 return Err(ProgramError::Custom(1));
             }
 
