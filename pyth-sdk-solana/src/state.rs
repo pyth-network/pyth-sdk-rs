@@ -21,8 +21,6 @@ pub use pyth_sdk::{
     PriceFeed,
 };
 
-use crate::VALID_SLOT_PERIOD;
-
 use crate::PythError;
 
 pub const MAGIC: u32 = 0xa1b2c3d4;

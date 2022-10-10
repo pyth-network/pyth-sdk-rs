@@ -8,7 +8,6 @@ use pyth_sdk_solana::state::{
     load_price_account,
     load_product_account,
     CorpAction,
-    PriceStatus,
     PriceType,
 };
 use solana_client::rpc_client::RpcClient;
@@ -23,15 +22,6 @@ fn get_price_type(ptype: &PriceType) -> &'static str {
     match ptype {
         PriceType::Unknown => "unknown",
         PriceType::Price => "price",
-    }
-}
-
-fn get_status(st: &PriceStatus) -> &'static str {
-    match st {
-        PriceStatus::Unknown => "unknown",
-        PriceStatus::Trading => "trading",
-        PriceStatus::Halted => "halted",
-        PriceStatus::Auction => "auction",
     }
 }
 
@@ -56,7 +46,7 @@ fn main() {
         // iget and print each Product in Mapping directory
         let mut i = 0;
         for prod_pkey in &map_acct.products {
-            let prod_data = clnt.get_account_data(&prod_pkey).unwrap();
+            let prod_data = clnt.get_account_data(prod_pkey).unwrap();
             let prod_acct = load_product_account(&prod_data).unwrap();
 
             // print key and reference data for this Product

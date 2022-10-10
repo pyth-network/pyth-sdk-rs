@@ -3,11 +3,9 @@
 use borsh::BorshDeserialize;
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
-use solana_program::program_error::ProgramError;
 use solana_program::pubkey::Pubkey;
 
 use crate::instruction::PythClientInstruction;
-use pyth_sdk_solana::state::load_price_account;
 
 pub fn process_instruction(
     _program_id: &Pubkey,
