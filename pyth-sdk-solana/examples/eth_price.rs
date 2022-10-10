@@ -4,6 +4,10 @@ use pyth_sdk_solana::load_price_feed_from_account;
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use std::str::FromStr;
+use std::time::{
+    SystemTime,
+    UNIX_EPOCH,
+};
 use std::{
     thread,
     time,
@@ -24,10 +28,13 @@ fn main() {
             load_price_feed_from_account(&eth_price_key, &mut eth_price_account).unwrap();
 
         println!(".....ETH/USD.....");
-        println!("status .......... {:?}", eth_price_feed.status);
-        println!("num_publishers .. {}", eth_price_feed.num_publishers);
 
-        let maybe_price = eth_price_feed.get_current_price();
+        let current_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        let maybe_price = eth_price_feed.get_price_no_older_than(current_time, 60);
         match maybe_price {
             Some(p) => {
                 println!("price ........... {} x 10^{}", p.price, p.expo);
@@ -40,7 +47,7 @@ fn main() {
         }
 
 
-        let maybe_ema_price = eth_price_feed.get_ema_price();
+        let maybe_ema_price = eth_price_feed.get_ema_price_no_older_than(current_time, 60);
         match maybe_ema_price {
             Some(ema_price) => {
                 println!(

@@ -14,6 +14,10 @@ use pyth_sdk_solana::state::{
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use std::str::FromStr;
+use std::time::{
+    SystemTime,
+    UNIX_EPOCH,
+};
 
 fn get_price_type(ptype: &PriceType) -> &'static str {
     match ptype {
@@ -73,7 +77,12 @@ fn main() {
 
                     println!("  price_account .. {:?}", px_pkey);
 
-                    let maybe_price = price_feed.get_current_price();
+                    let current_time = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs() as i64;
+
+                    let maybe_price = price_feed.get_price_no_older_than(current_time, 60);
                     match maybe_price {
                         Some(p) => {
                             println!("    price ........ {} x 10^{}", p.price, p.expo);
@@ -89,8 +98,6 @@ fn main() {
                         "    price_type ... {}",
                         get_price_type(&price_account.ptype)
                     );
-                    println!("    exponent ..... {}", price_feed.expo);
-                    println!("    status ....... {}", get_status(&price_feed.status));
                     println!(
                         "    corp_act ..... {}",
                         get_corp_act(&price_account.agg.corp_act)
@@ -100,7 +107,7 @@ fn main() {
                     println!("    valid_slot ... {}", price_account.valid_slot);
                     println!("    publish_slot . {}", price_account.agg.pub_slot);
 
-                    let maybe_ema_price = price_feed.get_ema_price();
+                    let maybe_ema_price = price_feed.get_ema_price_no_older_than(current_time, 60);
                     match maybe_ema_price {
                         Some(ema_price) => {
                             println!(

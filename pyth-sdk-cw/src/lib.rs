@@ -16,7 +16,6 @@ pub use pyth_sdk::{
     Price,
     PriceFeed,
     PriceIdentifier,
-    PriceStatus,
     ProductIdentifier,
 };
 

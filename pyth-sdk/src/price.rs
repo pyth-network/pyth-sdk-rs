@@ -5,14 +5,18 @@ use borsh::{
 
 use schemars::JsonSchema;
 
-use crate::utils;
+use crate::{
+    utils,
+    UnixTimestamp,
+};
 
 // Constants for working with pyth's number representation
 const PD_EXPO: i32 = -9;
 const PD_SCALE: u64 = 1_000_000_000;
 const MAX_PD_V_U64: u64 = (1 << 28) - 1;
 
-/// A price with a degree of uncertainty, represented as a price +- a confidence interval.
+/// A price with a degree of uncertainty at a certain time, represented as a price +- a confidence
+/// interval.
 ///
 /// The confidence interval roughly corresponds to the standard error of a normal distribution.
 /// Both the price and confidence are stored in a fixed-point numeric representation, `x *
@@ -20,8 +24,8 @@ const MAX_PD_V_U64: u64 = (1 << 28) - 1;
 ///
 /// ```
 /// use pyth_sdk::Price;
-/// Price { price: 12345, conf: 267, expo: -2 }; // represents 123.45 +- 2.67
-/// Price { price: 123, conf: 1, expo: 2 }; // represents 12300 +- 100
+/// Price { price: 12345, conf: 267, expo: -2, publish_time: 100 }; // represents 123.45 +- 2.67 published at UnixTimestamp 100
+/// Price { price: 123, conf: 1, expo: 2,  publish_time: 100 }; // represents 12300 +- 100 published at UnixTimestamp 100
 /// ```
 ///
 /// `Price` supports a limited set of mathematical operations. All of these operations will
@@ -48,13 +52,15 @@ pub struct Price {
     /// Price.
     #[serde(with = "utils::as_string")] // To ensure accuracy on conversion to json.
     #[schemars(with = "String")]
-    pub price: i64,
+    pub price:        i64,
     /// Confidence Interval.
     #[serde(with = "utils::as_string")]
     #[schemars(with = "String")]
-    pub conf:  u64,
+    pub conf:         u64,
     /// Exponent.
-    pub expo:  i32,
+    pub expo:         i32,
+    /// Publish Timestamp
+    pub publish_time: UnixTimestamp,
 }
 
 impl Price {
@@ -107,9 +113,10 @@ impl Price {
         }
 
         let mut res = Price {
-            price: 0,
-            conf:  0,
-            expo:  result_expo,
+            price:        0,
+            conf:         0,
+            expo:         result_expo,
+            publish_time: amounts[0].0.publish_time,
         };
         for amount in amounts {
             res = res.add(
@@ -180,11 +187,12 @@ impl Price {
         // price.
         if conf < (u64::MAX as u128) {
             Some(Price {
-                price: (midprice as i64)
+                price:        (midprice as i64)
                     .checked_mul(base_sign)?
                     .checked_mul(other_sign)?,
-                conf:  conf as u64,
-                expo:  midprice_expo,
+                conf:         conf as u64,
+                expo:         midprice_expo,
+                publish_time: self.publish_time.min(other.publish_time),
             })
         } else {
             None
@@ -207,15 +215,17 @@ impl Price {
             price,
             conf,
             expo: self.expo,
+            publish_time: self.publish_time.min(other.publish_time),
         })
     }
 
     /// Multiply this `Price` by a constant `c * 10^e`.
     pub fn cmul(&self, c: i64, e: i32) -> Option<Price> {
         self.mul(&Price {
-            price: c,
-            conf:  0,
-            expo:  e,
+            price:        c,
+            conf:         0,
+            expo:         e,
+            publish_time: self.publish_time,
         })
     }
 
@@ -250,6 +260,7 @@ impl Price {
                 .checked_mul(other_sign)?,
             conf,
             expo: midprice_expo,
+            publish_time: self.publish_time.min(other.publish_time),
         })
     }
 
@@ -268,9 +279,10 @@ impl Price {
         }
 
         Some(Price {
-            price: (p as i64).checked_mul(s)?,
-            conf:  c,
-            expo:  e,
+            price:        (p as i64).checked_mul(s)?,
+            conf:         c,
+            expo:         e,
+            publish_time: self.publish_time,
         })
     }
 
@@ -294,9 +306,10 @@ impl Price {
             }
 
             Some(Price {
-                price: p,
-                conf:  c,
-                expo:  target_expo,
+                price:        p,
+                conf:         c,
+                expo:         target_expo,
+                publish_time: self.publish_time,
             })
         } else {
             let mut p = self.price;
@@ -310,9 +323,10 @@ impl Price {
             }
 
             Some(Price {
-                price: p,
-                conf:  c,
-                expo:  target_expo,
+                price:        p,
+                conf:         c,
+                expo:         target_expo,
+                publish_time: self.publish_time,
             })
         }
     }
@@ -344,7 +358,12 @@ mod test {
     const MIN_PD_V_I64: i64 = -MAX_PD_V_I64;
 
     fn pc(price: i64, conf: u64, expo: i32) -> Price {
-        Price { price, conf, expo }
+        Price {
+            price,
+            conf,
+            expo,
+            publish_time: 0,
+        }
     }
 
     fn pc_scaled(price: i64, conf: u64, cur_expo: i32, expo: i32) -> Price {
@@ -352,6 +371,7 @@ mod test {
             price,
             conf,
             expo: cur_expo,
+            publish_time: 0,
         }
         .scale_to_exponent(expo)
         .unwrap()
@@ -401,6 +421,14 @@ mod test {
             pc(0, u64::MAX / scale_u64, i32::MAX),
         );
         fails(pc(1, u64::MAX, i32::MAX - expo + 1));
+
+        // Check timestamp won't change after normalize
+        let p = Price {
+            publish_time: 100,
+            ..Default::default()
+        };
+
+        assert_eq!(p.normalize().unwrap().publish_time, 100);
     }
 
     #[test]
@@ -428,6 +456,14 @@ mod test {
 
         // fails because exponent delta overflows
         fails(pc(1, 1, i32::MIN), i32::MAX);
+
+        // Check timestamp won't change after scale to exponent
+        let p = Price {
+            publish_time: 100,
+            ..pc(1234, 1234, 0)
+        };
+
+        assert_eq!(p.scale_to_exponent(2).unwrap().publish_time, 100);
     }
 
     #[test]
@@ -664,6 +700,20 @@ mod test {
             pc(PD_SCALE as i64, 2 * PD_SCALE, i32::MIN),
         );
         fails(pc(1, 1, i32::MIN - PD_EXPO), pc(1, 1, 1));
+
+        // Check timestamp will be the minimum after div
+        let p1 = Price {
+            publish_time: 100,
+            ..pc(1234, 1234, 0)
+        };
+
+        let p2 = Price {
+            publish_time: 200,
+            ..pc(1234, 1234, 0)
+        };
+
+        assert_eq!(p1.div(&p2).unwrap().publish_time, 100);
+        assert_eq!(p2.div(&p1).unwrap().publish_time, 100);
     }
 
     #[test]
@@ -829,5 +879,19 @@ mod test {
         succeeds(pc(1, 1, i32::MIN), pc(1, 1, 0), pc(1, 2, i32::MIN));
         succeeds(pc(1, 1, i32::MIN), pc(1, 1, 1), pc(1, 2, i32::MIN + 1));
         fails(pc(1, 1, i32::MIN), pc(1, 1, -1));
+
+        // Check timestamp will be the minimum after mul
+        let p1 = Price {
+            publish_time: 100,
+            ..pc(1234, 1234, 0)
+        };
+
+        let p2 = Price {
+            publish_time: 200,
+            ..pc(1234, 1234, 0)
+        };
+
+        assert_eq!(p1.mul(&p2).unwrap().publish_time, 100);
+        assert_eq!(p2.mul(&p1).unwrap().publish_time, 100);
     }
 }

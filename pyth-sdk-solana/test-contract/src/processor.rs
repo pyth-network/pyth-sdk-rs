@@ -40,18 +40,5 @@ pub fn process_instruction(
             Ok(())
         }
         PythClientInstruction::Noop => Ok(()),
-        PythClientInstruction::PriceStatusCheck {
-            price_account_data,
-            expected_price_status,
-        } => {
-            let price_account = load_price_account(price_account_data.as_ref())?;
-            let price = price_account.to_price_feed(&Pubkey::default());
-
-            if price.status == expected_price_status {
-                Ok(())
-            } else {
-                Err(ProgramError::Custom(0))
-            }
-        }
     }
 }
