@@ -124,14 +124,18 @@ export const invoke = async (loan: string, collateral: string) => {
         })
     );
 
+    var attacker_succeed = false, txAttackerSig;
     try {
-        let txAttackerSig = await web3.sendAndConfirmTransaction(
+        txAttackerSig = await web3.sendAndConfirmTransaction(
             conn, txAttacker, [payer, attackerDataAccount, attacker]
         );
-        throw new Error("Attacker succeeded. TxHash: " + txAttackerSig);
+        attacker_succeed = true;
     } catch (error) {
         console.log("Attacker failed to invoke unauthorized Init.");
     }
+
+    if (attacker_succeed)
+        throw new Error("Attacker succeeded! TxHash: " + txAttackerSig);
 }
 
 /* Pyth price accounts on the solana devnet */
