@@ -35,8 +35,7 @@ pub fn process_instruction(
     let instruction = ExampleInstructions::try_from_slice(input)?;
     match instruction {
         ExampleInstructions::Init {} => {
-            // Only an authorized / trusted key should be able to configure the price feed id for
-            // each asset
+            // Only an authorized key should be able to configure the price feed id for each asset
             if !(signer.key == program_id && signer.is_signer) {
                 return Err(ProgramError::Custom(0));
             }
@@ -50,6 +49,10 @@ pub fn process_instruction(
             config.is_initialized = true;
             config.loan_price_feed_id = *pyth_loan_account.key;
             config.collateral_price_feed_id = *pyth_collateral_account.key;
+
+            // Make sure these Pyth price accounts can be loaded
+            load_price_feed_from_account_info(pyth_loan_account)?;
+            load_price_feed_from_account_info(pyth_collateral_account)?;
 
             let config_data = config.try_to_vec()?;
             let config_dst = &mut admin_config_account.try_borrow_mut_data()?;
