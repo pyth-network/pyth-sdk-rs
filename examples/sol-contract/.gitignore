@@ -1,0 +1,5 @@
+build/example_sol_contract.so
+build/example_sol_contract-keypair.json
+scripts/invoke.js
+scripts/invoke.js.map
+scripts/node_modules/
