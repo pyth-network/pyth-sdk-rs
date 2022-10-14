@@ -18,6 +18,9 @@ const MAX_PD_V_U64: u64 = (1 << 28) - 1;
 /// A price with a degree of uncertainty at a certain time, represented as a price +- a confidence
 /// interval.
 ///
+/// Please refer to the documentation at https://docs.pyth.network/consumers/best-practices for
+/// using this price safely.
+///
 /// The confidence interval roughly corresponds to the standard error of a normal distribution.
 /// Both the price and confidence are stored in a fixed-point numeric representation, `x *
 /// 10^expo`, where `expo` is the exponent. For example:
@@ -53,13 +56,13 @@ pub struct Price {
     #[serde(with = "utils::as_string")] // To ensure accuracy on conversion to json.
     #[schemars(with = "String")]
     pub price:        i64,
-    /// Confidence Interval.
+    /// Confidence interval.
     #[serde(with = "utils::as_string")]
     #[schemars(with = "String")]
     pub conf:         u64,
     /// Exponent.
     pub expo:         i32,
-    /// Publish Timestamp
+    /// Publish time.
     pub publish_time: UnixTimestamp,
 }
 
