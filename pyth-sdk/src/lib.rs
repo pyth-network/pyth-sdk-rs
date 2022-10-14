@@ -126,23 +126,26 @@ impl PriceFeed {
     /// a * 10^e along with its publish time.
     ///
     /// Returns a `Price` struct containing the current price, confidence interval, and the exponent
-    /// for both numbers, and publish time. This method returns the price value without checking
-    /// availability of the price. This value might not be valid or updated when the price is
-    /// not available.
+    /// for both numbers, and publish time. This method returns the latest price which may be from
+    /// arbitrarily far in the past, and the caller should probably check the timestamp before using
+    /// it.
+    ///
+    /// Please consider using `get_price_no_older_than` when possible.
     pub fn get_price_unchecked(&self) -> Price {
         self.price
     }
 
 
-    /// Get the "unchecked" exponential moving average price (ema_price) and a confidence interval
-    /// on the result along with its publish time.
+    /// Get the "unchecked" exponentially-weighted moving average (EMA) price and a confidence
+    /// interval on the result along with its publish time.
     ///
-    /// Returns the price value without checking availability of the price.
-    /// This value might not be valid or updated when the price is not available.
-    /// Please use `get_ema_price` where possible.
+    /// Returns the latest EMA price value which may be from arbitrarily far in the past, and the
+    /// caller should probably check the timestamp before using it.
     ///
     /// At the moment, the confidence interval returned by this method is computed in
     /// a somewhat questionable way, so we do not recommend using it for high-value applications.
+    ///
+    /// Please consider using `get_ema_price_no_older_than` when possible.
     pub fn get_ema_price_unchecked(&self) -> Price {
         self.ema_price
     }
