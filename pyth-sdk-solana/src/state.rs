@@ -12,7 +12,10 @@ use bytemuck::{
     PodCastError,
     Zeroable,
 };
-use pyth_sdk::PriceIdentifier;
+use pyth_sdk::{
+    PriceIdentifier,
+    UnixTimestamp,
+};
 use solana_program::pubkey::Pubkey;
 use std::mem::size_of;
 
@@ -344,37 +347,37 @@ unsafe impl Pod for PriceAccount {
 }
 
 impl PriceAccount {
+    pub fn get_publish_time(&self) -> UnixTimestamp {
+        match self.agg.status {
+            PriceStatus::Trading => self.timestamp,
+            _ => self.prev_timestamp,
+        }
+    }
+
     pub fn to_price_feed(&self, price_key: &Pubkey) -> PriceFeed {
         let status = self.agg.status;
 
-        let price = if matches!(status, PriceStatus::Trading) {
-            Price {
+        let price = match status {
+            PriceStatus::Trading => Price {
                 conf:         self.agg.conf,
                 expo:         self.expo,
                 price:        self.agg.price,
-                publish_time: self.timestamp,
-            }
-        } else {
-            Price {
+                publish_time: self.get_publish_time(),
+            },
+            _ => Price {
                 conf:         self.prev_conf,
                 expo:         self.expo,
                 price:        self.prev_price,
-                publish_time: self.prev_timestamp,
-            }
+                publish_time: self.get_publish_time(),
+            },
         };
 
-        let mut ema_price = Price {
+        let ema_price = Price {
             conf:         self.ema_conf.val as u64,
             expo:         self.expo,
             price:        self.ema_price.val,
-            publish_time: self.timestamp,
+            publish_time: self.get_publish_time(),
         };
-
-        // Ema price only gets updated if status is Trading. So it's update timestamp will be
-        // prev_timestamp when the status is not Trading.
-        if !matches!(status, PriceStatus::Trading) {
-            ema_price.publish_time = self.prev_timestamp;
-        }
 
         PriceFeed::new(PriceIdentifier::new(price_key.to_bytes()), price, ema_price)
     }
