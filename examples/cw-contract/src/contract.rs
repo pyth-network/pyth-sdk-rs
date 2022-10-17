@@ -66,13 +66,13 @@ pub fn execute(
 
 /// Query the Pyth contract the current price of the configured price feed.
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::FetchPrice {} => to_binary(&query_fetch_price(deps)?),
+        QueryMsg::FetchPrice {} => to_binary(&query_fetch_price(deps, env)?),
     }
 }
 
-fn query_fetch_price(deps: Deps) -> StdResult<FetchPriceResponse> {
+fn query_fetch_price(deps: Deps, env: Env) -> StdResult<FetchPriceResponse> {
     let state = STATE.load(deps.storage)?;
 
     // query_price_feed is the standard way to read the current price from a Pyth price feed.
@@ -92,13 +92,13 @@ fn query_fetch_price(deps: Deps) -> StdResult<FetchPriceResponse> {
     // you handle this scenario more carefully. Consult the [consumer best practices](https://docs.pyth.network/consumers/best-practices)
     // for recommendations.
     let current_price = price_feed
-        .get_current_price()
+        .get_price_no_older_than(env.block.time.seconds() as i64, 60)
         .ok_or_else(|| StdError::not_found("Current price is not available"))?;
 
     // Get an exponentially-weighted moving average price and confidence interval.
     // The same notes about availability apply to this price.
     let ema_price = price_feed
-        .get_ema_price()
+        .get_ema_price_no_older_than(env.block.time.seconds() as i64, 60)
         .ok_or_else(|| StdError::not_found("EMA price is not available"))?;
 
     Ok(FetchPriceResponse {

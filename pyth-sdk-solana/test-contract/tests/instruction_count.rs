@@ -7,7 +7,12 @@ mod common;
 use common::test_instr_exec_ok;
 
 fn pc(price: i64, conf: u64, expo: i32) -> Price {
-    Price { price, conf, expo }
+    Price {
+        price,
+        conf,
+        expo,
+        publish_time: 0,
+    }
 }
 
 #[tokio::test]

@@ -14,7 +14,7 @@ use bytemuck::{
 };
 use pyth_sdk::{
     PriceIdentifier,
-    ProductIdentifier,
+    UnixTimestamp,
 };
 use solana_program::pubkey::Pubkey;
 use std::mem::size_of;
@@ -22,13 +22,7 @@ use std::mem::size_of;
 pub use pyth_sdk::{
     Price,
     PriceFeed,
-    PriceStatus,
 };
-
-use solana_program::clock::Clock;
-use solana_program::sysvar::Sysvar;
-
-use crate::VALID_SLOT_PERIOD;
 
 use crate::PythError;
 
@@ -112,6 +106,37 @@ pub enum PriceType {
 impl Default for PriceType {
     fn default() -> Self {
         PriceType::Unknown
+    }
+}
+
+
+/// Represents availability status of a price feed.
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    BorshSerialize,
+    BorshDeserialize,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+#[repr(C)]
+pub enum PriceStatus {
+    /// The price feed is not currently updating for an unknown reason.
+    Unknown,
+    /// The price feed is updating as expected.
+    Trading,
+    /// The price feed is not currently updating because trading in the product has been halted.
+    Halted,
+    /// The price feed is not currently updating because an auction is setting the price.
+    Auction,
+}
+
+impl Default for PriceStatus {
+    fn default() -> Self {
+        PriceStatus::Unknown
     }
 }
 
@@ -322,39 +347,39 @@ unsafe impl Pod for PriceAccount {
 }
 
 impl PriceAccount {
-    pub fn to_price_feed(&self, price_key: &Pubkey) -> PriceFeed {
-        let mut status = self.agg.status;
-        let mut prev_price = self.prev_price;
-        let mut prev_conf = self.prev_conf;
-        let mut prev_publish_time = self.prev_timestamp;
-
-        if let Ok(clock) = Clock::get() {
-            if matches!(status, PriceStatus::Trading)
-                && clock.slot.saturating_sub(self.agg.pub_slot) > VALID_SLOT_PERIOD
-            {
-                status = PriceStatus::Unknown;
-                prev_price = self.agg.price;
-                prev_conf = self.agg.conf;
-                prev_publish_time = self.timestamp;
-            }
+    pub fn get_publish_time(&self) -> UnixTimestamp {
+        match self.agg.status {
+            PriceStatus::Trading => self.timestamp,
+            _ => self.prev_timestamp,
         }
+    }
 
-        PriceFeed::new(
-            PriceIdentifier::new(price_key.to_bytes()),
-            status,
-            self.timestamp,
-            self.expo,
-            self.num,
-            self.num_qt,
-            ProductIdentifier::new(self.prod.to_bytes()),
-            self.agg.price,
-            self.agg.conf,
-            self.ema_price.val,
-            self.ema_conf.val as u64,
-            prev_price,
-            prev_conf,
-            prev_publish_time,
-        )
+    pub fn to_price_feed(&self, price_key: &Pubkey) -> PriceFeed {
+        let status = self.agg.status;
+
+        let price = match status {
+            PriceStatus::Trading => Price {
+                conf:         self.agg.conf,
+                expo:         self.expo,
+                price:        self.agg.price,
+                publish_time: self.get_publish_time(),
+            },
+            _ => Price {
+                conf:         self.prev_conf,
+                expo:         self.expo,
+                price:        self.prev_price,
+                publish_time: self.get_publish_time(),
+            },
+        };
+
+        let ema_price = Price {
+            conf:         self.ema_conf.val as u64,
+            expo:         self.expo,
+            price:        self.ema_price.val,
+            publish_time: self.get_publish_time(),
+        };
+
+        PriceFeed::new(PriceIdentifier::new(price_key.to_bytes()), price, ema_price)
     }
 }
 
@@ -446,4 +471,118 @@ fn get_attr_str(buf: &[u8]) -> (&str, &[u8]) {
     let str = std::str::from_utf8(&buf[1..len + 1]).expect("attr should be ascii or utf-8");
     let remaining_buf = &buf[len + 1..];
     (str, remaining_buf)
+}
+
+#[cfg(test)]
+mod test {
+    use pyth_sdk::{
+        Identifier,
+        Price,
+        PriceFeed,
+    };
+    use solana_program::pubkey::Pubkey;
+
+    use super::{
+        PriceAccount,
+        PriceInfo,
+        PriceStatus,
+        Rational,
+    };
+
+
+    #[test]
+    fn test_trading_price_to_price_feed() {
+        let price_account = PriceAccount {
+            expo: 5,
+            agg: PriceInfo {
+                price: 10,
+                conf: 20,
+                status: PriceStatus::Trading,
+                ..Default::default()
+            },
+            timestamp: 200,
+            prev_timestamp: 100,
+            ema_price: Rational {
+                val: 40,
+                ..Default::default()
+            },
+            ema_conf: Rational {
+                val: 50,
+                ..Default::default()
+            },
+            prev_price: 60,
+            prev_conf: 70,
+            ..Default::default()
+        };
+
+        let pubkey = Pubkey::new_from_array([3; 32]);
+        let price_feed = price_account.to_price_feed(&pubkey);
+
+        assert_eq!(
+            price_feed,
+            PriceFeed::new(
+                Identifier::new(pubkey.to_bytes()),
+                Price {
+                    conf:         20,
+                    price:        10,
+                    expo:         5,
+                    publish_time: 200,
+                },
+                Price {
+                    conf:         50,
+                    price:        40,
+                    expo:         5,
+                    publish_time: 200,
+                }
+            )
+        );
+    }
+
+    #[test]
+    fn test_non_trading_price_to_price_feed() {
+        let price_account = PriceAccount {
+            expo: 5,
+            agg: PriceInfo {
+                price: 10,
+                conf: 20,
+                status: PriceStatus::Unknown,
+                ..Default::default()
+            },
+            timestamp: 200,
+            prev_timestamp: 100,
+            ema_price: Rational {
+                val: 40,
+                ..Default::default()
+            },
+            ema_conf: Rational {
+                val: 50,
+                ..Default::default()
+            },
+            prev_price: 60,
+            prev_conf: 70,
+            ..Default::default()
+        };
+
+        let pubkey = Pubkey::new_from_array([3; 32]);
+        let price_feed = price_account.to_price_feed(&pubkey);
+
+        assert_eq!(
+            price_feed,
+            PriceFeed::new(
+                Identifier::new(pubkey.to_bytes()),
+                Price {
+                    conf:         70,
+                    price:        60,
+                    expo:         5,
+                    publish_time: 100,
+                },
+                Price {
+                    conf:         50,
+                    price:        40,
+                    expo:         5,
+                    publish_time: 100,
+                }
+            )
+        );
+    }
 }
