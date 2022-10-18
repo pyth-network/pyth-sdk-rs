@@ -35,14 +35,6 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: 1.58.1
-          override: true
-          components: clippy
-
       - name: Generate Schema
         run: cargo run --example schema
 
