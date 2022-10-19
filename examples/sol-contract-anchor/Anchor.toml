@@ -1,12 +1,5 @@
-[features]
-seeds = false
-skip-lint = false
-
 [programs.devnet]
 example_sol_anchor_contract = "BM8eAdE2JbN4HL2vPaZnbsxGH6TTVi11jFbz8t79hXKw"
-
-[registry]
-url = "https://api.apr.dev"
 
 [provider]
 cluster = "devnet"
