@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use solana_program::account_info::AccountInfo;
 use pyth_sdk_solana::load_price_feed_from_account_info;
 
-declare_id!("BM8eAdE2JbN4HL2vPaZnbsxGH6TTVi11jFbz8t79hXKw");
+declare_id!("4ACQwuQt2ChnPRUV8KwuhVqJvEdusWd3i8JAngHDkp91");
 
 #[account]
 pub struct AdminConfig {
@@ -14,7 +14,7 @@ pub struct AdminConfig {
 
 #[derive(Accounts)]
 pub struct InitRequest<'info> {
-    #[account(address = *program_id)]
+    #[account(address = *program_id @ ErrorCode::Unauthorized)]
     pub program: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
