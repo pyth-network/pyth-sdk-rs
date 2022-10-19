@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use solana_program::account_info::AccountInfo;
 use pyth_sdk_solana::load_price_feed_from_account_info;
 
-declare_id!("GZwQNVL14fd7ubdVvucnE7aYytmtiPWLJ3638y31hBAL");
+declare_id!("BM8eAdE2JbN4HL2vPaZnbsxGH6TTVi11jFbz8t79hXKw");
 
 #[account]
 pub struct AdminConfig {

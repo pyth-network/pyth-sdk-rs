@@ -19,11 +19,14 @@ try {
     programKey = anchor.web3.Keypair.fromSecretKey(
         new Uint8Array(JSON.parse(data))
     );
+} catch (error) {
+    throw new Error("Please run `anchor build` first.");
+}
 
+try {
     assert(programId.equals(programKey.publicKey));
 } catch (error) {
-    console.error("Please run `anchor build` first.");
-    return;
+    throw new Error("Please make sure you have the same program Id in (1) Anchor.toml, (2) programs/.../src/lib.rs and (3) the result of anchor deploy. Then re-build and re-deploy your program");
 }
 
 it("Initialize the config.", async () => {
