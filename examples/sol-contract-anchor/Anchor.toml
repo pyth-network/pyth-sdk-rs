@@ -1,0 +1,17 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.devnet]
+example_sol_anchor_contract = "GZwQNVL14fd7ubdVvucnE7aYytmtiPWLJ3638y31hBAL"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "/home/yunhao/pyth/wallet/pair.json"
+
+[scripts]
+install = "npm i chai mocha ts-mocha @types/bn.js @types/chai @types/mocha typescript prettier @project-serum/anchor"
+invoke = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 scripts/invoke.ts"
