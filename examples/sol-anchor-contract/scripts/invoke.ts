@@ -26,7 +26,7 @@ try {
 try {
     assert(programId.equals(programKey.publicKey));
 } catch (error) {
-    throw new Error("Please make sure you have the same program Id in (1) Anchor.toml, (2) programs/.../src/lib.rs and (3) the result of anchor deploy. Then re-build and re-deploy your program");
+    throw new Error("Please make sure you have the same program address in (1) Anchor.toml, (2) programs/example-sol-anchor-contract/src/lib.rs and (3) the output of anchor deploy. Then re-build and re-deploy your program.");
 }
 
 it("Initialize the config.", async () => {

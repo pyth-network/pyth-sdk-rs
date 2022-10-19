@@ -17,6 +17,7 @@ We assume that you have installed `anchor`, `npm` and `yarn`.
 # Change the `wallet` field in Anchor.toml to your own wallet
 # And then deploy the example contract
 > anchor deploy
+# An error may occur if your wallet does not have enough funds
 
 # Install the client dependencies and invoke this program
 > anchor run install
