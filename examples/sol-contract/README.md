@@ -17,7 +17,8 @@ Pyth SDK is used in the `Loan2Value` instruction in `src/processor.rs`.
 For the loan, the code first reads the unit price from the Pyth oracle.
 ```rust
 let feed1 = load_price_feed_from_account_info(pyth_loan_account)?;
-let result1 = feed1.get_current_price().ok_or(ProgramError::Custom(3))?;
+let current_timestamp1 = Clock::get()?.unix_timestamp;
+let result1 = feed1.get_price_no_older_than(current_timestamp1, 60).ok_or(ProgramError::Custom(3))?;
 ```
 
 And then calculate the loan value given the quantity of the loan.

@@ -8,11 +8,11 @@ use solana_program::account_info::{
 };
 use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
-use solana_program::sysvar::Sysvar;
-use solana_program::sysvar::clock::Clock;
 use solana_program::program_error::ProgramError;
 use solana_program::program_memory::sol_memcpy;
 use solana_program::pubkey::Pubkey;
+use solana_program::sysvar::clock::Clock;
+use solana_program::sysvar::Sysvar;
 
 use borsh::{
     BorshDeserialize,
@@ -87,7 +87,9 @@ pub fn process_instruction(
             // https://docs.pyth.network/consume-data/best-practices
             let feed1 = load_price_feed_from_account_info(pyth_loan_account)?;
             let current_timestamp1 = Clock::get()?.unix_timestamp;
-            let result1 = feed1.get_price_no_older_than(current_timestamp1, 60).ok_or(ProgramError::Custom(3))?;
+            let result1 = feed1
+                .get_price_no_older_than(current_timestamp1, 60)
+                .ok_or(ProgramError::Custom(3))?;
             let loan_max_price = result1
                 .price
                 .checked_add(result1.conf as i64)
@@ -107,7 +109,9 @@ pub fn process_instruction(
             // https://docs.pyth.network/consume-data/best-practices
             let feed2 = load_price_feed_from_account_info(pyth_collateral_account)?;
             let current_timestamp2 = Clock::get()?.unix_timestamp;
-            let result2 = feed2.get_price_no_older_than(current_timestamp2, 60).ok_or(ProgramError::Custom(3))?;
+            let result2 = feed2
+                .get_price_no_older_than(current_timestamp2, 60)
+                .ok_or(ProgramError::Custom(3))?;
             let collateral_min_price = result2
                 .price
                 .checked_sub(result2.conf as i64)
