@@ -49,5 +49,5 @@ We assume that you have installed `cargo`, `solana`, `npm` and `node`.
 # Deploy the example contract
 > scripts/deploy.sh
 # Invoke the example contract
-> scripts/invoke.ts
+> scripts/invoke.sh
 ```
