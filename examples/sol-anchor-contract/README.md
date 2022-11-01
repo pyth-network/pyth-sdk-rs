@@ -8,21 +8,23 @@ Please refer to the README of `sol-contract` for a description of the functional
 We assume that you have installed `anchor`, `npm` and `yarn`.
 
 ```shell
+# Generate the program key
+> solana-keygen new -o program_address.json
+
+# Use the pubkey generated to replace the following two places
+# "example_sol_anchor_contract" in Anchor.toml
+# "declare_id!()" in programs/example-sol-anchor-contract/src/lib.rs
+
 # Enter the directory and build this example
 > cd examples/sol-contract-anchor
 > anchor build
 
-# Config the solana CLI by setting its url to devnet
-> solana config set --url https://api.devnet.solana.com
 # Change the `wallet` field in Anchor.toml to your own wallet
-# And then deploy the example contract
-> anchor deploy
-# An error may occur if your wallet does not have enough funds
+# And then deploy the example contract; An error may occur if
+# your wallet does not have enough funds
+> anchor deploy --program-keypair program_address.json --program-name example-sol-anchor-contract
 
 # Install the client dependencies and invoke this program
 > anchor run install
 > anchor run invoke
 ```
-
-You must make sure that the following 3 places have the same program address: (1) Anchor.toml, (2) programs/example-sol-anchor-contract/src/lib.rs and (3) the output of `anchor deploy`.
-Otherwise, modify (1) or (2) with the program address shown in (3).
