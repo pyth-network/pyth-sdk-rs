@@ -7,7 +7,6 @@ declare_id!("Fwn1fCmbjd8d95hxY9NUUr5Xa7D13khveMnmCUFdd3ah");
 
 #[account]
 pub struct AdminConfig {
-    pub is_initialized:           bool,
     pub loan_price_feed_id:       Pubkey,
     pub collateral_price_feed_id: Pubkey,
 }
@@ -39,18 +38,11 @@ pub mod example_sol_anchor_contract {
     use super::*;
 
     pub fn init(ctx: Context<InitRequest>, config: AdminConfig) -> Result<()> {
-        if ctx.accounts.config.is_initialized {
-            return Err(error!(ErrorCode::ReInitialize));
-        }
         ctx.accounts.config.set_inner(config);
         Ok(())
     }
 
     pub fn loan_to_value(ctx: Context<QueryRequest>, loan_qty: i64, collateral_qty: i64) -> Result<()> {
-        if !ctx.accounts.config.is_initialized {
-            return Err(error!(ErrorCode::UnInitialize));
-        }
-
         msg!("Loan quantity is {}.", loan_qty);
         msg!("Collateral quantity is {}.", collateral_qty);
 

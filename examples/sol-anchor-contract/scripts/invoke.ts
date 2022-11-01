@@ -32,7 +32,6 @@ try {
 it("Initialize the config.", async () => {
     let txSig = await program.rpc.init(
         {
-            isInitialized: true,
             loanPriceFeedId: new anchor.web3.PublicKey(ethToUSD),
             collateralPriceFeedId: new anchor.web3.PublicKey(usdtToUSD),
         },
@@ -73,7 +72,6 @@ it("Prevent initialization of config without authority.", async () => {
     try {
         txSig = await program.rpc.init(
             {
-                isInitialized: true,
                 loanPriceFeedId: new anchor.web3.PublicKey(ethToUSD),
                 collateralPriceFeedId: new anchor.web3.PublicKey(usdtToUSD),
             },
