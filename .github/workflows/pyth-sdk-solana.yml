@@ -34,6 +34,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install libudev-dev
     - name: Install Solana Binaries
       run: |
+        # Installing 1.14.x cli tools to have sbf instead of bpf. bpf does not work anymore.
         sh -c "$(curl -sSfL https://release.solana.com/v1.14.7/install)"
         echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
     - name: Build
