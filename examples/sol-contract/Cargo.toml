@@ -10,9 +10,5 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 borsh = "0.9"
 arrayref = "0.3.6"
-solana-program = "1.10.40"
+solana-program = "=1.13.3"
 pyth-sdk-solana = { path = "../../pyth-sdk-solana", version = "0.6.1" }
-
-[dev-dependencies]
-solana-sdk = "1.10.40"
-solana-client = "1.10.40"
