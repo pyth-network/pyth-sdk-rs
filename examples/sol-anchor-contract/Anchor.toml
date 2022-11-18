@@ -1,0 +1,10 @@
+[programs.devnet]
+example_sol_anchor_contract = "Fwn1fCmbjd8d95hxY9NUUr5Xa7D13khveMnmCUFdd3ah"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+install = "npm install"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 scripts/test.ts"
