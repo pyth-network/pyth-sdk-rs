@@ -89,7 +89,7 @@ For more information on the different types of Pyth accounts, see the [account s
 
 ## Off-chain Example Programs
 
-The example [eth_price](examples/eth_price.rs) program prints the product reference data and current price information for Pyth on Solana devnet.
+The example [eth_price](examples/eth_price.rs) program prints the product reference data and current price information for Pyth on pythnet. You can use the same example and replace the url with the relevant Solana cluster urls to get the same information for Solana clusters.
 Run the following commands to try this example program:
 
 ```

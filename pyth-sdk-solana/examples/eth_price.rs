@@ -1,4 +1,4 @@
-// example usage of reading pyth price from solana price account
+// example usage of reading pyth price from solana/pythnet price account
 
 use pyth_sdk_solana::load_price_feed_from_account;
 use solana_client::rpc_client::RpcClient;
@@ -15,8 +15,8 @@ use std::{
 
 
 fn main() {
-    let url = "http://api.mainnet-beta.solana.com";
-    // Pyth eth/usd price account on mainnet. can be found from https://pyth.network
+    let url = "http:/pythnet.rpcpool.com";
+    // Pyth ETH/USD price account on pythnet (can be found on https://pyth.network/developers/price-feed-ids#solana-mainnet-beta which has the same price feed IDs as pythnet)
     let key = "JBu1AL4obBcCMqKBBxhpWCNUt136ijcuMZLFvTP7iWdB";
     let clnt = RpcClient::new(url.to_string());
     let eth_price_key = Pubkey::from_str(key).unwrap();
