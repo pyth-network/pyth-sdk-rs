@@ -16,7 +16,7 @@ use pyth_sdk::{
     PriceIdentifier,
     UnixTimestamp,
 };
-use solana_program::pubkey::Pubkey;
+use solana_program::{pubkey::Pubkey, clock::Clock};
 use std::mem::size_of;
 
 pub use pyth_sdk::{
@@ -354,6 +354,33 @@ impl PriceAccount {
         }
     }
 
+    /// Get the last valid price as long as it was updated within `slot_threshold` slots of the current slot.
+    pub fn get_price_no_older_than(
+        &self,
+        clock: &Clock,
+        slot_threshold: u64
+    ) -> Option<Price> {
+        if self.agg.status == PriceStatus::Trading && self.agg.pub_slot >= clock.slot - slot_threshold {
+            return Some(Price {
+                conf:         self.agg.conf,
+                expo:         self.expo,
+                price:        self.agg.price,
+                publish_time: self.timestamp,
+            })
+        }
+        
+        if self.prev_slot > clock.slot - slot_threshold {
+            return Some(Price {
+                conf:         self.prev_conf,
+                expo:         self.expo,
+                price:        self.prev_price,
+                publish_time: self.prev_timestamp,
+            })
+        }
+
+        None
+    }
+
     pub fn to_price_feed(&self, price_key: &Pubkey) -> PriceFeed {
         let status = self.agg.status;
 
@@ -480,7 +507,7 @@ mod test {
         Price,
         PriceFeed,
     };
-    use solana_program::pubkey::Pubkey;
+    use solana_program::{pubkey::Pubkey, clock::Clock};
 
     use super::{
         PriceAccount,
@@ -583,6 +610,40 @@ mod test {
                     publish_time: 100,
                 }
             )
+        );
+    }
+
+    #[test]
+    fn test_happy_price_no_older_than() {
+        let price_account = PriceAccount {
+            expo: 5,
+            agg: PriceInfo {
+                price: 10,
+                conf: 20,
+                status: PriceStatus::Trading,
+                pub_slot: 1,
+                ..Default::default()
+            },
+            timestamp: 200,
+            prev_timestamp: 100,
+            prev_price: 60,
+            prev_conf: 70,
+            ..Default::default()
+        };
+
+        let clock = Clock {
+            slot: 5,
+            ..Default::default()
+        };
+
+        assert_eq!(
+            price_account.get_price_no_older_than(&clock, 4),
+            Some(Price {
+                conf: 20,
+                expo: 5,
+                price: 10,
+                publish_time: 200,
+            })
         );
     }
 }
