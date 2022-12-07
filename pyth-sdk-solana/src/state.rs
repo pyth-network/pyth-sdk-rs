@@ -369,7 +369,7 @@ impl PriceAccount {
             })
         }
         
-        if self.prev_slot > clock.slot - slot_threshold {
+        if self.prev_slot >= clock.slot - slot_threshold {
             return Some(Price {
                 conf:         self.prev_conf,
                 expo:         self.expo,
@@ -614,7 +614,7 @@ mod test {
     }
 
     #[test]
-    fn test_happy_price_no_older_than() {
+    fn test_happy_use_latest_price_in_price_no_older_than() {
         let price_account = PriceAccount {
             expo: 5,
             agg: PriceInfo {
@@ -644,6 +644,102 @@ mod test {
                 price: 10,
                 publish_time: 200,
             })
+        );
+    }
+
+    #[test]
+    fn test_happy_use_prev_price_in_price_no_older_than() {
+        let price_account = PriceAccount {
+            expo: 5,
+            agg: PriceInfo {
+                price: 10,
+                conf: 20,
+                status: PriceStatus::Unknown,
+                pub_slot: 3,
+                ..Default::default()
+            },
+            timestamp: 200,
+            prev_timestamp: 100,
+            prev_price: 60,
+            prev_conf: 70,
+            prev_slot: 1,
+            ..Default::default()
+        };
+
+        let clock = Clock {
+            slot: 5,
+            ..Default::default()
+        };
+
+        assert_eq!(
+            price_account.get_price_no_older_than(&clock, 4),
+            Some(Price {
+                conf: 70,
+                expo: 5,
+                price: 60,
+                publish_time: 100,
+            })
+        );
+    }
+
+    #[test]
+    fn test_sad_cur_price_unknown_in_price_no_older_than() {
+        let price_account = PriceAccount {
+            expo: 5,
+            agg: PriceInfo {
+                price: 10,
+                conf: 20,
+                status: PriceStatus::Unknown,
+                pub_slot: 3,
+                ..Default::default()
+            },
+            timestamp: 200,
+            prev_timestamp: 100,
+            prev_price: 60,
+            prev_conf: 70,
+            prev_slot: 1,
+            ..Default::default()
+        };
+
+        let clock = Clock {
+            slot: 5,
+            ..Default::default()
+        };
+
+        // current price is unknown, prev price is too stale
+        assert_eq!(
+            price_account.get_price_no_older_than(&clock, 3),
+            None
+        );
+    }
+
+    #[test]
+    fn test_sad_cur_price_stale_in_price_no_older_than() {
+        let price_account = PriceAccount {
+            expo: 5,
+            agg: PriceInfo {
+                price: 10,
+                conf: 20,
+                status: PriceStatus::Unknown,
+                pub_slot: 3,
+                ..Default::default()
+            },
+            timestamp: 200,
+            prev_timestamp: 100,
+            prev_price: 60,
+            prev_conf: 70,
+            prev_slot: 1,
+            ..Default::default()
+        };
+
+        let clock = Clock {
+            slot: 5,
+            ..Default::default()
+        };
+
+        assert_eq!(
+            price_account.get_price_no_older_than(&clock, 1),
+            None
         );
     }
 }
