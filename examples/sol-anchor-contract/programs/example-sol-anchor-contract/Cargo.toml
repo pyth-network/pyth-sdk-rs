@@ -17,5 +17,5 @@ default = []
 
 [dependencies]
 anchor-lang = "0.25.0"
-pyth-sdk-solana = "0.5.0"
-solana-program = "1.8.1, < 1.11"
+pyth-sdk-solana = { path = "../../../../pyth-sdk-solana", version = "0.7.0" }
+solana-program = ">= 1.10, < 1.15"
