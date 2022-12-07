@@ -720,7 +720,7 @@ mod test {
             agg: PriceInfo {
                 price: 10,
                 conf: 20,
-                status: PriceStatus::Unknown,
+                status: PriceStatus::Trading,
                 pub_slot: 3,
                 ..Default::default()
             },
