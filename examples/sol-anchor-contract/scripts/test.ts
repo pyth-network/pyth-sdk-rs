@@ -26,7 +26,7 @@ try {
 try {
     assert(programId.equals(programKey.publicKey));
 } catch (error) {
-    throw new Error("Please make sure you have the same program address inAnchor.toml and program_address.json");
+    throw new Error("Please make sure you have the same program address in Anchor.toml and program_address.json");
 }
 
 it("Initialize the config.", async () => {
