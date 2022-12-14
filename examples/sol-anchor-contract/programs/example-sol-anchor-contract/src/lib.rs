@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use solana_program::account_info::AccountInfo;
 use pyth_sdk_solana::load_price_feed_from_account_info;
 
-declare_id!("Fwn1fCmbjd8d95hxY9NUUr5Xa7D13khveMnmCUFdd3ah");
+declare_id!("9azQ2ePzPvMPQgHric53kdSNmwjVM5KijDE4ANFCE9D4");
 
 #[account]
 pub struct AdminConfig {
@@ -54,7 +54,9 @@ pub mod example_sol_anchor_contract {
         // https://docs.pyth.network/consume-data/best-practices
         let feed1 = load_price_feed_from_account_info(pyth_loan_account)
             .map_err(|_x| error!(ErrorCode::PythError))?;
-        let result1 = feed1.get_current_price()
+        let current_timestamp1 = Clock::get()?.unix_timestamp;
+        let result1 = feed1
+            .get_price_no_older_than(current_timestamp1, 60)
             .ok_or(ErrorCode::PythOffline)?;
         let loan_max_price = result1
             .price
@@ -75,7 +77,9 @@ pub mod example_sol_anchor_contract {
         // https://docs.pyth.network/consume-data/best-practices
         let feed2 = load_price_feed_from_account_info(pyth_collateral_account)
                         .map_err(|_x| error!(ErrorCode::PythError))?;
-        let result2 = feed2.get_current_price()
+        let current_timestamp2 = Clock::get()?.unix_timestamp;
+        let result2 = feed2
+            .get_price_no_older_than(current_timestamp2, 60)
             .ok_or(ErrorCode::PythOffline)?;
         let collateral_min_price = result2
             .price

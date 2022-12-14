@@ -26,5 +26,5 @@ We assume that you have installed `anchor`, `npm` and `yarn`.
 
 # Install the client dependencies and invoke this program
 > anchor run install
-> anchor run invoke
+> anchor run test
 ```

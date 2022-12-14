@@ -1,5 +1,5 @@
 [programs.devnet]
-example_sol_anchor_contract = "Fwn1fCmbjd8d95hxY9NUUr5Xa7D13khveMnmCUFdd3ah"
+example_sol_anchor_contract = "9azQ2ePzPvMPQgHric53kdSNmwjVM5KijDE4ANFCE9D4"
 
 [provider]
 cluster = "devnet"
