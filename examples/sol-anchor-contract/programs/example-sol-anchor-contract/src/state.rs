@@ -16,7 +16,6 @@ pub struct PythPriceFeed {
     pub feed: PriceFeed,
 }
 
-#[automatically_derived]
 impl anchor_lang::AccountDeserialize for PythPriceFeed {
     fn try_deserialize_unchecked(data: &mut &[u8]) -> Result<Self>{
         let account = load_price_account(data)
@@ -29,14 +28,12 @@ impl anchor_lang::AccountDeserialize for PythPriceFeed {
     }
 }
 
-#[automatically_derived]
 impl anchor_lang::AccountSerialize for PythPriceFeed {
-    fn try_serialize<W: std::io::Write>(&self, writer: &mut W,) -> std::result::Result<(), Error> {
+    fn try_serialize<W: std::io::Write>(&self, _writer: &mut W,) -> std::result::Result<(), Error> {
         Err(error!(ErrorCode::TryToSerializePriceAccount))
     }
 }
 
-#[automatically_derived]
 impl anchor_lang::Owner for PythPriceFeed {
     fn owner() -> Pubkey {
         // CHECK: this is the pyth oracle address on solana devnet
