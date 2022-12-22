@@ -50,8 +50,6 @@ pub mod example_sol_anchor_contract {
         // (price + conf) * loan_qty * 10 ^ (expo).
         // Here is more explanation on confidence interval in Pyth:
         // https://docs.pyth.network/consume-data/best-practices
-        // let feed1 = load_price_feed_from_account_info(pyth_loan_account)
-        //    .map_err(|_x| error!(ErrorCode::PythError))?;
         let current_timestamp1 = Clock::get()?.unix_timestamp;
         let result1 = loan_feed
             .get_price_no_older_than(current_timestamp1, 60)
