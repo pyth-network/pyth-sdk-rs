@@ -1,15 +1,15 @@
 use std::mem::size_of;
 use anchor_lang::prelude::*;
 use solana_program::account_info::AccountInfo;
-use pyth_sdk_solana::load_price_feed_from_account_info;
 
-declare_id!("9azQ2ePzPvMPQgHric53kdSNmwjVM5KijDE4ANFCE9D4");
+pub mod state;
+use state::AdminConfig;
+use state::PythPriceFeed;
 
-#[account]
-pub struct AdminConfig {
-    pub loan_price_feed_id:       Pubkey,
-    pub collateral_price_feed_id: Pubkey,
-}
+mod error;
+use error::ErrorCode;
+
+declare_id!("BZh3CP454Ca1C9yBp2tpGAkXoKFti9x8ShJLSxNDpoxa");
 
 #[derive(Accounts)]
 pub struct InitRequest<'info> {
@@ -25,12 +25,10 @@ pub struct InitRequest<'info> {
 #[derive(Accounts)]
 pub struct QueryRequest<'info> {
     pub config: Account<'info, AdminConfig>,
-    /// CHECK: Pyth structs don't seem to support Anchor deserialization
     #[account(address = config.loan_price_feed_id @ ErrorCode::InvalidArgument)]
-    pub pyth_loan_account: AccountInfo<'info>,
-    /// CHECK: Pyth structs don't seem to support Anchor deserialization
+    pub pyth_loan_account: Account<'info, PythPriceFeed>,
     #[account(address = config.collateral_price_feed_id @ ErrorCode::InvalidArgument)]
-    pub pyth_collateral_account: AccountInfo<'info>,
+    pub pyth_collateral_account: Account<'info, PythPriceFeed>,
 }
 
 #[program]
@@ -46,16 +44,16 @@ pub mod example_sol_anchor_contract {
         msg!("Loan quantity is {}.", loan_qty);
         msg!("Collateral quantity is {}.", collateral_qty);
 
-        let pyth_loan_account = &ctx.accounts.pyth_loan_account;
-        let pyth_collateral_account = &ctx.accounts.pyth_collateral_account;
+        let loan_feed = &ctx.accounts.pyth_loan_account.feed;
+        let collateral_feed = &ctx.accounts.pyth_collateral_account.feed;
         // With high confidence, the maximum value of the loan is
         // (price + conf) * loan_qty * 10 ^ (expo).
         // Here is more explanation on confidence interval in Pyth:
         // https://docs.pyth.network/consume-data/best-practices
-        let feed1 = load_price_feed_from_account_info(pyth_loan_account)
-            .map_err(|_x| error!(ErrorCode::PythError))?;
+        // let feed1 = load_price_feed_from_account_info(pyth_loan_account)
+        //    .map_err(|_x| error!(ErrorCode::PythError))?;
         let current_timestamp1 = Clock::get()?.unix_timestamp;
-        let result1 = feed1
+        let result1 = loan_feed
             .get_price_no_older_than(current_timestamp1, 60)
             .ok_or(ErrorCode::PythOffline)?;
         let loan_max_price = result1
@@ -75,10 +73,8 @@ pub mod example_sol_anchor_contract {
         // (price - conf) * collateral_qty * 10 ^ (expo).
         // Here is more explanation on confidence interval in Pyth:
         // https://docs.pyth.network/consume-data/best-practices
-        let feed2 = load_price_feed_from_account_info(pyth_collateral_account)
-                        .map_err(|_x| error!(ErrorCode::PythError))?;
         let current_timestamp2 = Clock::get()?.unix_timestamp;
-        let result2 = feed2
+        let result2 = collateral_feed
             .get_price_no_older_than(current_timestamp2, 60)
             .ok_or(ErrorCode::PythOffline)?;
         let collateral_min_price = result2
@@ -120,24 +116,4 @@ pub mod example_sol_anchor_contract {
             return Err(error!(ErrorCode::LoanValueTooHigh));
         }
     }
-}
-
-#[error_code]
-pub enum ErrorCode {
-    #[msg("You are not authorized to perform this action.")]
-    Unauthorized,
-    #[msg("The config has already been initialized.")]
-    ReInitialize,
-    #[msg("The config has not been initialized.")]
-    UnInitialize,
-    #[msg("Argument is invalid.")]
-    InvalidArgument,
-    #[msg("An overflow occurs.")]
-    Overflow,
-    #[msg("Pyth has an internal error.")]
-    PythError,
-    #[msg("Pyth price oracle is offline.")]
-    PythOffline,
-    #[msg("The loan value is higher than the collateral value.")]
-    LoanValueTooHigh,
 }
