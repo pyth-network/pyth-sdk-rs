@@ -4,7 +4,7 @@ use solana_program::account_info::AccountInfo;
 
 pub mod state;
 use state::AdminConfig;
-use state::PythPriceAccount;
+use state::PythPrice;
 
 mod error;
 use error::ErrorCode;
@@ -26,9 +26,9 @@ pub struct InitRequest<'info> {
 pub struct QueryRequest<'info> {
     pub config: Account<'info, AdminConfig>,
     #[account(address = config.loan_price_feed_id @ ErrorCode::InvalidArgument)]
-    pub pyth_loan_account: Account<'info, PythPriceAccount>,
+    pub pyth_loan_account: Account<'info, PythPrice>,
     #[account(address = config.collateral_price_feed_id @ ErrorCode::InvalidArgument)]
-    pub pyth_collateral_account: Account<'info, PythPriceAccount>,
+    pub pyth_collateral_account: Account<'info, PythPrice>,
 }
 
 #[program]
@@ -44,15 +44,13 @@ pub mod example_sol_anchor_contract {
         msg!("Loan quantity is {}.", loan_qty);
         msg!("Collateral quantity is {}.", collateral_qty);
 
-        let loan_account = &ctx.accounts.pyth_loan_account.account;
-        let collateral_account = &ctx.accounts.pyth_collateral_account.account;
+        let loan_price = &ctx.accounts.pyth_loan_account.price;
+        let collateral_price = &ctx.accounts.pyth_collateral_account.price;
         // With high confidence, the maximum value of the loan is
         // (price + conf) * loan_qty * 10 ^ (expo).
         // Here is more explanation on confidence interval in Pyth:
         // https://docs.pyth.network/consume-data/best-practices
-        //let current_timestamp1 = Clock::get()?.unix_timestamp;
-        let result1 = loan_account
-            .get_price_no_older_than(&Clock::get()?, 60)
+        let result1 = loan_price
             .ok_or(ErrorCode::PythOffline)?;
         let loan_max_price = result1
             .price
@@ -71,9 +69,7 @@ pub mod example_sol_anchor_contract {
         // (price - conf) * collateral_qty * 10 ^ (expo).
         // Here is more explanation on confidence interval in Pyth:
         // https://docs.pyth.network/consume-data/best-practices
-        //let current_timestamp2 = Clock::get()?.unix_timestamp;
-        let result2 = collateral_account
-            .get_price_no_older_than(&Clock::get()?, 60)
+        let result2 = collateral_price
             .ok_or(ErrorCode::PythOffline)?;
         let collateral_min_price = result2
             .price

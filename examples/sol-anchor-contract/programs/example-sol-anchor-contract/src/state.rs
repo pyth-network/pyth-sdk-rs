@@ -1,8 +1,8 @@
 use std::str::FromStr;
 use anchor_lang::prelude::*;
-use pyth_sdk_solana::state::PriceAccount;
 use pyth_sdk_solana::state::load_price_account;
 
+pub use pyth_sdk::Price;
 use crate::ErrorCode;
 
 #[account]
@@ -12,26 +12,26 @@ pub struct AdminConfig {
 }
 
 #[derive(Clone)]
-pub struct PythPriceAccount {
-    pub account: PriceAccount,
+pub struct PythPrice {
+    pub price: Option<Price>,
 }
 
-impl anchor_lang::AccountDeserialize for PythPriceAccount {
+impl anchor_lang::AccountDeserialize for PythPrice {
     fn try_deserialize_unchecked(data: &mut &[u8]) -> Result<Self>{
         let account = load_price_account(data)
             .map_err(|_x| error!(ErrorCode::PythError))?;
-        // CHECK: any possibility of returning &PriceAccount here?
-        return Ok(PythPriceAccount {account: account});
+        let price = account.get_price_no_older_than(&Clock::get()?, 60);
+        return Ok(PythPrice {price: price});
     }
 }
 
-impl anchor_lang::AccountSerialize for PythPriceAccount {
+impl anchor_lang::AccountSerialize for PythPrice {
     fn try_serialize<W: std::io::Write>(&self, _writer: &mut W,) -> std::result::Result<(), Error> {
         Err(error!(ErrorCode::TryToSerializePriceAccount))
     }
 }
 
-impl anchor_lang::Owner for PythPriceAccount {
+impl anchor_lang::Owner for PythPrice {
     fn owner() -> Pubkey {
         // CHECK: this is the pyth oracle address on solana devnet
         let oracle_addr = "gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s";
