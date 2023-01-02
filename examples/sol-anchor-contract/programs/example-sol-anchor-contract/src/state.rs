@@ -2,8 +2,8 @@ use std::str::FromStr;
 use anchor_lang::prelude::*;
 use pyth_sdk_solana::state::load_price_account;
 
-pub use pyth_sdk::Price;
 use crate::ErrorCode;
+pub use pyth_sdk::Price;
 
 #[account]
 pub struct AdminConfig {
@@ -13,14 +13,15 @@ pub struct AdminConfig {
 
 #[derive(Clone)]
 pub struct PythPrice {
-    pub price: Option<Price>,
+    pub price: Price,
 }
 
 impl anchor_lang::AccountDeserialize for PythPrice {
     fn try_deserialize_unchecked(data: &mut &[u8]) -> Result<Self>{
         let account = load_price_account(data)
             .map_err(|_x| error!(ErrorCode::PythError))?;
-        let price = account.get_price_no_older_than(&Clock::get()?, 60);
+        let price = account.get_price_no_older_than(&Clock::get()?, 60)
+            .ok_or(error!(ErrorCode::PythOffline))?;
         return Ok(PythPrice {price: price});
     }
 }

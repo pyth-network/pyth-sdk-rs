@@ -50,11 +50,9 @@ pub mod example_sol_anchor_contract {
         // (price + conf) * loan_qty * 10 ^ (expo).
         // Here is more explanation on confidence interval in Pyth:
         // https://docs.pyth.network/consume-data/best-practices
-        let result1 = loan_price
-            .ok_or(ErrorCode::PythOffline)?;
-        let loan_max_price = result1
+        let loan_max_price = loan_price
             .price
-            .checked_add(result1.conf as i64)
+            .checked_add(loan_price.conf as i64)
             .ok_or(ErrorCode::Overflow)?;
         let mut loan_max_value = loan_max_price
             .checked_mul(loan_qty)
@@ -62,18 +60,16 @@ pub mod example_sol_anchor_contract {
         msg!(
             "The maximum loan value is {} * 10^({}).",
             loan_max_value,
-            result1.expo
+            loan_price.expo
         );
 
         // With high confidence, the minimum value of the collateral is
         // (price - conf) * collateral_qty * 10 ^ (expo).
         // Here is more explanation on confidence interval in Pyth:
         // https://docs.pyth.network/consume-data/best-practices
-        let result2 = collateral_price
-            .ok_or(ErrorCode::PythOffline)?;
-        let collateral_min_price = result2
+        let collateral_min_price = collateral_price
             .price
-            .checked_sub(result2.conf as i64)
+            .checked_sub(collateral_price.conf as i64)
             .ok_or(ErrorCode::Overflow)?;
         let mut collateral_min_value = collateral_min_price
             .checked_mul(collateral_qty)
@@ -81,21 +77,21 @@ pub mod example_sol_anchor_contract {
         msg!(
             "The minimum collateral value is {} * 10^({}).",
             collateral_min_value,
-            result2.expo
+            collateral_price.expo
         );
 
         // If the loan and collateral prices use different exponent,
         // normalize the value.
-        if result1.expo > result2.expo {
+        if loan_price.expo > collateral_price.expo {
             let normalize = (10 as i64)
-                .checked_pow((result1.expo - result2.expo) as u32)
+                .checked_pow((loan_price.expo - collateral_price.expo) as u32)
                 .ok_or(ErrorCode::Overflow)?;
             collateral_min_value = collateral_min_value
                 .checked_mul(normalize)
                 .ok_or(ErrorCode::Overflow)?;
-        } else if result1.expo < result2.expo {
+        } else if loan_price.expo < collateral_price.expo {
             let normalize = (10 as i64)
-                .checked_pow((result2.expo - result1.expo) as u32)
+                .checked_pow((collateral_price.expo - loan_price.expo) as u32)
                 .ok_or(ErrorCode::Overflow)?;
             loan_max_value = loan_max_value
                 .checked_mul(normalize)
