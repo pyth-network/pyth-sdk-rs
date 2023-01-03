@@ -109,29 +109,34 @@ fn query_fetch_price(deps: Deps, env: Env) -> StdResult<FetchPriceResponse> {
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use cosmwasm_std::testing::{
+        mock_dependencies,
+        mock_env,
+        MockApi,
+        MockQuerier,
+        MockStorage,
+    };
+    use cosmwasm_std::{
+        from_binary,
+        Addr,
+        Coin,
+        OwnedDeps,
+        QuerierResult,
+        SystemError,
+        SystemResult,
+        Timestamp,
+        WasmQuery,
+    };
+    use pyth_sdk_cw::test_utils::MockPyth;
+    use pyth_sdk_cw::{
+        Price,
+        PriceFeed,
+        PriceIdentifier,
+        UnixTimestamp,
+    };
     use std::convert::TryFrom;
     use std::time::Duration;
-    use cosmwasm_std::{Coin, Timestamp, WasmQuery};
-    use {
-        super::*,
-        cosmwasm_std::{
-            from_binary,
-            testing::{
-                mock_dependencies,
-                mock_env,
-                MockApi,
-                MockQuerier,
-                MockStorage,
-            },
-            Addr,
-            OwnedDeps,
-            QuerierResult,
-            SystemError,
-            SystemResult,
-        },
-    };
-    use pyth_sdk_cw::{Price, PriceFeed, PriceIdentifier, UnixTimestamp};
-    use pyth_sdk_cw::test_utils::{MockPyth};
 
     // Dummy contract address for testing.
     // For real deployments, see list of contract addresses here https://docs.pyth.network/pythnet-price-feeds/cosmwasm
@@ -141,18 +146,22 @@ mod test {
 
     fn default_state() -> State {
         State {
-            pyth_contract_addr:   Addr::unchecked(PYTH_CONTRACT_ADDR),
-            price_feed_id:   PriceIdentifier::from_hex(PRICE_ID).unwrap(),
+            pyth_contract_addr: Addr::unchecked(PYTH_CONTRACT_ADDR),
+            price_feed_id:      PriceIdentifier::from_hex(PRICE_ID).unwrap(),
         }
     }
 
-    fn setup_test(state: &State, mock_pyth: &MockPyth, block_timestamp: UnixTimestamp) -> (OwnedDeps<MockStorage, MockApi, MockQuerier>, Env) {
+    fn setup_test(
+        state: &State,
+        mock_pyth: &MockPyth,
+        block_timestamp: UnixTimestamp,
+    ) -> (OwnedDeps<MockStorage, MockApi, MockQuerier>, Env) {
         let mut dependencies = mock_dependencies();
 
         let mock_pyth_copy = (*mock_pyth).clone();
         dependencies
-          .querier
-          .update_wasm(move |x| handle_wasm_query(&mock_pyth_copy, x));
+            .querier
+            .update_wasm(move |x| handle_wasm_query(&mock_pyth_copy, x));
 
         STATE.save(dependencies.as_mut().storage, state).unwrap();
 
@@ -196,16 +205,27 @@ mod test {
         let mut mock_pyth = MockPyth::new(Duration::from_secs(60), Coin::new(1, "foo"), &[]);
         let price_feed = PriceFeed::new(
             PriceIdentifier::from_hex(PRICE_ID).unwrap(),
-            Price { price: 100, conf: 10, expo: -1, publish_time: current_unix_time },
-            Price { price: 200, conf: 20, expo: -1, publish_time: current_unix_time },
+            Price {
+                price:        100,
+                conf:         10,
+                expo:         -1,
+                publish_time: current_unix_time,
+            },
+            Price {
+                price:        200,
+                conf:         20,
+                expo:         -1,
+                publish_time: current_unix_time,
+            },
         );
 
         mock_pyth.add_feed(price_feed);
 
         let (deps, env) = setup_test(&default_state(), &mock_pyth, current_unix_time);
 
-        let msg = QueryMsg::FetchPrice { };
-        let result = query(deps.as_ref(), env, msg).and_then(|binary| from_binary::<FetchPriceResponse>(&binary));
+        let msg = QueryMsg::FetchPrice {};
+        let result = query(deps.as_ref(), env, msg)
+            .and_then(|binary| from_binary::<FetchPriceResponse>(&binary));
 
         assert_eq!(result.map(|r| r.current_price.price), Ok(100));
     }
