@@ -1,6 +1,6 @@
 [package]
 name = "pyth-sdk-cw"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Pyth Data Foundation"]
 edition = "2018"
 license = "Apache-2.0"
@@ -10,11 +10,14 @@ description = "pyth price oracle data structures and example usage"
 keywords = [ "pyth", "cw", "cosmwasm", "oracle" ]
 readme = "README.md"
 
+[features]
+test-utils = []
+
 [dependencies]
 cosmwasm-std = { version = "1.0.0" }
 cosmwasm-storage = { version = "1.0.0" }
 serde = { version = "1.0.136", features = ["derive"] }
-pyth-sdk = { path = "../pyth-sdk", version = "0.7.0" }
+pyth-sdk = { path = "../pyth-sdk", version = "0.8.0" }
 schemars = "0.8.1"
 
 [dev-dependencies]

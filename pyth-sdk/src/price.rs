@@ -232,6 +232,16 @@ impl Price {
         })
     }
 
+    /// Divide this `Price` by a constant `c * 10^e`.
+    pub fn cdiv(&self, c: i64, e: i32) -> Option<Price> {
+        self.div(&Price {
+            price: c,
+            conf: 0,
+            expo: e,
+            publish_time: self.publish_time,
+        })
+    }
+
     /// Multiply this `Price` by `other`, propagating any uncertainty.
     pub fn mul(&self, other: &Price) -> Option<Price> {
         // Price is not guaranteed to store its price/confidence in normalized form.
