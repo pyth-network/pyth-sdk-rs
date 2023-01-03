@@ -194,9 +194,15 @@ mod test {
         let current_unix_time = 10_000_000;
 
         let mut mock_pyth = MockPyth::new(Duration::from_secs(60), Coin::new(1, "foo"), &[]);
-        mock_pyth.add_feed_with_price(PriceIdentifier::from_hex(PRICE_ID).unwrap(), Price { price: 100, conf: 10, expo: -1, publish_time: current_unix_time });
+        let price_feed = PriceFeed::new(
+            PriceIdentifier::from_hex(PRICE_ID).unwrap(),
+            Price { price: 100, conf: 10, expo: -1, publish_time: current_unix_time },
+            Price { price: 200, conf: 20, expo: -1, publish_time: current_unix_time },
+        );
 
-        let (mut deps, env) = setup_test(&default_state(), &mock_pyth, current_unix_time);
+        mock_pyth.add_feed(price_feed);
+
+        let (deps, env) = setup_test(&default_state(), &mock_pyth, current_unix_time);
 
         let msg = QueryMsg::FetchPrice { };
         let result = query(deps.as_ref(), env, msg).and_then(|binary| from_binary::<FetchPriceResponse>(&binary));

@@ -121,7 +121,6 @@ impl PriceFeed {
         }
     }
 
-
     /// Get the "unchecked" price and confidence interval as fixed-point numbers of the form
     /// a * 10^e along with its publish time.
     ///

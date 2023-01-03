@@ -13,7 +13,7 @@ use {
   },
   std::collections::HashMap,
 };
-use pyth_sdk::{Price, PriceFeed, PriceIdentifier};
+use pyth_sdk::{PriceFeed, PriceIdentifier};
 use crate::{PriceFeedResponse, QueryMsg};
 
 /// Mock version of Pyth for testing cosmwasm contracts.
@@ -26,6 +26,9 @@ pub struct MockPyth {
 }
 
 impl MockPyth {
+
+  /// Create a new `MockPyth`. You can either provide the full list of price feeds up front,
+  /// or add them later via `add_feed`.
   pub fn new(valid_time_period: Duration,
              fee_per_vaa: Coin,
              feeds: &[PriceFeed]) -> Self {
@@ -42,34 +45,23 @@ impl MockPyth {
     self.feeds.insert(feed.id, feed);
   }
 
-  /// Add a price feed containing `price` as both the current price and EMA.
-  pub fn add_feed_with_price(&mut self, id: PriceIdentifier, price: Price) {
-    let feed = PriceFeed::new(
-      id,
-      price,
-      price,
-    );
-    self.feeds.insert(id, feed);
-  }
-
   /// Handler for processing query messages. See the tests in `contract.rs` for how to use this
   /// handler within your tests.
   pub fn handle_wasm_query(&self, msg: &Binary) -> QuerierResult {
     let query_msg = from_binary::<QueryMsg>(msg);
     match query_msg {
       Ok(QueryMsg::PriceFeed { id }) => match self.feeds.get(&id) {
-        Some(feed) => SystemResult::Ok(ContractResult::Ok(
+        Some(feed) => SystemResult::Ok(
           to_binary(&PriceFeedResponse {
             price_feed: *feed,
-          })
-            .unwrap(),
-        )),
+          }).into(),
+        ),
         None => SystemResult::Ok(ContractResult::Err("unknown price feed".into())),
       },
-      Ok(QueryMsg::GetValidTimePeriod) => SystemResult::Ok(ContractResult::Ok(to_binary(&self.valid_time_period).unwrap())),
+      Ok(QueryMsg::GetValidTimePeriod) => SystemResult::Ok(to_binary(&self.valid_time_period).into()),
       Ok(QueryMsg::GetUpdateFee { vaas}) => {
         let new_amount = self.fee_per_vaa.amount.u128().checked_mul(vaas.len() as u128).unwrap();
-        SystemResult::Ok(ContractResult::Ok(to_binary(&Coin::new(new_amount, &self.fee_per_vaa.denom)).unwrap()))
+        SystemResult::Ok(to_binary(&Coin::new(new_amount, &self.fee_per_vaa.denom)).into())
       },
       Err(_e) => SystemResult::Err(SystemError::InvalidRequest {
         error:   "Invalid message".into(),
