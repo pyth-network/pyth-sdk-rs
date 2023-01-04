@@ -1,0 +1,28 @@
+name: Pyth SDK Example Solana Contract
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./examples/sol-contract
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install libudev-dev
+    - name: Install solana binaries
+      run: |
+        # Installing 1.14.x cli tools to have sbf instead of bpf. bpf does not work anymore.
+        sh -c "$(curl -sSfL https://release.solana.com/v1.14.7/install)"
+        echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+    - name: Build
+      run: scripts/build.sh
