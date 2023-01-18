@@ -8,6 +8,7 @@ use schemars::JsonSchema;
 use crate::{
     utils,
     UnixTimestamp,
+    error::LiquidityOracleError,
 };
 
 // Constants for working with pyth's number representation
@@ -87,6 +88,60 @@ impl Price {
     /// ```
     pub fn get_price_in_quote(&self, quote: &Price, result_expo: i32) -> Option<Price> {
         self.div(quote)?.scale_to_exponent(result_expo)
+    }
+
+    /// Get the valuation of a collateral position according to:
+    /// 1. the net amount deposited (across the protocol)
+    /// 2. the max amount depositable (across the protocol)
+    /// 3. the initial and final valuation discount rates
+    /// 
+    /// We use a linear interpolation between the the initial and final discount rates,
+    /// scaled by the proportion of max depositable amount that has been deposited.
+    /// This essentially assumes a linear liquidity cumulative density function,
+    /// which has been shown to be a reasonable assumption for many crypto tokens in literature.
+    pub fn get_collateral_valuation_price(&self, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) -> Price {
+        if max_deposits < deposits {
+            return err!(LiquidityOracleError::ExceedsMaxDeposits);
+        }
+
+        if discount_initial > discount_final {
+            return err!(LiquidityOracleError::InitialDiscountExceedsFinalDiscount);
+        }
+
+        if discount_final > discount_precision {
+            return err!(LiquidityOracleError::FinalDiscountExceedsPrecision);
+        }
+        
+        // get initial expo; use later to convert conf to the right expo
+        let expo_init = self.expo;
+
+        let left = self.cmul(deposits, 0)?.cmul(discount_precision-discount_final, 0)?;
+        let right = self.cmul(max_deposits-deposits, 0)?.cmul(discount_precision-discount_initial, 0)?;
+
+        let numer = left.add(&right)?;
+        let denom = max_deposits * discount_precision;
+
+        // TODO: divide price by a constant (denom)
+        // can denote denom as a Price with tiny confidence,
+        // perform the div, and throw away the resulting confidence,
+        // since all we care about from the div is price and expo
+        let denom_as_price = Price {
+            price: denom,
+            conf: 1,
+            expo: 0,
+            publish_time: self.publish_time,
+        }; 
+        let price_discounted = numer.div(denom_as_price)?;
+
+        // we want to scale the original confidence to the new expo
+        let conf_scaled = self.scale_confidence_to_exponent(price_discounted.expo);
+        
+        Price {
+            price: price_discounted.price,
+            conf: conf_scaled,
+            expo: price_discounted.expo,
+            publish_time: self.publish_time,
+        }
     }
 
     /// Get the price of a basket of currencies.
@@ -331,6 +386,38 @@ impl Price {
                 expo:         target_expo,
                 publish_time: self.publish_time,
             })
+        }
+    }
+
+    /// Scale confidence so that its exponent is `target_expo`.
+    ///
+    /// Logic of this function similar to that of scale_to_exponent;
+    /// only difference is that this is scaling the confidence alone,
+    /// and it returns a u64 option.
+    /// 
+    /// Useful in the case of get_collateral_valuation_price function,
+    /// since separate explicit confidence scaling required there.
+    pub fn scale_confidence_to_exponent(&self, target_expo: i32) -> Option<u64> {
+        let mut delta = target_expo.checked_sub(self.expo)?;
+        if delta >= 0 {
+            let mut c = self.conf;
+            // 2nd term is a short-circuit to bound op consumption
+            while delta > 0 && (c != 0) {
+                c = c.checked_div(10)?;
+                delta = delta.checked_sub(1)?;
+            }
+
+            Some(c)
+        } else {
+            let mut c = self.conf;
+
+            // c == None will short-circuit to bound op consumption
+            while delta < 0 {
+                c = c.checked_mul(10)?;
+                delta = delta.checked_add(1)?;
+            }
+
+            Some(c)
         }
     }
 
@@ -896,5 +983,26 @@ mod test {
 
         assert_eq!(p1.mul(&p2).unwrap().publish_time, 100);
         assert_eq!(p2.mul(&p1).unwrap().publish_time, 100);
+    }
+
+    #[test]
+    fn test_get_collateral_valuation_price() {
+        fn succeeds(price1: Price, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64, expected: Price) {
+            assert_eq!(price1.get_collateral_valuation_price(deposits, max_deposits, discount_initial, discount_final, discount_precision).unwrap(), expected);
+        }
+
+        fn fails(price1: Price, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) {
+            assert_eq!(price1.get_collateral_valuation_price(deposits, max_deposits, discount_initial, discount_final, discount_precision), None);
+        }
+
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            0,
+            100,
+            0,
+            5,
+            100,
+            pc(100 * (PD_SCALE), 2 * PD_SCALE, 0)
+        );
     }
 }
