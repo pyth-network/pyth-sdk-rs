@@ -103,7 +103,7 @@ pub type DurationInSeconds = u64;
 #[repr(C)]
 pub struct PriceFeed {
     /// Unique identifier for this price.
-    pub id:    PriceIdentifier,
+    pub id:        PriceIdentifier,
     /// Price.
     pub price:     Price,
     /// Exponentially-weighted moving average (EMA) price.
