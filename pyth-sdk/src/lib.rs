@@ -105,9 +105,9 @@ pub struct PriceFeed {
     /// Unique identifier for this price.
     pub id:    PriceIdentifier,
     /// Price.
-    price:     Price,
+    pub price:     Price,
     /// Exponentially-weighted moving average (EMA) price.
-    ema_price: Price,
+    pub ema_price: Price,
 }
 
 impl PriceFeed {
