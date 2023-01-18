@@ -1,7 +1,6 @@
-use solana_program::program_error::ProgramError;
 use thiserror::Error;
 
-#[derive(Error, Debug, Copy, Clone)]
+#[derive(Error, Debug, Copy, Clone, PartialEq)]
 pub enum LiquidityOracleError {
     #[error("deposits exceeds max depositable")]
     ExceedsMaxDeposits,
@@ -9,4 +8,6 @@ pub enum LiquidityOracleError {
     InitialDiscountExceedsFinalDiscount,
     #[error("final discount rate should not be greater than the discount precision")]
     FinalDiscountExceedsPrecision,
+    #[error("None encountered")]
+    NoneEncountered
 }
