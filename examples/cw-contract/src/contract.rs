@@ -7,12 +7,17 @@ use cosmwasm_std::{
     DepsMut,
     Env,
     MessageInfo,
+    QueryRequest,
     Response,
     StdError,
     StdResult,
+    WasmQuery,
 };
 
-use pyth_sdk_cw::query_price_feed;
+use pyth_cosmwasm::msg::{
+    PriceFeedResponse,
+    QueryMsg as PythQueryMsg,
+};
 
 use crate::msg::{
     ExecuteMsg,
@@ -80,8 +85,15 @@ fn query_fetch_price(deps: Deps, env: Env) -> StdResult<FetchPriceResponse> {
     // price feed. The result is a PriceFeed object with fields for the current price and other
     // useful information. The function will fail if the contract address or price feed id are
     // invalid.
-    let price_feed =
-        query_price_feed(&deps.querier, state.pyth_contract_addr, state.price_feed_id)?.price_feed;
+    let price_feed_response: PriceFeedResponse =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: state.pyth_contract_addr.into_string(),
+            msg:           to_binary(&PythQueryMsg::PriceFeed {
+                id: state.price_feed_id,
+            })?,
+        }))?;
+
+    let price_feed = price_feed_response.price_feed;
 
     // Get the current price and confidence interval from the price feed.
     // This function returns None if the price is not currently available.

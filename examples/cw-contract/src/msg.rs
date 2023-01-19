@@ -1,4 +1,4 @@
-use pyth_sdk_cw::{
+use pyth_cosmwasm::{
     Price,
     PriceIdentifier,
 };
