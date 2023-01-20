@@ -108,7 +108,7 @@ impl Price {
     /// discount_precision: u64, the precision used for discounts
     /// 
     /// Logic
-    /// collateral_valuation_price = (deposits * price * (discount_precision-discount_final) + (max_deposits - deposits) * price * (discount_precision - discount_initial)) / (max_deposits * discount_precision)
+    /// collateral_valuation_price = (deposits / max_deposits) * ((discount_precision-discount_final) / discount_precision) * price + ((max_deposits - deposits) / max_deposits) * ((discount_precision - discount_initial) / discount_precision) * price
     pub fn get_collateral_valuation_price(&self, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) -> Result<Price, LiquidityOracleError> {
         if max_deposits < deposits {
             return Err(LiquidityOracleError::ExceedsMaxDeposits.into());
@@ -126,44 +126,90 @@ impl Price {
         let diff_discount_precision_initial = (discount_precision-discount_initial) as i64;
         let diff_discount_precision_final = (discount_precision-discount_final) as i64;
 
-        let mut left = self.cmul(deposits as i64, 0).
-            ok_or(LiquidityOracleError::NoneEncountered)?.
-            cmul(diff_discount_precision_final, 0).
-            ok_or(LiquidityOracleError::NoneEncountered)?
-        ;
-        let mut right = self.cmul(remaining_depositable, 0).
-            ok_or(LiquidityOracleError::NoneEncountered)?.
-            cmul(diff_discount_precision_initial, 0).
-            ok_or(LiquidityOracleError::NoneEncountered)?
-        ;
-        // scale left and right to match expo
-        if left.expo > right.expo {
-            left = left.
-                scale_to_exponent(right.expo).
-                ok_or(LiquidityOracleError::NoneEncountered)?
-            ;
-        }
-        else if left.expo < right.expo {
-            right = right.
-                scale_to_exponent(left.expo).
-                ok_or(LiquidityOracleError::NoneEncountered)?                    
-            ;
-        }
-
-        let numer = left.add(&right).ok_or(LiquidityOracleError::NoneEncountered)?;
-        let denom = max_deposits * discount_precision;
-
-        // TODO: divide price by a constant (denom)
-        // can denote denom as a Price with tiny confidence,
-        // perform the div, and throw away the resulting confidence,
-        // since all we care about from the div is price and expo
-        let denom_as_price = Price {
-            price: denom as i64,
+        // get fractions for deposits
+        let deposits_as_price = Price {
+            price: deposits as i64,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+        let remaining_depositable_as_price = Price {
+            price: remaining_depositable,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+        let max_deposits_as_price = Price {
+            price: max_deposits as i64,
             conf: 1,
             expo: 0,
-            publish_time: self.publish_time,
-        }; 
-        let price_discounted = numer.div(&denom_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
+            publish_time: 0,
+        };
+
+        let deposits_percentage = deposits_as_price.div(&max_deposits_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
+        let remaining_depositable_percentage = remaining_depositable_as_price.div(&max_deposits_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
+        
+        // get fractions for discount
+        let diff_discount_precision_initial_as_price = Price {
+            price: diff_discount_precision_initial,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+        let diff_discount_precision_final_as_price = Price {
+            price: diff_discount_precision_final,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+        let discount_precision_as_price = Price {
+            price: discount_precision as i64,
+            conf: 1,
+            expo: 0,
+            publish_time: 0,
+        };
+
+        let initial_percentage = diff_discount_precision_initial_as_price.div(&discount_precision_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
+        let final_percentage = diff_discount_precision_final_as_price.div(&discount_precision_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
+
+
+        // compute left and right terms of the sum
+        let mut left = self.mul(&deposits_percentage).
+            ok_or(LiquidityOracleError::NoneEncountered)?.
+            mul(&final_percentage).
+            ok_or(LiquidityOracleError::NoneEncountered)?
+        ;
+        let mut right = self.mul(&remaining_depositable_percentage).
+            ok_or(LiquidityOracleError::NoneEncountered)?.
+            mul(&initial_percentage).
+            ok_or(LiquidityOracleError::NoneEncountered)?
+        ;
+
+        // scale left and right to match expo; need to ensure no overflow so have a match for NoneEncountered error
+        if left.expo > right.expo {
+            // prefer right scaled up to left if no overflow, to prevent any precision loss
+            let right_scaled = right.scale_to_exponent(left.expo);
+            let left_scaled = left.scale_to_exponent(right.expo);
+
+            match right_scaled {
+                Some(_x) => right = right_scaled.ok_or(LiquidityOracleError::NoneEncountered)?,
+
+                None => left = left_scaled.ok_or(LiquidityOracleError::NoneEncountered)?,
+            }
+        }
+        else if left.expo < right.expo {
+            // prefer left scaled up to right if no overflow, to prevent any precision loss
+            let left_scaled = left.scale_to_exponent(right.expo);
+            let right_scaled = right.scale_to_exponent(left.expo);
+
+            match left_scaled {
+                Some(_x) => left = left_scaled.ok_or(LiquidityOracleError::NoneEncountered)?,
+
+                None => right = right_scaled.ok_or(LiquidityOracleError::NoneEncountered)?,
+            }
+        }
+
+        let price_discounted = left.add(&right).ok_or(LiquidityOracleError::NoneEncountered)?;
 
         // we want to scale the original confidence to the new expo
         let conf_scaled = self.scale_confidence_to_exponent(price_discounted.expo);
@@ -1023,8 +1069,6 @@ mod test {
     fn test_get_collateral_valuation_price() {
         fn succeeds(price: Price, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64, mut expected: Price) {
             let mut price_collat = price.get_collateral_valuation_price(deposits, max_deposits, discount_initial, discount_final, discount_precision).unwrap();
-            print!("Output: price is {}, conf is {}, expo is {}, ts is {}", price_collat.price, price_collat.conf, price_collat.expo, price_collat.publish_time);
-            print!("Exepcted: price is {}, conf is {}, expo is {}, ts is {}", expected.price, expected.conf, expected.expo, expected.publish_time);
             
             // scale price_collat and expected to match in expo
             if price_collat.expo > expected.expo {
