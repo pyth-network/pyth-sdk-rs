@@ -108,7 +108,20 @@ impl Price {
     /// discount_precision: u64, the precision used for discounts
     /// 
     /// Logic
-    /// collateral_valuation_price = (deposits / max_deposits) * ((discount_precision-discount_final) / discount_precision) * price + ((max_deposits - deposits) / max_deposits) * ((discount_precision - discount_initial) / discount_precision) * price
+    /// A = deposits / max_deposits
+    /// B = (discount_precision-discount_final) / discount_precision
+    /// C = (max_deposits - deposits) / max_deposits
+    /// D = (discount_precision - discount_initial) / discount_precision
+    /// collateral_valuation_price = [(A * B) + (C * D)] * price
+    /// 
+    /// Bounds due to precision loss
+    /// A, B, C, D each has precision up to PD_SCALE
+    /// x = 1/PD_SCALE
+    /// Err(A*B) <= (1+x)^2 - 1 (in fractional terms)
+    /// Err(C*D) <= (1+x)^2 - 1
+    /// Err(A*B + C*D) <= 2*(1+x)^2 - 2
+    /// Err((A*B + C*D) * price) <= 2*(1+x)^2 - 2 = 2x^2 + 2x ~= 2/PD_SCALE
+    /// Thus, we expect the computed collateral valuation price to be no more than 2/PD_SCALE off of the mathematically true value
     pub fn get_collateral_valuation_price(&self, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) -> Result<Price, LiquidityOracleError> {
         if max_deposits < deposits {
             return Err(LiquidityOracleError::ExceedsMaxDeposits.into());
@@ -172,18 +185,9 @@ impl Price {
         let initial_percentage = diff_discount_precision_initial_as_price.div(&discount_precision_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
         let final_percentage = diff_discount_precision_final_as_price.div(&discount_precision_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
 
-
-        // compute left and right terms of the sum
-        let mut left = self.mul(&deposits_percentage).
-            ok_or(LiquidityOracleError::NoneEncountered)?.
-            mul(&final_percentage).
-            ok_or(LiquidityOracleError::NoneEncountered)?
-        ;
-        let mut right = self.mul(&remaining_depositable_percentage).
-            ok_or(LiquidityOracleError::NoneEncountered)?.
-            mul(&initial_percentage).
-            ok_or(LiquidityOracleError::NoneEncountered)?
-        ;
+        // // compute left and right terms of the sum
+        let mut left = deposits_percentage.mul(&final_percentage).ok_or(LiquidityOracleError::NoneEncountered)?;
+        let mut right = remaining_depositable_percentage.mul(&initial_percentage).ok_or(LiquidityOracleError::NoneEncountered)?;
 
         // scale left and right to match expo; need to ensure no overflow so have a match for NoneEncountered error
         if left.expo > right.expo {
@@ -209,7 +213,11 @@ impl Price {
             }
         }
 
-        let price_discounted = left.add(&right).ok_or(LiquidityOracleError::NoneEncountered)?;
+        // get product term
+        let mult_discounted = left.add(&right).ok_or(LiquidityOracleError::NoneEncountered)?;
+
+        // get price discounted
+        let price_discounted = self.mul(&mult_discounted).ok_or(LiquidityOracleError::NoneEncountered)?;
 
         // we want to scale the original confidence to the new expo
         let conf_scaled = self.scale_confidence_to_exponent(price_discounted.expo);
@@ -1165,6 +1173,71 @@ mod test {
             10,
             100,
             pc(90 * (PD_SCALE as i64), 2 * PD_SCALE, 0)
+        );
+
+        // test precision limits
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            1,
+            1_000_000_000_000_000_000,
+            0,
+            10,
+            100,
+            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, 0),
+        );
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            100_000_000,
+            1_000_000_000_000_000_000,
+            0,
+            10,
+            100,
+            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, 0),
+        );
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            1_000_000_000,
+            1_000_000_000_000_000_000,
+            0,
+            10,
+            100,
+            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, 0),
+        );
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            10_000_000_000,
+            1_000_000_000_000_000_000,
+            0,
+            10,
+            100,
+            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, 0),
+        );
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            100_000_000_000,
+            1_000_000_000_000_000_000,
+            0,
+            10,
+            100,
+            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, 0),
+        );
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            200_000_000_000,
+            1_000_000_000_000_000_000,
+            0,
+            10,
+            100,
+            pc(100 * (PD_SCALE as i64)-2000, 2 * PD_SCALE, 0),
+        );
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            1_000_000_000_000,
+            1_000_000_000_000_000_000,
+            0,
+            10,
+            100,
+            pc(100 * (PD_SCALE as i64)-10000, 2 * PD_SCALE, 0),
         );
 
         // fails bc over max deposit limit
