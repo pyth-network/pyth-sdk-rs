@@ -9,5 +9,7 @@ pub enum LiquidityOracleError {
     #[error("final discount rate should not be greater than the discount precision")]
     FinalDiscountExceedsPrecision,
     #[error("None encountered")]
-    NoneEncountered
+    NoneEncountered,
+    #[error("i64 try from error")]
+    I64ConversionError,
 }

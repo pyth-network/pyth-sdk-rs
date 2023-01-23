@@ -1,3 +1,7 @@
+use std::convert::TryFrom;
+
+use crate::error::LiquidityOracleError;
+
 /// This module helps serde to serialize deserialize some fields as String
 ///
 /// The reason this is added is that `#[serde(with = "String")]` does not work
@@ -29,4 +33,8 @@ pub mod as_string {
             .parse()
             .map_err(|_| D::Error::custom("Input is not valid"))
     }
+}
+
+pub fn u64_to_i64(value: u64) -> Result<i64, LiquidityOracleError> {
+    i64::try_from(value).map_err(|_| LiquidityOracleError::I64ConversionError)
 }

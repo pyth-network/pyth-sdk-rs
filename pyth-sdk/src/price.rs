@@ -135,13 +135,13 @@ impl Price {
             return Err(LiquidityOracleError::FinalDiscountExceedsPrecision.into());
         }
 
-        let remaining_depositable = (max_deposits-deposits) as i64;
-        let diff_discount_precision_initial = (discount_precision-discount_initial) as i64;
-        let diff_discount_precision_final = (discount_precision-discount_final) as i64;
+        let remaining_depositable = utils::u64_to_i64(max_deposits-deposits)?;
+        let diff_discount_precision_initial = utils::u64_to_i64(discount_precision-discount_initial)?;
+        let diff_discount_precision_final = utils::u64_to_i64(discount_precision-discount_final)?;
 
         // get fractions for deposits
         let deposits_as_price = Price {
-            price: deposits as i64,
+            price: utils::u64_to_i64(deposits)?,
             conf: 0,
             expo: 0,
             publish_time: 0,
@@ -153,7 +153,7 @@ impl Price {
             publish_time: 0,
         };
         let max_deposits_as_price = Price {
-            price: max_deposits as i64,
+            price: utils::u64_to_i64(max_deposits)?,
             conf: 1,
             expo: 0,
             publish_time: 0,
@@ -176,7 +176,7 @@ impl Price {
             publish_time: 0,
         };
         let discount_precision_as_price = Price {
-            price: discount_precision as i64,
+            price: utils::u64_to_i64(discount_precision)?,
             conf: 1,
             expo: 0,
             publish_time: 0,
