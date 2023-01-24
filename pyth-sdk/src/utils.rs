@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-use crate::error::LiquidityOracleError;
+use crate::error::OracleError;
 
 /// This module helps serde to serialize deserialize some fields as String
 ///
@@ -35,6 +35,6 @@ pub mod as_string {
     }
 }
 
-pub fn u64_to_i64(value: u64) -> Result<i64, LiquidityOracleError> {
-    i64::try_from(value).map_err(|_| LiquidityOracleError::I64ConversionError)
+pub fn u64_to_i64(value: u64) -> Result<i64, OracleError> {
+    i64::try_from(value).map_err(|_| OracleError::I64ConversionError)
 }

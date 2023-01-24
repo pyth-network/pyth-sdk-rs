@@ -8,7 +8,7 @@ use schemars::JsonSchema;
 use crate::{
     utils,
     UnixTimestamp,
-    error::LiquidityOracleError,
+    error::OracleError,
 };
 
 // Constants for working with pyth's number representation
@@ -91,77 +91,52 @@ impl Price {
     }
 
     /// Get the valuation of a collateral position according to:
-    /// 1. the net amount deposited (across the protocol)
-    /// 2. the max amount depositable (across the protocol)
-    /// 3. the initial and final valuation discount rates
+    /// 1. the net amount currently deposited (across the protocol)
+    /// 2. the deposits endpoint for the affine combination (across the protocol)
+    /// 3. the initial (at 0 deposits) and final (at the deposits endpoint) valuation discount rates
     /// 
     /// We use a linear interpolation between the the initial and final discount rates,
-    /// scaled by the proportion of max depositable amount that has been deposited.
+    /// scaled by the proportion of the deposits endpoint that has been deposited.
     /// This essentially assumes a linear liquidity cumulative density function,
     /// which has been shown to be a reasonable assumption for many crypto tokens in literature.
+    /// If the assumptions of the liquidity curve hold true, we are obtaining a lower bound for the net price
+    /// at which one can sell the quantity of token specified by deposits in the open markets.
+    /// We value collateral according to the total deposits in the protocol due to the present
+    /// intractability of assessing collateral at risk by price range.
     /// 
     /// Args
     /// deposits: u64, quantity of token deposited in the protocol
-    /// max_deposits: u64, max quantity of token that can be deposited in the protocol
+    /// deposits_endpoint: u64, deposits right endpoint for the affine combination
     /// discount_initial: u64, initial discount rate at 0 deposits (units given by discount_precision)
-    /// discount_final: u64, final discount rate at max_deposits deposits (units given by discount_precision)
+    /// discount_final: u64, final discount rate at deposits_endpoint deposits (units given by discount_precision)
     /// discount_precision: u64, the precision used for discounts
     /// 
-    /// Logic
-    /// A = deposits / max_deposits
-    /// B = (discount_precision-discount_final) / discount_precision
-    /// C = (max_deposits - deposits) / max_deposits
-    /// D = (discount_precision - discount_initial) / discount_precision
-    /// collateral_valuation_price = [(A * B) + (C * D)] * price
+    /// affine_combination yields us error <= 2/PD_SCALE for discount_interpolated
+    /// We then multiply this with the price to yield price_discounted before scaling this back to the original expo
+    /// Output of affine_combination has expo >= -18, price (self) has arbitrary expo
+    /// Scaling this back to the original expo then has error bounded by the expo (10^expo).
+    /// This is because reverting a potentially finer expo to a coarser grid has the potential to be off by
+    /// the order of the atomic unit of the coarser grid.
+    /// This scaling error combines with the previous error additively: Err <= 2/PD_SCALE + 10^expo
     /// 
-    /// Bounds due to precision loss
-    /// A, B, C, D each has precision up to PD_SCALE
-    /// x = 1/PD_SCALE
-    /// Err(A*B) <= (1+x)^2 - 1 (in fractional terms)
-    /// Err(C*D) <= (1+x)^2 - 1
-    /// Err(A*B + C*D) <= 2*(1+x)^2 - 2
-    /// Err((A*B + C*D) * price) <= 2*(1+x)^2 - 2 = 2x^2 + 2x ~= 2/PD_SCALE
-    /// Thus, we expect the computed collateral valuation price to be no more than 2/PD_SCALE off of the mathematically true value
-    pub fn get_collateral_valuation_price(&self, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) -> Result<Price, LiquidityOracleError> {
-        if max_deposits < deposits {
-            return Err(LiquidityOracleError::ExceedsMaxDeposits.into());
-        }
-
+    /// The practical error is based on the original expo:
+    /// if it is big, then the 10^expo loss dominates;
+    /// otherwise, the 2/PD_SCALE error dominates.
+    /// 
+    /// Thus, we expect the computed collateral valuation price to be no more than 2/PD_SCALE + 10^expo off of the mathematically true value
+    /// For this reason, we encourage using this function with prices that have high expos, to minimize the potential error.
+    pub fn get_collateral_valuation_price(&self, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) -> Result<Price, OracleError> {
         if discount_initial > discount_final {
-            return Err(LiquidityOracleError::InitialDiscountExceedsFinalDiscount.into());
+            return Err(OracleError::InitialDiscountExceedsFinalDiscount.into());
         }
 
         if discount_final > discount_precision {
-            return Err(LiquidityOracleError::FinalDiscountExceedsPrecision.into());
+            return Err(OracleError::FinalDiscountExceedsPrecision.into());
         }
 
-        let remaining_depositable = utils::u64_to_i64(max_deposits-deposits)?;
         let diff_discount_precision_initial = utils::u64_to_i64(discount_precision-discount_initial)?;
         let diff_discount_precision_final = utils::u64_to_i64(discount_precision-discount_final)?;
 
-        // get fractions for deposits
-        let deposits_as_price = Price {
-            price: utils::u64_to_i64(deposits)?,
-            conf: 0,
-            expo: 0,
-            publish_time: 0,
-        };
-        let remaining_depositable_as_price = Price {
-            price: remaining_depositable,
-            conf: 0,
-            expo: 0,
-            publish_time: 0,
-        };
-        let max_deposits_as_price = Price {
-            price: utils::u64_to_i64(max_deposits)?,
-            conf: 1,
-            expo: 0,
-            publish_time: 0,
-        };
-
-        let deposits_percentage = deposits_as_price.div(&max_deposits_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
-        let remaining_depositable_percentage = remaining_depositable_as_price.div(&max_deposits_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
-        
         // get fractions for discount
         let diff_discount_precision_initial_as_price = Price {
             price: diff_discount_precision_initial,
@@ -182,54 +157,217 @@ impl Price {
             publish_time: 0,
         };
 
-        let initial_percentage = diff_discount_precision_initial_as_price.div(&discount_precision_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
-        let final_percentage = diff_discount_precision_final_as_price.div(&discount_precision_as_price).ok_or(LiquidityOracleError::NoneEncountered)?;
+        let initial_percentage = diff_discount_precision_initial_as_price.div(&discount_precision_as_price).ok_or(OracleError::NoneEncountered)?;
+        let final_percentage = diff_discount_precision_final_as_price.div(&discount_precision_as_price).ok_or(OracleError::NoneEncountered)?;
 
-        // // compute left and right terms of the sum
-        let mut left = deposits_percentage.mul(&final_percentage).ok_or(LiquidityOracleError::NoneEncountered)?;
-        let mut right = remaining_depositable_percentage.mul(&initial_percentage).ok_or(LiquidityOracleError::NoneEncountered)?;
+        // get the interpolated discount as a price
+        let discount_interpolated = Price::affine_combination(
+            0, 
+            initial_percentage, 
+            utils::u64_to_i64(deposits_endpoint)?, 
+            final_percentage, 
+            utils::u64_to_i64(deposits)?
+        )?;
 
-        // scale left and right to match expo; need to ensure no overflow so have a match for NoneEncountered error
-        if left.expo > right.expo {
-            // prefer right scaled up to left if no overflow, to prevent any precision loss
-            let right_scaled = right.scale_to_exponent(left.expo);
-            let left_scaled = left.scale_to_exponent(right.expo);
+        let conf_orig = self.conf;
+        let expo_orig = self.expo;
 
-            match right_scaled {
-                Some(_x) => right = right_scaled.ok_or(LiquidityOracleError::NoneEncountered)?,
-
-                None => left = left_scaled.ok_or(LiquidityOracleError::NoneEncountered)?,
-            }
-        }
-        else if left.expo < right.expo {
-            // prefer left scaled up to right if no overflow, to prevent any precision loss
-            let left_scaled = left.scale_to_exponent(right.expo);
-            let right_scaled = right.scale_to_exponent(left.expo);
-
-            match left_scaled {
-                Some(_x) => left = left_scaled.ok_or(LiquidityOracleError::NoneEncountered)?,
-
-                None => right = right_scaled.ok_or(LiquidityOracleError::NoneEncountered)?,
-            }
-        }
-
-        // get product term
-        let mult_discounted = left.add(&right).ok_or(LiquidityOracleError::NoneEncountered)?;
-
-        // get price discounted
-        let price_discounted = self.mul(&mult_discounted).ok_or(LiquidityOracleError::NoneEncountered)?;
-
-        // we want to scale the original confidence to the new expo
-        let conf_scaled = self.scale_confidence_to_exponent(price_discounted.expo);
+        // get price discounted, convert back to the original exponents we received the price in
+        let price_discounted = self.
+            mul(&discount_interpolated).
+            ok_or(OracleError::NoneEncountered)?.
+            scale_to_exponent(expo_orig).
+            ok_or(OracleError::NoneEncountered)?
+        ;
         
         Ok(
             Price {
                 price: price_discounted.price,
-                conf: conf_scaled.ok_or(LiquidityOracleError::NoneEncountered)?,
+                conf: conf_orig,
                 expo: price_discounted.expo,
                 publish_time: self.publish_time,
             }
         )
+    }
+
+    /// Get the valuation of a borrow position according to:
+    /// 1. the net amount currently borrowed (across the protocol)
+    /// 2. the borrowed endpoint for the affine combination (across the protocol)
+    /// 3. the initial (at 0 borrows) and final (at the borrow endpoint) valuation premiums
+    /// 
+    /// We use a linear interpolation between the the initial and final premiums,
+    /// scaled by the proportion of the borrows endpoint that has been borrowed out.
+    /// This essentially assumes a linear liquidity cumulative density function,
+    /// which has been shown to be a reasonable assumption for many crypto tokens in literature.
+    /// If the assumptions of the liquidity curve hold true, we are obtaining an upper bound for the net price
+    /// at which one can buy the quantity of token specified by borrows in the open markets.
+    /// We value the borrows according to the total borrows out of the protocol due to the present
+    /// intractability of assessing collateral at risk and repayment likelihood by price range.
+    /// 
+    /// Args
+    /// borrows: u64, quantity of token borrowed from the protocol
+    /// borrows_endpoint: u64, borrows right endpoint for the affine combination
+    /// premium_initial: u64, initial premium at 0 borrows (units given by premium_precision)
+    /// premium_final: u64, final premium at borrows_endpoint borrows (units given by premium_precision)
+    /// premium_precision: u64, the precision used for premium
+    /// 
+    /// affine_combination yields us error <= 2/PD_SCALE for premium_interpolated
+    /// We then multiply this with the price to yield price_premium before scaling this back to the original expo
+    /// Output of affine_combination has expo >= -18, price (self) has arbitrary expo
+    /// Scaling this back to the original expo then has error bounded by the expo (10^expo).
+    /// This is because reverting a potentially finer expo to a coarser grid has the potential to be off by
+    /// the order of the atomic unit of the coarser grid.
+    /// This scaling error combines with the previous error additively: Err <= 2/PD_SCALE + 10^expo
+    /// 
+    /// The practical error is based on the original expo:
+    /// if it is big, then the 10^expo loss dominates;
+    /// otherwise, the 2/PD_SCALE error dominates.
+    /// 
+    /// Thus, we expect the computed borrow valuation price to be no more than 2/PD_SCALE + 10^expo off of the mathematically true value
+    /// For this reason, we encourage using this function with prices that have high expos, to minimize the potential error.
+    pub fn get_borrow_valuation_price(&self, borrows: u64, borrows_endpoint: u64, premium_initial: u64, premium_final: u64, premium_precision: u64) -> Result<Price, OracleError> {
+        if premium_initial > premium_final {
+            return Err(OracleError::InitialPremiumExceedsFinalPremium.into());
+        }
+
+        let premium_factor_initial = utils::u64_to_i64(premium_precision+premium_initial)?;
+        let premium_factor_final = utils::u64_to_i64(premium_precision+premium_final)?;
+
+        // get fractions for discount
+        let premium_factor_initial_as_price = Price {
+            price: premium_factor_initial,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+        let premium_factor_final_as_price = Price {
+            price: premium_factor_final,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+        let premium_precision_as_price = Price {
+            price: utils::u64_to_i64(premium_precision)?,
+            conf: 1,
+            expo: 0,
+            publish_time: 0,
+        };
+
+        let initial_percentage = premium_factor_initial_as_price.div(&premium_precision_as_price).ok_or(OracleError::NoneEncountered)?;
+        let final_percentage = premium_factor_final_as_price.div(&premium_precision_as_price).ok_or(OracleError::NoneEncountered)?;
+
+        // get the interpolated discount as a price
+        let premium_interpolated = Price::affine_combination(
+            0, 
+            initial_percentage, 
+            utils::u64_to_i64(borrows_endpoint)?, 
+            final_percentage, 
+            utils::u64_to_i64(borrows)?
+        )?;
+
+        let conf_orig = self.conf;
+        let expo_orig = self.expo;
+
+        // get price premium, convert back to the original exponents we received the price in
+        let price_premium = self.
+            mul(&premium_interpolated).
+            ok_or(OracleError::NoneEncountered)?.
+            scale_to_exponent(expo_orig).
+            ok_or(OracleError::NoneEncountered)?
+        ;
+        
+        Ok(
+            Price {
+                price: price_premium.price,
+                conf: conf_orig,
+                expo: price_premium.expo,
+                publish_time: self.publish_time,
+            }
+        )
+    }
+
+    /// Performs an affine combination after setting everything to expo -9
+    /// Takes in 2 points and a 3rd "query" x coordinate, to compute the value at
+    /// Effectively draws a line between the 2 points and then proceeds to 
+    /// interpolate/exterpolate to find the value at the query coordinate according to that line
+    /// 
+    /// Args
+    /// x1: i64, the x coordinate of the first point
+    /// y1: Price, the y coordinate of the first point, represented as a Price struct
+    /// x2: i64, the x coordinate of the second point, must be greater than x1
+    /// y2: Price, the y coordinate of the second point, represented as a Price struct
+    /// x_query: the query x coordinate, at which we wish to impute a y value
+    /// 
+    /// Logic
+    /// imputed y value = y2 * ((x3-x1)/(x2-x1)) + y1 * ((x2-x3)/(x2-x1))
+    /// 1. compute A = x3-x1
+    /// 2. compute B = x2-x3
+    /// 3. compute C = x2-x1
+    /// 4. compute D = A/C
+    /// 5. compute E = B/C
+    /// 6. compute F = y2 * D
+    /// 7. compute G = y1 * E
+    /// 8. compute H = F + G
+    /// 
+    /// Bounds due to precision loss
+    /// x = 1/PD_SCALE
+    /// division incurs max loss of x
+    /// Err(D), Err(E) is relatively negligible--by scaling to expo -9 we are imposing
+    /// a grid composed of 1 billion units between x1 and x2 endpoints. Moreover, D, E <= 1.
+    /// Thus, max loss here: Err(D), Err(E) <= x
+    /// Err(y1), Err(y2) often <= x
+    /// Err(F), Err(G) <= (1+x)^2 - 1 (in fractional terms)
+    /// Err(H) <= 2*(1+x)^2 - 2 ~= 2x = 2/PD_SCALE
+    pub fn affine_combination(x1: i64, y1: Price, x2: i64, y2: Price, x_query: i64) -> Result<Price, OracleError> {
+        if x2 <= x1 {
+            return Err(OracleError::InitialEndpointExceedsFinalEndpoint);
+        }
+        
+        // get the deltas for the x coordinates
+        let delta_q1 = x_query - x1;
+        let delta_2q = x2 - x_query;
+        let delta_21 = x2 - x1;
+
+        // convert deltas to Prices
+        let delta_q1_as_price = Price {
+            price: delta_q1,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+        let delta_2q_as_price = Price {
+            price: delta_2q,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+        let delta_21_as_price = Price {
+            price: delta_21,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+
+        // get the relevant fractions of the deltas
+        let mut frac_q1 = delta_q1_as_price.div(&delta_21_as_price).ok_or(OracleError::NoneEncountered)?;
+        let mut frac_2q = delta_2q_as_price.div(&delta_21_as_price).ok_or(OracleError::NoneEncountered)?;
+
+        // scale all the prices to expo -9 for the mul and addition
+        frac_q1 = frac_q1.scale_to_exponent(-9).ok_or(OracleError::NoneEncountered)?;
+        frac_2q = frac_2q.scale_to_exponent(-9).ok_or(OracleError::NoneEncountered)?;
+
+        let y1_scaled = y1.scale_to_exponent(-9).ok_or(OracleError::NoneEncountered)?;
+        let y2_scaled = y2.scale_to_exponent(-9).ok_or(OracleError::NoneEncountered)?;
+
+        // calculate products for left and right
+        let mut left = y2_scaled.mul(&frac_q1).ok_or(OracleError::NoneEncountered)?;
+        let mut right = y1_scaled.mul(&frac_2q).ok_or(OracleError::NoneEncountered)?;        
+        
+        // standardize to expo -18 for addition
+        left = left.scale_to_exponent(-18).ok_or(OracleError::NoneEncountered)?;
+        right = right.scale_to_exponent(-18).ok_or(OracleError::NoneEncountered)?;
+
+        Ok(left.add(&right).ok_or(OracleError::NoneEncountered)?)
     }
 
     /// Get the price of a basket of currencies.
@@ -530,7 +668,7 @@ mod test {
         MAX_PD_V_U64,
         PD_EXPO,
         PD_SCALE,
-    }, error::LiquidityOracleError};
+    }, error::OracleError};
 
     const MAX_PD_V_I64: i64 = MAX_PD_V_U64 as i64;
     const MIN_PD_V_I64: i64 = -MAX_PD_V_I64;
@@ -1075,8 +1213,8 @@ mod test {
 
     #[test]
     fn test_get_collateral_valuation_price() {
-        fn succeeds(price: Price, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64, mut expected: Price) {
-            let mut price_collat = price.get_collateral_valuation_price(deposits, max_deposits, discount_initial, discount_final, discount_precision).unwrap();
+        fn succeeds(price: Price, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_precision: u64, mut expected: Price) {
+            let mut price_collat = price.get_collateral_valuation_price(deposits, deposits_endpoint, discount_initial, discount_final, discount_precision).unwrap();
             
             // scale price_collat and expected to match in expo
             if price_collat.expo > expected.expo {
@@ -1089,170 +1227,161 @@ mod test {
             assert_eq!(price_collat, expected);
         }
 
-        fn fails_exceeds_max_deposits(price: Price, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) {
-            let result = price.get_collateral_valuation_price(deposits, max_deposits, discount_initial, discount_final, discount_precision);
-            assert_eq!(result.unwrap_err(), LiquidityOracleError::ExceedsMaxDeposits);
+        fn fails_initial_discount_exceeds_final_discount(price: Price, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) {
+            let result = price.get_collateral_valuation_price(deposits, deposits_endpoint, discount_initial, discount_final, discount_precision);
+            assert_eq!(result.unwrap_err(), OracleError::InitialDiscountExceedsFinalDiscount);
         }
 
-        fn fails_initial_discount_exceeds_final_discount(price: Price, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) {
-            let result = price.get_collateral_valuation_price(deposits, max_deposits, discount_initial, discount_final, discount_precision);
-            assert_eq!(result.unwrap_err(), LiquidityOracleError::InitialDiscountExceedsFinalDiscount);
-        }
-
-        fn fails_final_discount_exceeds_precision(price: Price, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) {
-            let result = price.get_collateral_valuation_price(deposits, max_deposits, discount_initial, discount_final, discount_precision);
-            assert_eq!(result.unwrap_err(), LiquidityOracleError::FinalDiscountExceedsPrecision);
-        }
-
-        fn fails_none_encountered(price: Price, deposits: u64, max_deposits: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) {
-            let result = price.get_collateral_valuation_price(deposits, max_deposits, discount_initial, discount_final, discount_precision);
-            assert_eq!(result.unwrap_err(), LiquidityOracleError::NoneEncountered);
+        fn fails_final_discount_exceeds_precision(price: Price, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) {
+            let result = price.get_collateral_valuation_price(deposits, deposits_endpoint, discount_initial, discount_final, discount_precision);
+            assert_eq!(result.unwrap_err(), OracleError::FinalDiscountExceedsPrecision);
         }
 
         // 0 deposits
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             0,
             100,
             0,
             10,
             100,
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0)
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
         // half deposits
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             50,
             100,
             0,
             10,
             100,
-            pc(95 * (PD_SCALE as i64), 2 * PD_SCALE, 0)
+            pc(95 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
         // full deposits
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             100,
             100,
             0,
             10,
             100,
-            pc(90 * (PD_SCALE as i64), 2 * PD_SCALE, 0)
+            pc(90 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // beyond final endpoint deposits
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            150,
+            100,
+            0,
+            10,
+            100,
+            pc(85 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
         // 0 deposits, staggered initial discount
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             0,
             100,
             2,
             10,
             100,
-            pc(98 * (PD_SCALE as i64), 2 * PD_SCALE, 0)
+            pc(98 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
         // half deposits, staggered initial discount
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             50,
             100,
             2,
             10,
             100,
-            pc(94 * (PD_SCALE as i64), 2 * PD_SCALE, 0)
+            pc(94 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
         // full deposits, staggered initial discount
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             100,
             100,
             2,
             10,
             100,
-            pc(90 * (PD_SCALE as i64), 2 * PD_SCALE, 0)
+            pc(90 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
         // test precision limits
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             1,
             1_000_000_000_000_000_000,
             0,
             10,
             100,
-            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, -9),
         );
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             100_000_000,
             1_000_000_000_000_000_000,
             0,
             10,
             100,
-            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, -9),
         );
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             1_000_000_000,
             1_000_000_000_000_000_000,
             0,
             10,
             100,
-            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, -9),
         );
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             10_000_000_000,
             1_000_000_000_000_000_000,
             0,
             10,
             100,
-            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, -9),
         );
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             100_000_000_000,
             1_000_000_000_000_000_000,
             0,
             10,
             100,
-            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, -9),
         );
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             200_000_000_000,
             1_000_000_000_000_000_000,
             0,
             10,
             100,
-            pc(100 * (PD_SCALE as i64)-2000, 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64)-2000, 2 * PD_SCALE, -9),
         );
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             1_000_000_000_000,
             1_000_000_000_000_000_000,
             0,
             10,
             100,
-            pc(100 * (PD_SCALE as i64)-10000, 2 * PD_SCALE, 0),
-        );
-
-        // fails bc over max deposit limit
-        fails_exceeds_max_deposits(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
-            101,
-            100,
-            0,
-            10,
-            100
+            pc(100 * (PD_SCALE as i64)-10000, 2 * PD_SCALE, -9),
         );
 
         // fails bc initial discount exceeds final discount
         fails_initial_discount_exceeds_final_discount(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             50,
             100,
             11,
@@ -1262,12 +1391,122 @@ mod test {
 
         // fails bc final discount exceeds precision
         fails_final_discount_exceeds_precision(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, 0),
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             50,
             100,
             0,
             101,
             100,
+        );
+
+    }
+
+    #[test]
+    fn test_get_borrow_valuation_price() {
+        fn succeeds(price: Price, borrows: u64, borrows_endpoint: u64, premium_initial: u64, premium_final: u64, premium_precision: u64, mut expected: Price) {
+            let mut price_borrow = price.get_borrow_valuation_price(borrows, borrows_endpoint, premium_initial, premium_final, premium_precision).unwrap();
+            
+            // scale price_collat and expected to match in expo
+            if price_borrow.expo > expected.expo {
+                price_borrow = price_borrow.scale_to_exponent(expected.expo).unwrap();
+            }
+            else if price_borrow.expo < expected.expo {
+                expected = expected.scale_to_exponent(price_borrow.expo).unwrap();
+            }
+
+            assert_eq!(price_borrow, expected);
+        }
+
+        fn fails_initial_discount_exceeds_final_discount(price: Price, borrows: u64, borrows_endpoint: u64, premium_initial: u64, premium_final: u64, premium_precision: u64) {
+            let result = price.get_borrow_valuation_price(borrows, borrows_endpoint, premium_initial, premium_final, premium_precision);
+            assert_eq!(result.unwrap_err(), OracleError::InitialPremiumExceedsFinalPremium);
+        }
+
+        // 0 borrows
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            0,
+            100,
+            0,
+            10,
+            100,
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // half borrows
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            50,
+            100,
+            0,
+            10,
+            100,
+            pc(105 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // full borrows
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            100,
+            100,
+            0,
+            10,
+            100,
+            pc(110 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // beyond final endpoint borrows
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            150,
+            100,
+            0,
+            10,
+            100,
+            pc(115 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // 0 borrows, staggered initial premium
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            0,
+            100,
+            2,
+            10,
+            100,
+            pc(102 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // half borrows, staggered initial premium
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            50,
+            100,
+            2,
+            10,
+            100,
+            pc(106 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // full borrows, staggered initial premium
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            100,
+            100,
+            2,
+            10,
+            100,
+            pc(110 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // fails bc initial premium exceeds final premium
+        fails_initial_discount_exceeds_final_discount(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            50,
+            100,
+            11,
+            10,
+            100
         );
 
     }
