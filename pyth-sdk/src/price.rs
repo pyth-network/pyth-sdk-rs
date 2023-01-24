@@ -152,7 +152,7 @@ impl Price {
         };
         let discount_precision_as_price = Price {
             price: utils::u64_to_i64(discount_precision)?,
-            conf: 1,
+            conf: 0,
             expo: 0,
             publish_time: 0,
         };
@@ -248,7 +248,7 @@ impl Price {
         };
         let premium_precision_as_price = Price {
             price: utils::u64_to_i64(premium_precision)?,
-            conf: 1,
+            conf: 0,
             expo: 0,
             publish_time: 0,
         };
