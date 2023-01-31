@@ -1,7 +1,5 @@
 use std::convert::TryFrom;
 
-use crate::error::OracleError;
-
 /// This module helps serde to serialize deserialize some fields as String
 ///
 /// The reason this is added is that `#[serde(with = "String")]` does not work
@@ -35,6 +33,20 @@ pub mod as_string {
     }
 }
 
-pub fn u64_to_i64(value: u64) -> Result<i64, OracleError> {
-    i64::try_from(value).map_err(|_| OracleError::I64ConversionError)
+pub fn u64_to_i64(value: u64) -> Option<i64> {
+    let value_signed = i64::try_from(value);
+    
+    match value_signed {
+        Ok(x) => return Some(x),
+        Err(_) => return None,
+    }
+}
+
+pub fn i32_to_u32(value: i32) -> Option<u32> {
+    let value_unsigned = u32::try_from(value);
+
+    match value_unsigned {
+        Ok(x) => return Some(x),
+        Err(_) => return None,
+    }
 }

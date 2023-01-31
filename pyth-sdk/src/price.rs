@@ -8,7 +8,6 @@ use schemars::JsonSchema;
 use crate::{
     utils,
     UnixTimestamp,
-    error::OracleError,
 };
 
 // Constants for working with pyth's number representation
@@ -99,6 +98,8 @@ impl Price {
     /// scaled by the proportion of the deposits endpoint that has been deposited.
     /// This essentially assumes a linear liquidity cumulative density function,
     /// which has been shown to be a reasonable assumption for many crypto tokens in literature.
+    /// For more detail on this: https://pythnetwork.medium.com/improving-lending-protocols-with-liquidity-oracles-fd1ea4f96f37
+    /// 
     /// If the assumptions of the liquidity curve hold true, we are obtaining a lower bound for the net price
     /// at which one can sell the quantity of token specified by deposits in the open markets.
     /// We value collateral according to the total deposits in the protocol due to the present
@@ -107,9 +108,9 @@ impl Price {
     /// Args
     /// deposits: u64, quantity of token deposited in the protocol
     /// deposits_endpoint: u64, deposits right endpoint for the affine combination
-    /// discount_initial: u64, initial discount rate at 0 deposits (units given by discount_precision)
-    /// discount_final: u64, final discount rate at deposits_endpoint deposits (units given by discount_precision)
-    /// discount_precision: u64, the precision used for discounts
+    /// discount_initial: u64, initial discount rate at 0 deposits (units given by discount_exponent)
+    /// discount_final: u64, final discount rate at deposits_endpoint deposits (units given by discount_exponent)
+    /// discount_exponent: u64, the exponent to apply to the discounts above (e.g. if discount_final is 10 but meant to express 0.1/10%, exponent would be -2)
     /// 
     /// affine_combination yields us error <= 2/PD_SCALE for discount_interpolated
     /// We then multiply this with the price to yield price_discounted before scaling this back to the original expo
@@ -125,40 +126,28 @@ impl Price {
     /// 
     /// Thus, we expect the computed collateral valuation price to be no more than 2/PD_SCALE + 10^expo off of the mathematically true value
     /// For this reason, we encourage using this function with prices that have high expos, to minimize the potential error.
-    pub fn get_collateral_valuation_price(&self, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) -> Result<Price, OracleError> {
-        if discount_initial > discount_final {
-            return Err(OracleError::InitialDiscountExceedsFinalDiscount.into());
+    pub fn get_collateral_valuation_price(&self, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_exponent: i32) -> Option<Price> {
+        if discount_initial < discount_final {
+            return None;
         }
 
-        if discount_final > discount_precision {
-            return Err(OracleError::FinalDiscountExceedsPrecision.into());
+        if !Price::check_precision_geq(discount_initial, discount_exponent)? {
+            return None;
         }
 
-        let diff_discount_precision_initial = utils::u64_to_i64(discount_precision-discount_initial)?;
-        let diff_discount_precision_final = utils::u64_to_i64(discount_precision-discount_final)?;
-
-        // get fractions for discount
-        let diff_discount_precision_initial_as_price = Price {
-            price: diff_discount_precision_initial,
+        // get price versions of discounts
+        let initial_percentage = Price {
+            price: utils::u64_to_i64(discount_initial)?,
             conf: 0,
-            expo: 0,
+            expo: discount_exponent,
             publish_time: 0,
         };
-        let diff_discount_precision_final_as_price = Price {
-            price: diff_discount_precision_final,
+        let final_percentage = Price {
+            price: utils::u64_to_i64(discount_final)?,
             conf: 0,
-            expo: 0,
+            expo: discount_exponent,
             publish_time: 0,
         };
-        let discount_precision_as_price = Price {
-            price: utils::u64_to_i64(discount_precision)?,
-            conf: 0,
-            expo: 0,
-            publish_time: 0,
-        };
-
-        let initial_percentage = diff_discount_precision_initial_as_price.div(&discount_precision_as_price).ok_or(OracleError::NoneEncountered)?;
-        let final_percentage = diff_discount_precision_final_as_price.div(&discount_precision_as_price).ok_or(OracleError::NoneEncountered)?;
 
         // get the interpolated discount as a price
         let discount_interpolated = Price::affine_combination(
@@ -166,7 +155,8 @@ impl Price {
             initial_percentage, 
             utils::u64_to_i64(deposits_endpoint)?, 
             final_percentage, 
-            utils::u64_to_i64(deposits)?
+            utils::u64_to_i64(deposits)?,
+            Some(-9)
         )?;
 
         let conf_orig = self.conf;
@@ -174,20 +164,18 @@ impl Price {
 
         // get price discounted, convert back to the original exponents we received the price in
         let price_discounted = self.
-            mul(&discount_interpolated).
-            ok_or(OracleError::NoneEncountered)?.
-            scale_to_exponent(expo_orig).
-            ok_or(OracleError::NoneEncountered)?
+            mul(&discount_interpolated)?.
+            scale_to_exponent(expo_orig)?
         ;
         
-        Ok(
+        return Some(
             Price {
                 price: price_discounted.price,
                 conf: conf_orig,
                 expo: price_discounted.expo,
                 publish_time: self.publish_time,
             }
-        )
+        );
     }
 
     /// Get the valuation of a borrow position according to:
@@ -199,6 +187,8 @@ impl Price {
     /// scaled by the proportion of the borrows endpoint that has been borrowed out.
     /// This essentially assumes a linear liquidity cumulative density function,
     /// which has been shown to be a reasonable assumption for many crypto tokens in literature.
+    /// For more detail on this: https://pythnetwork.medium.com/improving-lending-protocols-with-liquidity-oracles-fd1ea4f96f37
+    /// 
     /// If the assumptions of the liquidity curve hold true, we are obtaining an upper bound for the net price
     /// at which one can buy the quantity of token specified by borrows in the open markets.
     /// We value the borrows according to the total borrows out of the protocol due to the present
@@ -209,7 +199,7 @@ impl Price {
     /// borrows_endpoint: u64, borrows right endpoint for the affine combination
     /// premium_initial: u64, initial premium at 0 borrows (units given by premium_precision)
     /// premium_final: u64, final premium at borrows_endpoint borrows (units given by premium_precision)
-    /// premium_precision: u64, the precision used for premium
+    /// premium_exponent: u64, the exponent of the precision (10^{premium_exponent}) used for premiums
     /// 
     /// affine_combination yields us error <= 2/PD_SCALE for premium_interpolated
     /// We then multiply this with the price to yield price_premium before scaling this back to the original expo
@@ -225,13 +215,13 @@ impl Price {
     /// 
     /// Thus, we expect the computed borrow valuation price to be no more than 2/PD_SCALE + 10^expo off of the mathematically true value
     /// For this reason, we encourage using this function with prices that have high expos, to minimize the potential error.
-    pub fn get_borrow_valuation_price(&self, borrows: u64, borrows_endpoint: u64, premium_initial: u64, premium_final: u64, premium_precision: u64) -> Result<Price, OracleError> {
+    pub fn get_borrow_valuation_price(&self, borrows: u64, borrows_endpoint: u64, premium_initial: u64, premium_final: u64, premium_precision: u64) -> Option<Price> {
         if premium_initial > premium_final {
-            return Err(OracleError::InitialPremiumExceedsFinalPremium.into());
+            return None;
         }
 
-        let premium_factor_initial = utils::u64_to_i64(premium_precision+premium_initial)?;
-        let premium_factor_final = utils::u64_to_i64(premium_precision+premium_final)?;
+        let premium_factor_initial = utils::u64_to_i64(premium_precision.checked_add(premium_initial)?)?;
+        let premium_factor_final = utils::u64_to_i64(premium_precision.checked_add(premium_final)?)?;
 
         // get fractions for discount
         let premium_factor_initial_as_price = Price {
@@ -253,8 +243,8 @@ impl Price {
             publish_time: 0,
         };
 
-        let initial_percentage = premium_factor_initial_as_price.div(&premium_precision_as_price).ok_or(OracleError::NoneEncountered)?;
-        let final_percentage = premium_factor_final_as_price.div(&premium_precision_as_price).ok_or(OracleError::NoneEncountered)?;
+        let initial_percentage = premium_factor_initial_as_price.div(&premium_precision_as_price)?;
+        let final_percentage = premium_factor_final_as_price.div(&premium_precision_as_price)?;
 
         // get the interpolated discount as a price
         let premium_interpolated = Price::affine_combination(
@@ -262,7 +252,8 @@ impl Price {
             initial_percentage, 
             utils::u64_to_i64(borrows_endpoint)?, 
             final_percentage, 
-            utils::u64_to_i64(borrows)?
+            utils::u64_to_i64(borrows)?,
+            Some(-9)
         )?;
 
         let conf_orig = self.conf;
@@ -270,20 +261,18 @@ impl Price {
 
         // get price premium, convert back to the original exponents we received the price in
         let price_premium = self.
-            mul(&premium_interpolated).
-            ok_or(OracleError::NoneEncountered)?.
-            scale_to_exponent(expo_orig).
-            ok_or(OracleError::NoneEncountered)?
+            mul(&premium_interpolated)?.
+            scale_to_exponent(expo_orig)?
         ;
         
-        Ok(
+        return Some(
             Price {
                 price: price_premium.price,
                 conf: conf_orig,
                 expo: price_premium.expo,
                 publish_time: self.publish_time,
             }
-        )
+        );
     }
 
     /// Performs an affine combination after setting everything to expo -9
@@ -296,7 +285,12 @@ impl Price {
     /// y1: Price, the y coordinate of the first point, represented as a Price struct
     /// x2: i64, the x coordinate of the second point, must be greater than x1
     /// y2: Price, the y coordinate of the second point, represented as a Price struct
-    /// x_query: the query x coordinate, at which we wish to impute a y value
+    /// x_query: i64, the query x coordinate, at which we wish to impute a y value
+    /// pre_add_expo: Option<i32>, the exponent to scale to, before final addition; essentially the final precision you want
+    /// 
+    /// We want for y1 and y2 to be in the same exponent post normalization.
+    /// The function will return None otherwise. The easiest way to pass this check
+    /// is to simply pass in a y1 and a y2 that are already normalized and have the same exponent.
     /// 
     /// Logic
     /// imputed y value = y2 * ((x3-x1)/(x2-x1)) + y1 * ((x2-x3)/(x2-x1))
@@ -318,56 +312,44 @@ impl Price {
     /// Err(y1), Err(y2) often <= x
     /// Err(F), Err(G) <= (1+x)^2 - 1 (in fractional terms)
     /// Err(H) <= 2*(1+x)^2 - 2 ~= 2x = 2/PD_SCALE
-    pub fn affine_combination(x1: i64, y1: Price, x2: i64, y2: Price, x_query: i64) -> Result<Price, OracleError> {
+    pub fn affine_combination(x1: i64, y1: Price, x2: i64, y2: Price, x_query: i64, pre_add_expo: Option<i32>) -> Option<Price> {
         if x2 <= x1 {
-            return Err(OracleError::InitialEndpointExceedsFinalEndpoint);
+            return None;
+        }
+
+        let y1_norm = y1.normalize()?;
+        let y2_norm = y2.normalize()?;
+
+        // require that normalized versions of y1 and y2 have the same expo
+        if y1_norm.expo != y2_norm.expo {
+            return None;
         }
         
         // get the deltas for the x coordinates
-        let delta_q1 = x_query - x1;
-        let delta_2q = x2 - x_query;
-        let delta_21 = x2 - x1;
+        let delta_q1 = x_query.checked_sub(x1)?;
+        let delta_2q = x2.checked_sub(x_query)?;
+        let delta_21 = x2.checked_sub(x1)?;
 
-        // convert deltas to Prices
-        let delta_q1_as_price = Price {
-            price: delta_q1,
-            conf: 0,
-            expo: 0,
-            publish_time: 0,
-        };
-        let delta_2q_as_price = Price {
-            price: delta_2q,
-            conf: 0,
-            expo: 0,
-            publish_time: 0,
-        };
-        let delta_21_as_price = Price {
-            price: delta_21,
-            conf: 0,
-            expo: 0,
-            publish_time: 0,
-        };
-
-        // get the relevant fractions of the deltas
-        let mut frac_q1 = delta_q1_as_price.div(&delta_21_as_price).ok_or(OracleError::NoneEncountered)?;
-        let mut frac_2q = delta_2q_as_price.div(&delta_21_as_price).ok_or(OracleError::NoneEncountered)?;
-
-        // scale all the prices to expo -9 for the mul and addition
-        frac_q1 = frac_q1.scale_to_exponent(-9).ok_or(OracleError::NoneEncountered)?;
-        frac_2q = frac_2q.scale_to_exponent(-9).ok_or(OracleError::NoneEncountered)?;
-
-        let y1_scaled = y1.scale_to_exponent(-9).ok_or(OracleError::NoneEncountered)?;
-        let y2_scaled = y2.scale_to_exponent(-9).ok_or(OracleError::NoneEncountered)?;
+        // get the relevant fractions of the deltas, with scaling
+        let frac_q1 = Price::fraction(delta_q1, delta_21, None)?;
+        let frac_2q = Price::fraction(delta_2q, delta_21, None)?;
 
         // calculate products for left and right
-        let mut left = y2_scaled.mul(&frac_q1).ok_or(OracleError::NoneEncountered)?;
-        let mut right = y1_scaled.mul(&frac_2q).ok_or(OracleError::NoneEncountered)?;        
-        
-        // standardize to expo -18 for addition
-        left = left.scale_to_exponent(-18).ok_or(OracleError::NoneEncountered)?;
-        right = right.scale_to_exponent(-18).ok_or(OracleError::NoneEncountered)?;
+        let mut left = y2.mul(&frac_q1)?;
+        let mut right = y1.mul(&frac_2q)?; 
 
-        Ok(left.add(&right).ok_or(OracleError::NoneEncountered)?)
+        if pre_add_expo.is_some() {
+            left = left.scale_to_exponent(pre_add_expo?)?;
+            right = right.scale_to_exponent(pre_add_expo?)?;
+        }
+        
+        if left.expo != right.expo {
+            return None;
+        }
+
+        let total = left.add(&right);
+
+        return left.add(&right);
     }
 
     /// Get the price of a basket of currencies.
@@ -615,38 +597,6 @@ impl Price {
         }
     }
 
-    /// Scale confidence so that its exponent is `target_expo`.
-    ///
-    /// Logic of this function similar to that of scale_to_exponent;
-    /// only difference is that this is scaling the confidence alone,
-    /// and it returns a u64 option.
-    /// 
-    /// Useful in the case of get_collateral_valuation_price function,
-    /// since separate explicit confidence scaling required there.
-    pub fn scale_confidence_to_exponent(&self, target_expo: i32) -> Option<u64> {
-        let mut delta = target_expo.checked_sub(self.expo)?;
-        if delta >= 0 {
-            let mut c = self.conf;
-            // 2nd term is a short-circuit to bound op consumption
-            while delta > 0 && (c != 0) {
-                c = c.checked_div(10)?;
-                delta = delta.checked_sub(1)?;
-            }
-
-            Some(c)
-        } else {
-            let mut c = self.conf;
-
-            // c == None will short-circuit to bound op consumption
-            while delta < 0 {
-                c = c.checked_mul(10)?;
-                delta = delta.checked_add(1)?;
-            }
-
-            Some(c)
-        }
-    }
-
     /// Helper function to convert signed integers to unsigned and a sign bit, which simplifies
     /// some of the computations above.
     fn to_unsigned(x: i64) -> (u64, i64) {
@@ -659,16 +609,61 @@ impl Price {
             (x as u64, 1)
         }
     }
+
+    /// Helper function to check if precision implied by exponent >= value, exponent <= 0
+    fn check_precision_geq(value: u64, exponent: i32) -> Option<bool> {  
+        if exponent > 0 {
+            return None;
+        }
+        
+        let mut precision: u64 = 1;
+        let mut delta = -exponent;
+        
+        while delta > 0 && (value != 0) {
+            precision = precision.checked_mul(10)?;
+            delta = delta.checked_sub(1)?;
+        }
+
+        return Some(value <= precision);
+    }
+
+    /// Helper function to create fraction and possibly scale to expo -9
+    fn fraction(x: i64, y: i64, scale_expo: Option<i32>) -> Option<Price> {
+        // convert x and y to Prices
+        let x_as_price = Price {
+            price: x,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+        let y_as_price = Price {
+            price: y,
+            conf: 0,
+            expo: 0,
+            publish_time: 0,
+        };
+
+        // get the relevant fraction
+        let mut frac = x_as_price.div(&y_as_price)?;
+
+        if scale_expo.is_some() {
+            frac = frac.scale_to_exponent(scale_expo?)?;
+        }
+
+        return Some(frac);
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{price::{
+    use std::char::MAX;
+
+    use crate::price::{
         Price,
         MAX_PD_V_U64,
         PD_EXPO,
         PD_SCALE,
-    }, error::OracleError};
+    };
 
     const MAX_PD_V_I64: i64 = MAX_PD_V_U64 as i64;
     const MIN_PD_V_I64: i64 = -MAX_PD_V_I64;
@@ -1212,29 +1207,43 @@ mod test {
     }
 
     #[test]
+    fn test_check_precision_geq() {
+        fn succeeds(value: u64, exponent: i32, expected: bool) {
+            let precision_geq = Price::check_precision_geq(value, exponent).unwrap();
+
+            assert_eq!(precision_geq, expected);
+        }
+
+        fn fails(value: u64, exponent: i32) {
+            let result = Price::check_precision_geq(value, exponent);
+            assert_eq!(result, None);
+        }
+
+        succeeds(1, 0, true);
+        succeeds(1, -1, true);
+
+        succeeds(100, -1, false);
+        succeeds(100, -2, true);
+        succeeds(100, -3, true);
+
+        succeeds(101, -2, false);
+        succeeds(101, -3, true);
+
+        // fails bc exponent > 0
+        fails(10, 1);
+    }
+
+    #[test]
     fn test_get_collateral_valuation_price() {
-        fn succeeds(price: Price, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_precision: u64, mut expected: Price) {
-            let mut price_collat = price.get_collateral_valuation_price(deposits, deposits_endpoint, discount_initial, discount_final, discount_precision).unwrap();
-            
-            // scale price_collat and expected to match in expo
-            if price_collat.expo > expected.expo {
-                price_collat = price_collat.scale_to_exponent(expected.expo).unwrap();
-            }
-            else if price_collat.expo < expected.expo {
-                expected = expected.scale_to_exponent(price_collat.expo).unwrap();
-            }
+        fn succeeds(price: Price, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_exponent: i32, expected: Price) {
+            let price_collat = price.get_collateral_valuation_price(deposits, deposits_endpoint, discount_initial, discount_final, discount_exponent).unwrap();
 
             assert_eq!(price_collat, expected);
         }
 
-        fn fails_initial_discount_exceeds_final_discount(price: Price, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) {
-            let result = price.get_collateral_valuation_price(deposits, deposits_endpoint, discount_initial, discount_final, discount_precision);
-            assert_eq!(result.unwrap_err(), OracleError::InitialDiscountExceedsFinalDiscount);
-        }
-
-        fn fails_final_discount_exceeds_precision(price: Price, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_precision: u64) {
-            let result = price.get_collateral_valuation_price(deposits, deposits_endpoint, discount_initial, discount_final, discount_precision);
-            assert_eq!(result.unwrap_err(), OracleError::FinalDiscountExceedsPrecision);
+        fn fails(price: Price, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_exponent: i32) {
+            let result = price.get_collateral_valuation_price(deposits, deposits_endpoint, discount_initial, discount_final, discount_exponent);
+            assert_eq!(result, None);
         }
 
         // 0 deposits
@@ -1242,9 +1251,9 @@ mod test {
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             0,
             100,
-            0,
-            10,
             100,
+            90,
+            -2,
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
@@ -1253,9 +1262,9 @@ mod test {
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             50,
             100,
-            0,
-            10,
             100,
+            90,
+            -2,
             pc(95 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
@@ -1264,9 +1273,42 @@ mod test {
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             100,
             100,
-            0,
-            10,
             100,
+            90,
+            -2,
+            pc(90 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // 0 deposits, diff precision
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            0,
+            100,
+            1000,
+            900,
+            -3,
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // half deposits, diff precision
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            50,
+            100,
+            1000,
+            900,
+            -3,
+            pc(95 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        );
+
+        // full deposits, diff precision
+        succeeds(
+            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+            100,
+            100,
+            1000,
+            900,
+            -3,
             pc(90 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
@@ -1275,9 +1317,9 @@ mod test {
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             150,
             100,
-            0,
-            10,
             100,
+            90,
+            -2,
             pc(85 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
@@ -1286,9 +1328,9 @@ mod test {
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             0,
             100,
-            2,
-            10,
-            100,
+            98,
+            90,
+            -2,
             pc(98 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
@@ -1297,9 +1339,9 @@ mod test {
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             50,
             100,
-            2,
-            10,
-            100,
+            98,
+            90,
+            -2,
             pc(94 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
@@ -1308,9 +1350,9 @@ mod test {
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             100,
             100,
-            2,
-            10,
-            100,
+            98,
+            90,
+            -2,
             pc(90 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
@@ -1319,195 +1361,645 @@ mod test {
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             1,
             1_000_000_000_000_000_000,
-            0,
-            10,
             100,
+            90,
+            -2,
             pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, -9),
         );
         succeeds(
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             100_000_000,
             1_000_000_000_000_000_000,
-            0,
-            10,
             100,
+            90,
+            -2,
             pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, -9),
         );
         succeeds(
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             1_000_000_000,
             1_000_000_000_000_000_000,
-            0,
-            10,
             100,
+            90,
+            -2,
             pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, -9),
         );
         succeeds(
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             10_000_000_000,
             1_000_000_000_000_000_000,
-            0,
-            10,
             100,
+            90,
+            -2,
             pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, -9),
         );
         succeeds(
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             100_000_000_000,
             1_000_000_000_000_000_000,
-            0,
-            10,
             100,
+            90,
+            -2,
             pc(100 * (PD_SCALE as i64)-1000, 2 * PD_SCALE, -9),
         );
         succeeds(
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             200_000_000_000,
             1_000_000_000_000_000_000,
-            0,
-            10,
             100,
+            90,
+            -2,
             pc(100 * (PD_SCALE as i64)-2000, 2 * PD_SCALE, -9),
         );
         succeeds(
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             1_000_000_000_000,
             1_000_000_000_000_000_000,
-            0,
-            10,
             100,
+            90,
+            -2,
             pc(100 * (PD_SCALE as i64)-10000, 2 * PD_SCALE, -9),
         );
 
-        // fails bc initial discount exceeds final discount
-        fails_initial_discount_exceeds_final_discount(
+        // fails bc initial discount lower than final discount
+        fails(
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             50,
             100,
-            11,
-            10,
-            100
+            89,
+            90,
+            -2
         );
 
-        // fails bc final discount exceeds precision
-        fails_final_discount_exceeds_precision(
+        // fails bc initial discount exceeds precision
+        fails(
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             50,
             100,
-            0,
             101,
-            100,
+            90,
+            -2,
         );
 
     }
 
     #[test]
     fn test_get_borrow_valuation_price() {
-        fn succeeds(price: Price, borrows: u64, borrows_endpoint: u64, premium_initial: u64, premium_final: u64, premium_precision: u64, mut expected: Price) {
-            let mut price_borrow = price.get_borrow_valuation_price(borrows, borrows_endpoint, premium_initial, premium_final, premium_precision).unwrap();
+        fn succeeds(price: Price, borrows: u64, borrows_endpoint: u64, premium_initial: u64, premium_final: u64, premium_precision: u64, expected: Price) {
+            let price_borrow = price.get_borrow_valuation_price(borrows, borrows_endpoint, premium_initial, premium_final, premium_precision).unwrap();
             
-            // scale price_collat and expected to match in expo
-            if price_borrow.expo > expected.expo {
-                price_borrow = price_borrow.scale_to_exponent(expected.expo).unwrap();
-            }
-            else if price_borrow.expo < expected.expo {
-                expected = expected.scale_to_exponent(price_borrow.expo).unwrap();
-            }
-
             assert_eq!(price_borrow, expected);
         }
 
-        fn fails_initial_discount_exceeds_final_discount(price: Price, borrows: u64, borrows_endpoint: u64, premium_initial: u64, premium_final: u64, premium_precision: u64) {
+        fn fails(price: Price, borrows: u64, borrows_endpoint: u64, premium_initial: u64, premium_final: u64, premium_precision: u64) {
             let result = price.get_borrow_valuation_price(borrows, borrows_endpoint, premium_initial, premium_final, premium_precision);
-            assert_eq!(result.unwrap_err(), OracleError::InitialPremiumExceedsFinalPremium);
+            assert_eq!(result, None);
         }
 
-        // 0 borrows
+        // // 0 borrows
+        // succeeds(
+        //     pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+        //     0,
+        //     100,
+        //     0,
+        //     10,
+        //     100,
+        //     pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        // );
+
+        // // half borrows
+        // succeeds(
+        //     pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+        //     50,
+        //     100,
+        //     0,
+        //     10,
+        //     100,
+        //     pc(105 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        // );
+
+        // // full borrows
+        // succeeds(
+        //     pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+        //     100,
+        //     100,
+        //     0,
+        //     10,
+        //     100,
+        //     pc(110 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        // );
+
+        // // beyond final endpoint borrows
+        // succeeds(
+        //     pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+        //     150,
+        //     100,
+        //     0,
+        //     10,
+        //     100,
+        //     pc(115 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        // );
+
+        // // 0 borrows, staggered initial premium
+        // succeeds(
+        //     pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+        //     0,
+        //     100,
+        //     2,
+        //     10,
+        //     100,
+        //     pc(102 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        // );
+
+        // // half borrows, staggered initial premium
+        // succeeds(
+        //     pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+        //     50,
+        //     100,
+        //     2,
+        //     10,
+        //     100,
+        //     pc(106 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        // );
+
+        // // full borrows, staggered initial premium
+        // succeeds(
+        //     pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+        //     100,
+        //     100,
+        //     2,
+        //     10,
+        //     100,
+        //     pc(110 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        // );
+
+        // // fails bc initial premium exceeds final premium
+        // fails(
+        //     pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
+        //     50,
+        //     100,
+        //     11,
+        //     10,
+        //     100
+        // );
+
+    }
+
+    #[test]
+    fn test_affine_combination() {
+        fn succeeds(x1: i64, y1: Price, x2: i64, y2: Price, x_query: i64, pre_add_expo: Option<i32>, expected: Price) {
+            let y_query = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo).unwrap();
+            
+            assert_eq!(y_query, expected);
+        }
+
+        fn fails(x1: i64, y1: Price, x2: i64, y2: Price, x_query: i64, pre_add_expo: Option<i32>) {
+            let result = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo);
+            assert_eq!(result, None);
+        }
+
+        // constant, inbounds
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
             0,
+            pc(100, 0, -4),
+            10,
+            pc(100, 0, -4),
+            5,
+            Some(-9),
+            pc(10_000_000, 0, -9)
+        );
+
+        // constant, outside the bounds
+        succeeds(
+            0,
+            pc(100, 0, -4),
+            10,
+            pc(100, 0, -4),
+            15,
+            Some(-9),
+            pc(10_000_000, 0, -9),
+        );
+
+        // increasing, inbounds
+        succeeds(
+            0,
+            pc(90, 0, -4),
+            10,
+            pc(100, 0, -4),
+            5,
+            Some(-9),
+            pc(9_500_000, 0, -9)
+        );
+
+        // increasing, out of bounds
+        succeeds(
+            0,
+            pc(90, 0, -4),
+            10,
+            pc(100, 0, -4),
+            15,
+            Some(-9),
+            pc(10_500_000, 0, -9)
+        );
+
+        // decreasing, inbounds
+        succeeds(
+            0,
+            pc(100, 0, -4),
+            10,
+            pc(80, 0, -4),
+            5,
+            Some(-9),
+            pc(9_000_000, 0, -9)
+        );
+
+        // decreasing, out of bounds
+        succeeds(
+            0,
+            pc(100, 0, -4),
+            10,
+            pc(80, 0, -4),
+            15,
+            Some(-9),
+            pc(7_000_000, 0, -9)
+        );
+
+        // test loss due to scaling
+        succeeds(
+            0,
+            pc(0, 0, -2),
+            13,
+            pc(10, 0, -2),
+            1,
+            Some(-8),
+            pc(769230, 0, -8)
+        );
+        succeeds(
+            0,
+            pc(0, 0, -2),
+            13,
+            pc(10, 0, -2),
+            1,
+            Some(-9),
+            pc(7692307, 0, -9)
+        );
+        succeeds(
+            0,
+            pc(0, 0, -3),
+            13,
+            pc(100, 0, -3),
+            1,
+            Some(-9),
+            pc(7692307, 0, -9)
+        );
+        succeeds(
+            0,
+            pc(0, 0, -2),
+            13,
+            pc(100, 0, -2),
+            1,
+            Some(-9),
+            pc(76923076, 0, -9)
+        );
+
+        // Test with end range of possible inputs on endpoint xs (no precision loss)
+        succeeds(
+            0,
+            pc(100, 0, -9),
+            i64::MAX,
+            pc(0, 0, -9),
+            i64::MAX/10,
+            Some(-9),
+            pc(90, 0, -9)
+        );
+        succeeds(
+            i64::MIN,
+            pc(100, 0, -9),
+            i64::MIN/2,
+            pc(0, 0, -9),
+            (i64::MIN/4)*3,
+            Some(-9),
+            pc(50, 0, -9)
+        );
+        succeeds(
+            i64::MIN+1,
+            pc(100, 0, -9),
+            0,
+            pc(0, 0, -9),
+            i64::MIN/4,
+            Some(-9),
+            pc(25, 0, -9)
+        );
+        succeeds(
+            i64::MIN+1,
+            pc(100, 0, -9),
+            0,
+            pc(0, 0, -9),
+            0,
+            Some(-9),
+            pc(0, 0, -9)
+        );
+
+        // Test with end range of possible inputs in prices to identify precision inaccuracy
+        succeeds(
+            0,
+            pc(MAX_PD_V_I64-10, 0, -4),
+            10,
+            pc(MAX_PD_V_I64, 0, -4),
+            5,
+            Some(-4),
+            pc(MAX_PD_V_I64-6, 0, -4)
+        );
+        succeeds(
+            0,
+            pc(MAX_PD_V_I64-1, 0, -4),
+            10,
+            pc(MAX_PD_V_I64, 0, -4),
+            9,
+            Some(-4),
+            pc(MAX_PD_V_I64-1, 0, -4)
+        );
+
+        // test w confidence (same at both endpoints)
+        succeeds(
+            0,
+            pc(90, 10, -4),
+            10,
+            pc(100, 10, -4),
+            5,
+            Some(-9),
+            pc(9_500_000, 1_000_000, -9)
+        );
+
+        // test w confidence (different at the endpoints)
+        succeeds(
+            0,
+            pc(90, 10, -4),
+            10,
+            pc(100, 15, -4),
+            5,
+            Some(-9),
+            pc(9_500_000, 1_250_000, -9)
+        );
+        succeeds(
+            0,
+            pc(90, 10, -4),
+            10,
+            pc(100, 15, -4),
+            8,
+            Some(-9),
+            pc(9_800_000, 1_400_000, -9)
+        );
+        succeeds(
+            0,
+            pc(90, 10, -4),
+            10,
+            pc(100, 15, -4),
+            15,
+            Some(-9),
+            pc(10_500_000, 2_750_000, -9)
+        );
+
+        // fails bc x1 > x2
+        fails(
+            20,
+            pc(100, 0, -4),
+            10,
+            pc(100, 0, -4),
+            15,
+            Some(-9)
+        );
+        // fails bc x1 is MIN, x2-x1 --> overflow in delta
+        fails(
+            i64::MIN,
+            pc(100, 0, -5),
+            10,
+            pc(1000, 0, -5),
+            5,
+            Some(-9)
+        );
+        // fails bc x2 is MAX, x1 is negative --> overflow in delta
+        fails(
+            -5,
+            pc(100, 0, -4),
+            i64::MAX,
+            pc(1000, 0, -4),
+            5,
+            Some(-9)
+        );
+        // fails bc of overflow in the checked_sub
+        fails(
+            i64::MIN/2,
+            pc(100, 0, -4),
+            i64::MAX/2+1,
+            pc(100, 0, -4),
+            5,
+            Some(-9)
+        );
+        // fails bc expos don't match for y1 and y2
+        fails(
+            0,
+            pc(100, 0, -4),
+            10,
+            pc(100, 0, -5),
+            5,
+            Some(-9)
+        );
+        // fails bc price too small to be realized
+        fails(
+            0,
+            pc(100, 0, -4),
+            10,
+            pc(5, 0, -4),
+            i64::MAX-100,
+            Some(-9)
+        );
+        // fails bc no pre_add_expo --> no shared precision pre add
+        fails(
+            0,
+            pc(100, 0, -4),
+            i64::MAX,
+            pc(0, 0, -4),
+            25,
+            None
+        );
+        // fails bc 0-i64::MIN > i64::MAX, so overflow
+        fails(
+            i64::MIN,
+            pc(100, 0, -9),
+            0,
+            pc(0, 0, -9),
+            0,
+            Some(-9)
+        );
+    }
+
+    #[test]
+    fn test_fraction() {
+        fn succeeds(x: i64, y: i64, scale_expo: Option<i32>, expected: Price) {
+            let frac = Price::fraction(x, y, scale_expo).unwrap();
+            
+            assert_eq!(frac, expected);
+        }
+
+        fn fails(x: i64, y: i64, scale_expo: Option<i32>) {
+            let result = Price::fraction(x, y, scale_expo);
+
+            assert_eq!(result, None);
+        }
+    
+        succeeds(
+            100, 
+            1000, 
+            Some(-9), 
+            pc(100_000_000, 0, -9)
+        );
+        succeeds(
+            1,
+            1_000_000_000,
+            Some(-9),
+            pc(1, 0, -9)
+        );
+
+        // test loss due to big numer
+        succeeds(
+            1_000_000_000_123,
+            1,
+            None,
+            pc(100_000_000_000_000_000, 0, -5)
+        );
+
+        // test loss due to big denom
+        succeeds(
+            1,
+            10_000_000_011,
+            None,
+            pc(10, 0, -11)
+        );
+
+        // test loss due to scaling
+        succeeds(
+            1,
+            1,
+            None,
+            pc(1000000000, 0, -9)
+        );
+        succeeds(
+            1,
+            1,
+            Some(0),
+            pc(1, 0, 0)
+        );
+        succeeds(
+            1,
+            1,
+            Some(1),
+            pc(0, 0, 1)
+        );
+        succeeds(
+            100,
+            1,
+            Some(i32::MAX-9),
+            pc(0, 0, i32::MAX-9)
+        );
+
+        // Test with big inputs where the output will lose precision.
+        succeeds(
+            i64::MAX,
+            100,
+            None,
+            pc(922337200000000, 0, 2)
+        );
+        succeeds(
+            i64::MAX,
+            1,
+            None,
+            pc(92233720000000000, 0, 2)
+        );
+        succeeds(
+            i64::MAX-10,
+            i64::MAX-5,
+            None,
+            pc(1000000000, 0, -9)
+        );
+        succeeds(
+            1_000_000_004,
+            1_000_000_008,
+            None,
+            pc(1000000000, 0, -9)
+        );
+        // dividing both of the terms in the above check by 4, but now precision cutoff doesn't kick in in normalize
+        succeeds(
+            250_000_001,
+            250_000_002,
+            None,
+            pc(999999996, 0, -9)
+        );
+
+        // Test with end range of possible inputs where the output should not lose precision.
+        succeeds(
+            MAX_PD_V_I64,
+            MAX_PD_V_I64,
+            None,
+            pc(1_000_000_000, 0, -9)
+        );
+        succeeds(
+            MAX_PD_V_I64,
+            1,
+            None,
+            pc(MAX_PD_V_I64*1_000_000_000, 0, -9)
+        );
+        succeeds(
+            MAX_PD_V_I64,
+            MIN_PD_V_I64,
+            None,
+            pc(-1_000_000_000, 0, -9)
+        );
+        succeeds(
+            MIN_PD_V_I64,
+            1,
+            None,
+            pc(MIN_PD_V_I64*1_000_000_000, 0, -9)
+        );
+
+        // // Test with end range of possible inputs to identify precision inaccuracy
+        succeeds(
+            1,
+            MAX_PD_V_I64,
+            None,
+            pc(3, 0, -9)
+        );
+        succeeds(
+            1, 
+            MIN_PD_V_I64, 
+            None,
+            pc(-3, 0, -9)
+        );
+
+
+        // fails due to div by 0
+        fails(
             100,
             0,
-            10,
-            100,
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+            None
         );
 
-        // half borrows
         succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
-            50,
-            100,
-            0,
-            10,
-            100,
-            pc(105 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+            1_000_000_000_000_000,
+            1,
+            None,
+            pc(100_000_000_000_000_000, 0, -2)
         );
-
-        // full borrows
-        succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
-            100,
-            100,
-            0,
-            10,
-            100,
-            pc(110 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+        // fails due to overflow when scaling
+        fails(
+            1_000_000_000_000_000,
+            1,
+            Some(-18)
         );
-
-        // beyond final endpoint borrows
-        succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
-            150,
+        fails(
             100,
-            0,
-            10,
-            100,
-            pc(115 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
+            1,
+            Some(i32::MIN)
         );
-
-        // 0 borrows, staggered initial premium
-        succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
-            0,
-            100,
-            2,
-            10,
-            100,
-            pc(102 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
-        );
-
-        // half borrows, staggered initial premium
-        succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
-            50,
-            100,
-            2,
-            10,
-            100,
-            pc(106 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
-        );
-
-        // full borrows, staggered initial premium
-        succeeds(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
-            100,
-            100,
-            2,
-            10,
-            100,
-            pc(110 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
-        );
-
-        // fails bc initial premium exceeds final premium
-        fails_initial_discount_exceeds_final_discount(
-            pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
-            50,
-            100,
-            11,
-            10,
-            100
-        );
-
     }
 }

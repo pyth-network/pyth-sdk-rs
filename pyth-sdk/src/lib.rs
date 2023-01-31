@@ -8,7 +8,6 @@ use schemars::JsonSchema;
 use std::fmt;
 
 pub mod utils;
-pub mod error;
 
 mod price;
 pub use price::Price;
