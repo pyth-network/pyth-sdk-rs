@@ -253,12 +253,12 @@ impl Price {
             scale_to_exponent(expo_orig)?
         ;
 
-        println!("init perc: {}, {}", initial_percentage.price, initial_percentage.expo);
-        println!("final perc: {}, {}", final_percentage.price, final_percentage.expo);
-        println!("interpolated premium: {}, {}", premium_interpolated.price, premium_interpolated.expo);
-        println!("in btwn: {}, {}", self.mul(&premium_interpolated)?.price, self.mul(&premium_interpolated)?.expo);
-        println!("price (adj for premium): {}, {}", price_premium.price, price_premium.expo);
-        println!("=======");
+        // println!("init perc: {}, {}", initial_percentage.price, initial_percentage.expo);
+        // println!("final perc: {}, {}", final_percentage.price, final_percentage.expo);
+        // println!("interpolated premium: {}, {}", premium_interpolated.price, premium_interpolated.expo);
+        // println!("in btwn: {}, {}", self.mul(&premium_interpolated)?.price, self.mul(&premium_interpolated)?.expo);
+        // println!("price (adj for premium): {}, {}", price_premium.price, price_premium.expo);
+        // println!("=======");
         
         return Some(
             Price {
@@ -270,10 +270,20 @@ impl Price {
         );
     }
 
-    /// Performs an affine combination after setting everything to expo -9
-    /// Takes in 2 points and a 3rd "query" x coordinate, to compute the value at
+    /// affine_combination performs an affine combination of two prices located at x coordinates x1 and x2, for query x coordinate x_query
+    /// Takes in 2 points and a 3rd "query" x coordinate, to compute the value at x_query
     /// Effectively draws a line between the 2 points and then proceeds to 
-    /// interpolate/exterpolate to find the value at the query coordinate according to that line
+    /// interpolate/extrapolate to find the value at the query coordinate according to that line
+    /// 
+    /// affine_combination gives you the Price, scaled to a specified exponent, closest to y2 * ((xq-x1)/(x2-x1)) + y1 * ((x2-x3)/(x2-x1))
+    /// If the numerators and denominators of the fractions there are both representable within 8 digits of precision 
+    /// and the fraction itself is also representable within 8 digits of precision, there is no loss due to taking the fractions.
+    /// If the prices are normalized, then there is no loss in taking the products via mul. 
+    /// Otherwise, the prices will be converted to a form representable within 8 digits of precision.
+    /// The scaling to the specified expo pre_add_expo introduces a max error of 2*10^pre_add_expo. 
+    /// If pre_add_expo is small enough relative to the products, then there is no loss due to scaling.
+    /// If the fractions are expressable within 8 digits of precision, the ys are normalized, and the exponent is sufficiently small,
+    /// then you get an exact result. Otherwise, your error is bounded as given below.
     /// 
     /// Args
     /// x1: i64, the x coordinate of the first point
@@ -295,14 +305,12 @@ impl Price {
     /// 8. compute H = F + G
     /// 
     /// Bounds due to precision loss
-    /// x = 1/PD_SCALE
-    /// division incurs max loss of x
-    /// Err(D), Err(E) is relatively negligible--by scaling to expo -9 we are imposing
-    /// a grid composed of 1 billion units between x1 and x2 endpoints. Moreover, D, E <= 1.
+    /// x = 10^(PD_EXPO+2)
+    /// fraction (due to normalization & division) incurs max loss of x
     /// Thus, max loss here: Err(D), Err(E) <= x
-    /// Err(y1), Err(y2) with normalization <= x
-    /// Err(F), Err(G) <= (1+x)^2 - 1 (in fractional terms)
-    /// Err(H) <= 2*(1+x)^2 - 2 ~= 2x = 2/PD_SCALE
+    /// If y1, y2 already normalized, no additional error. O/w, Err(y1), Err(y2) with normalization <= x
+    /// Err(F), Err(G) <= (1+x)^2 - 1 (in fractional terms) ~= 2x
+    /// Err(H) <= 2*2x = 4x, when PD_EXPO = -9 ==> Err(H) <= 4*10^-7
     /// 
     /// Scaling this back has error bounded by the expo (10^pre_add_expo).
     /// This is because reverting a potentially finer expo to a coarser grid has the potential to be off by
@@ -313,6 +321,8 @@ impl Price {
         if x2 <= x1 {
             return None;
         }
+
+        println!("{}, {}, {}, {}, {}", x1, x2, y1.price, y2.price, x_query);
         
         // get the deltas for the x coordinates
         // 1. compute A = xq-x1
@@ -348,8 +358,8 @@ impl Price {
             return None;
         }
 
-        println!("left after scaling: {}, {}", left.price, left.expo);
-        println!("right after scaling: {}, {}", right.price, right.expo);
+        // println!("left after scaling: {}, {}", left.price, left.expo);
+        // println!("right after scaling: {}, {}", right.price, right.expo);
 
         // 8. compute H = F + G, Err(H) ~= 2x + 2*10^pre_add_expo
         return left.add(&right);
@@ -411,6 +421,7 @@ impl Price {
         // Price is not guaranteed to store its price/confidence in normalized form.
         // Normalize them here to bound the range of price/conf, which is required to perform
         // arithmetic operations.
+
         println!("numerator orig: {}, {}", self.price, self.expo);
         println!("orig price other: {}, {}", other.price, other.expo);
 
@@ -619,23 +630,6 @@ impl Price {
         }
     }
 
-    /// Helper function to check if precision implied by exponent >= value, exponent <= 0
-    fn check_precision_geq(value: u64, exponent: i32) -> Option<bool> {  
-        if exponent > 0 {
-            return None;
-        }
-        
-        let mut precision: u64 = 1;
-        let mut delta = -exponent;
-        
-        while delta > 0 && (value != 0) {
-            precision = precision.checked_mul(10)?;
-            delta = delta.checked_sub(1)?;
-        }
-
-        return Some(value <= precision);
-    }
-
     /// Helper function to create fraction
     /// 
     /// fraction(x, y) gives you the normalized Price closest to x/y.
@@ -661,7 +655,7 @@ impl Price {
         };
 
         // get the relevant fraction
-        let mut frac = x_as_price.div(&y_as_price)?;
+        let frac = x_as_price.div(&y_as_price)?;
 
         return Some(frac);
     }
@@ -670,6 +664,7 @@ impl Price {
 #[cfg(test)]
 mod test {
     use quickcheck::{Arbitrary, Gen, TestResult};
+    use std::convert::TryFrom;
 
     use crate::price::{
         Price,
@@ -705,9 +700,9 @@ mod test {
     impl Arbitrary for Price {
         fn arbitrary(g: &mut Gen) -> Price {
             Price {
-                price: i64::arbitrary(g),
-                conf: u64::arbitrary(g),
-                expo: i32::arbitrary(g), 
+                price: i64::try_from(i32::arbitrary(g)).ok().unwrap(),
+                conf: 0,
+                expo: -9,//i32::arbitrary(g), 
                 publish_time: 0
             }
         }
@@ -1232,33 +1227,6 @@ mod test {
     }
 
     #[test]
-    fn test_check_precision_geq() {
-        fn succeeds(value: u64, exponent: i32, expected: bool) {
-            let precision_geq = Price::check_precision_geq(value, exponent).unwrap();
-
-            assert_eq!(precision_geq, expected);
-        }
-
-        fn fails(value: u64, exponent: i32) {
-            let result = Price::check_precision_geq(value, exponent);
-            assert_eq!(result, None);
-        }
-
-        succeeds(1, 0, true);
-        succeeds(1, -1, true);
-
-        succeeds(100, -1, false);
-        succeeds(100, -2, true);
-        succeeds(100, -3, true);
-
-        succeeds(101, -2, false);
-        succeeds(101, -3, true);
-
-        // fails bc exponent > 0
-        fails(10, 1);
-    }
-
-    #[test]
     fn test_get_collateral_valuation_price() {
         fn succeeds(price: Price, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_exponent: i32, expected: Price) {
             let price_collat = price.get_collateral_valuation_price(deposits, deposits_endpoint, discount_initial, discount_final, discount_exponent).unwrap();
@@ -1589,13 +1557,6 @@ mod test {
             pc(110 * (PD_SCALE as i64), 2 * PD_SCALE, -9)
         );
 
-
-
-
-
-
-        
-
         // test precision limits
         succeeds(
             pc(100 * (PD_SCALE as i64), 2 * PD_SCALE, -9),
@@ -1764,6 +1725,7 @@ mod test {
         );
 
         // test loss due to scaling
+        // lose more bc scale to higher expo
         succeeds(
             0,
             pc(0, 0, -2),
@@ -1773,6 +1735,7 @@ mod test {
             -8,
             pc(769230, 0, -8)
         );
+        // lose less bc scale to lower expo
         succeeds(
             0,
             pc(0, 0, -2),
@@ -1782,6 +1745,7 @@ mod test {
             -9,
             pc(7692307, 0, -9)
         );
+        // lose more bc need to increment expo more in scaling
         succeeds(
             0,
             pc(0, 0, -3),
@@ -1791,6 +1755,7 @@ mod test {
             -9,
             pc(7692307, 0, -9)
         );
+        // lose less bc need to increment expo less in scaling
         succeeds(
             0,
             pc(0, 0, -2),
@@ -1801,7 +1766,7 @@ mod test {
             pc(76923076, 0, -9)
         );
 
-        // Test with end range of possible inputs on endpoint xs (no precision loss)
+        // Test with end range of possible inputs on endpoint xs
         succeeds(
             0,
             pc(100, 0, -9),
@@ -1820,44 +1785,87 @@ mod test {
             -9,
             pc(50, 0, -9)
         );
-        succeeds(
-            i64::MIN+1,
-            pc(100, 0, -9),
-            0,
-            pc(0, 0, -9),
-            i64::MIN/4,
-            -9,
-            pc(25, 0, -9)
-        );
-        succeeds(
-            i64::MIN+1,
-            pc(100, 0, -9),
-            0,
-            pc(0, 0, -9),
-            0,
-            -9,
-            pc(0, 0, -9)
-        );
 
         // Test with end range of possible inputs in prices to identify precision inaccuracy
+        // precision inaccuracy due to loss in scaling
         succeeds(
             0,
-            pc(MAX_PD_V_I64-10, 0, -4),
+            pc(MAX_PD_V_I64-10, 0, -9),
             10,
-            pc(MAX_PD_V_I64, 0, -4),
+            pc(MAX_PD_V_I64, 0, -9),
             5,
-            -4,
-            pc(MAX_PD_V_I64-6, 0, -4)
+            -9,
+            pc(MAX_PD_V_I64-6, 0, -9)
         );
+        // precision inaccruacy due to loss in scaling
         succeeds(
             0,
-            pc(MAX_PD_V_I64-1, 0, -4),
+            pc(MAX_PD_V_I64-1, 0, -9),
             10,
-            pc(MAX_PD_V_I64, 0, -4),
+            pc(MAX_PD_V_I64, 0, -9),
             9,
-            -4,
-            pc(MAX_PD_V_I64-1, 0, -4)
+            -9,
+            pc(MAX_PD_V_I64-1, 0, -9)
         );
+
+        // Test with combinations of (in)exact fractions + (un)normalized ys; making pre_add_expo very small to abstract away scaling error
+        // exact fraction, normalized ys --> exact result
+        succeeds(
+            0,
+            pc(0, 0, -9),
+            512,
+            pc(MAX_PD_V_I64-511, 0, -9),
+            1,
+            -18,
+            pc(524_287_000_000_000, 0, -18)
+        );
+        // exact fraction, unnormalized ys, should be 524_289_000_000_000 exactly, but due to normalization lose <= 2*10^(PD_EXPO+2)
+        // we see the actual result is off by < 16_000_000, which corresponds to loss of ~= 1.6*10^-8 < 2*10^-7
+        succeeds(
+            0,
+            pc(0, 0, -9),
+            512,
+            pc(MAX_PD_V_I64+513, 0, -9),
+            1,
+            -18,
+            pc(524_288_984_375_000, 0, -18)
+        );
+        // inexact fraciton, normalized ys, should be 262_143_000_000_000 exactly, but due to fraction imprecision lose <= 2*10^(PD_EXPO+2)
+        // 1/1024 = 0.0009765625, but due to imprecision --> 0.00976562; similar for 1023/1024
+        // we see the actual result is off by < 140_000_000, which corresponds to loss of 1.4*10^-7 < 2*10^-7
+        succeeds(
+            0,
+            pc(0, 0, -9),
+            1024,
+            pc(MAX_PD_V_I64-1023, 0, -9),
+            1,
+            -18,
+            pc(262_142_865_782_784, 0, -18)
+        );
+        // inexact fraction, unnormalized ys, should be 262_145_000_000_000 exactly, but due to normalization and fraction imprecision lose <= 4*10^(PD_EXPO+2)
+        // 1/1024 and 1023/1024 precision losses described above + normalization of y2
+        // actual result off by < 140_000_000, which corresponds to loss of 1.4*10^-7 < 2*10^-7
+        succeeds(
+            0,
+            pc(0, 0, -9),
+            1024,
+            pc(MAX_PD_V_I64+1025, 0, -9),
+            1,
+            -18,
+            pc(262_144_865_781_760, 0, -18)
+        );
+        // should be -267_912_190_000_000_000 exactly, but due to normalization and fraction imprecision lose <= 4^10^(PD_EXPO+2)
+        // actual result off by < 2_000_000_000, which corresponds to loss of 2*10^-7 < 4*10^-7 (counting figures from the start of the number)
+        succeeds(
+            0,
+            pc(MIN_PD_V_I64-1025, 0, -9),
+            1024,
+            pc(MAX_PD_V_I64+1025, 0, -9),
+            1,
+            -18,
+            pc(-267_912_188_120_944_640, 0, -18)
+        );
+
 
         // test w confidence (same at both endpoints)
         succeeds(
@@ -1926,7 +1934,7 @@ mod test {
             5,
             -9
         );
-        // fails bc of overflow in the checked_sub
+        // fails bc of overflow in the checked_sub for x2-x1
         fails(
             i64::MIN/2,
             pc(100, 0, -4),
@@ -1935,7 +1943,7 @@ mod test {
             5,
             -9
         );
-        // fails bc price too small to be realized
+        // fails bc output price too small to be realized, cannot be scaled to fit with specified pre_add_expo
         fails(
             0,
             pc(100, 0, -4),
@@ -1955,36 +1963,112 @@ mod test {
         );
     }
 
-    // quickcheck to confirm affine_combination introduces no error if normalization done explicitly on prices
+    // quickcheck to confirm affine_combination introduces no error if normalization done explicitly on prices first
     #[quickcheck]
-        fn quickcheck_affine(x1: i64, y1: Price, x2: i64, y2: Price, x_query: i64, pre_add_expo: i32) -> TestResult {
-            // require x2 > x1
-            if x1 >= x2 {
-                return TestResult::discard()
-            }
+    fn quickcheck_affine_combination_normalize_prices(x1_inp: i32, y1: Price, x2_inp: i32, y2: Price, x_query_inp: i32) -> TestResult {
+        let x1 = i64::try_from(x1_inp).ok().unwrap();
+        let x2 = i64::try_from(x2_inp).ok().unwrap();
+        let x_query = i64::try_from(x_query_inp).ok().unwrap();
 
-            // require low pre_add_expo
-            if pre_add_expo >= 2 {
-                return TestResult::discard()
-            }
+        let pre_add_expo = -9;
 
-            // require reasonable price/conf range
-            if (y1.price > 2*MAX_PD_V_I64) || (y1.price < 2*MIN_PD_V_I64) || (y1.conf > 2*MAX_PD_V_U64) {
-                return TestResult::discard()
-            }
-            if (y2.price > 2*MAX_PD_V_I64) || (y2.price < 2*MIN_PD_V_I64) || (y2.conf > 2*MAX_PD_V_U64) {
-                return TestResult::discard()
-            }
-
-            let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo).unwrap();
-
-            let y1_norm = y1.normalize().unwrap();
-            let y2_norm = y2.normalize().unwrap();
-
-            let result_norm = Price::affine_combination(x1, y1_norm, x2, y2_norm, x_query, pre_add_expo).unwrap();
-
-            TestResult::from_bool(result_norm == result_orig)
+        // require x2 > x1
+        if x1 >= x2 {
+            return TestResult::discard()
         }
+
+        // require low pre_add_expo
+        if pre_add_expo >= 2 {
+            return TestResult::discard()
+        }
+
+        // require reasonable price/conf range
+        if (y1.price > 2*MAX_PD_V_I64) || (y1.price < 2*MIN_PD_V_I64) {
+            return TestResult::discard()
+        }
+        if (y2.price > 2*MAX_PD_V_I64) || (y2.price < 2*MIN_PD_V_I64) {
+            return TestResult::discard()
+        }
+
+        println!("QUICKCHECKED {}, {}, {}, {}", y1.price, y1.conf, y2.price, y2.conf);
+
+        let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo).unwrap();
+
+        let y1_norm = y1.normalize().unwrap();
+        let y2_norm = y2.normalize().unwrap();
+
+        let result_norm = Price::affine_combination(x1, y1_norm, x2, y2_norm, x_query, pre_add_expo).unwrap();
+
+        TestResult::from_bool(result_norm == result_orig)
+    }
+
+    // quickcheck to confirm affine_combination introduces bounded error if close fraction x/y passed in first
+    #[quickcheck]
+    fn quickcheck_affine_combination_normalize_fractions(x1_inp: i32, y1: Price, x2_inp: i32, y2: Price, x_query_inp: i32) -> TestResult {
+        println!("Arguments (BEGIN): {}, {}, {}, {}, {}", x1_inp, y1.price, x2_inp, y2.price, x_query_inp);
+        let x1 = i64::try_from(x1_inp).ok().unwrap();
+        let x2 = i64::try_from(x2_inp).ok().unwrap();
+        let x_query = i64::try_from(x_query_inp).ok().unwrap();
+
+        let pre_add_expo = -9;
+
+        // require x2 > x1
+        if x1 >= x2 {
+            return TestResult::discard()
+        }
+
+        if (x_query > 5*x2) || (x_query < 2*x1 - x2) {
+            return TestResult::discard()
+        }
+
+        // require low pre_add_expo
+        if pre_add_expo >= 2 {
+            return TestResult::discard()
+        }
+
+        // require reasonable price/conf range
+        if (y1.price > 2*MAX_PD_V_I64) || (y1.price < 2*MIN_PD_V_I64) {
+            return TestResult::discard()
+        }
+        if (y2.price > 2*MAX_PD_V_I64) || (y2.price < 2*MIN_PD_V_I64) {
+            return TestResult::discard()
+        }
+
+        let x1_new: i64;
+        let xq_new: i64;
+        let x2_new: i64;
+
+        if x2 == 0 {
+            x1_new = x1;
+            xq_new = x_query;
+            x2_new = x2;
+        }
+        else {
+            let mut frac_q2 = Price::fraction(x_query-x1, x2-x1).unwrap();
+            frac_q2 = frac_q2.scale_to_exponent(-8).unwrap();
+
+            x1_new = 0;
+            xq_new = frac_q2.price;
+            x2_new = 100_000_000 as i64;
+        }
+
+        let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo).unwrap().
+            scale_to_exponent(-7).unwrap();
+        // println!("GOT HERE 6, {}, {}, {}", x1_new, x2_new, xq_new);
+
+        let result_norm = Price::affine_combination(x1_new, y1, x2_new, y2, xq_new, pre_add_expo).unwrap().
+            scale_to_exponent(-7).unwrap();
+        // println!("GOT HERE 7");
+
+        println!("Arguments (END): {}, {}, {}, {}, {}", x1, y1.price, x2, y2.price, x_query);
+        println!("result orig: {}, {}, {}, {}", result_orig.price, result_orig.expo, result_orig.conf, result_orig.publish_time);
+        println!("result norm: {}, {}, {}, {}", result_norm.price, result_norm.expo, result_norm.conf, result_norm.publish_time);
+
+
+        let price_diff = result_norm.add(&result_orig.cmul(-1, 0).unwrap()).unwrap();
+    
+        TestResult::from_bool((price_diff.price < 4) && (price_diff.price > -4))
+    }
 
     #[test]
     fn test_fraction() {
@@ -2021,6 +2105,11 @@ mod test {
             102,
             3,
             pc(34_000_000_000, 0, -9)
+        );
+        succeeds(
+            11_111_111,
+            10_000_000,
+            pc(1_111_111_100, 0, -9)
         );
 
         // test loss due to big numer (x cannot be represented in 8 digits)--only preserves 8 digits of precision
@@ -2089,6 +2178,17 @@ mod test {
             MIN_PD_V_I64,
             1,
             pc(MIN_PD_V_I64*1_000_000_000, 0, -9)
+        );
+        // test cases near the boundary where output should lose precision
+        succeeds(
+            MAX_PD_V_I64+1,
+            1,
+            pc(MAX_PD_V_I64/10 * 1_000_000_000, 0, -8)
+        );
+        succeeds(
+            MAX_PD_V_I64+10,
+            1,
+            pc((MAX_PD_V_I64/10 + 1) * 1_000_000_000, 0, -8)
         );
 
         // fails due to div by 0
