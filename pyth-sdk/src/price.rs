@@ -252,13 +252,6 @@ impl Price {
             mul(&premium_interpolated)?.
             scale_to_exponent(expo_orig)?
         ;
-
-        // println!("init perc: {}, {}", initial_percentage.price, initial_percentage.expo);
-        // println!("final perc: {}, {}", final_percentage.price, final_percentage.expo);
-        // println!("interpolated premium: {}, {}", premium_interpolated.price, premium_interpolated.expo);
-        // println!("in btwn: {}, {}", self.mul(&premium_interpolated)?.price, self.mul(&premium_interpolated)?.expo);
-        // println!("price (adj for premium): {}, {}", price_premium.price, price_premium.expo);
-        // println!("=======");
         
         return Some(
             Price {
@@ -321,8 +314,6 @@ impl Price {
         if x2 <= x1 {
             return None;
         }
-
-        println!("{}, {}, {}, {}, {}", x1, x2, y1.price, y2.price, x_query);
         
         // get the deltas for the x coordinates
         // 1. compute A = xq-x1
@@ -344,12 +335,6 @@ impl Price {
         // 7. compute G = y1 * E, Err(G) <= (1+x)^2 - 1
         let mut right = y1.mul(&frac_2q)?; 
 
-        println!("frac_q1: {}, {}", frac_q1.price, frac_q1.expo);
-        println!("frac_2q: {}, {}", frac_2q.price, frac_2q.expo);
-
-        println!("left before scaling: {}, {}", left.price, left.expo);
-        println!("right before scaling: {}, {}", right.price, right.expo);
-
         // Err(scaling) += 2*10^pre_add_expo
         left = left.scale_to_exponent(pre_add_expo)?;
         right = right.scale_to_exponent(pre_add_expo)?;
@@ -357,9 +342,6 @@ impl Price {
         if left.expo != right.expo {
             return None;
         }
-
-        // println!("left after scaling: {}, {}", left.price, left.expo);
-        // println!("right after scaling: {}, {}", right.price, right.expo);
 
         // 8. compute H = F + G, Err(H) ~= 2x + 2*10^pre_add_expo
         return left.add(&right);
@@ -422,14 +404,8 @@ impl Price {
         // Normalize them here to bound the range of price/conf, which is required to perform
         // arithmetic operations.
 
-        println!("numerator orig: {}, {}", self.price, self.expo);
-        println!("orig price other: {}, {}", other.price, other.expo);
-
         let base = self.normalize()?;
         let other = other.normalize()?;
-
-        println!("numerator post: {}, {}", base.price, base.expo);
-        println!("orig price post: {}, {}", other.price, other.expo);
 
         if other.price == 0 {
             return None;
@@ -1990,8 +1966,6 @@ mod test {
             return TestResult::discard()
         }
 
-        println!("QUICKCHECKED {}, {}, {}, {}", y1.price, y1.conf, y2.price, y2.conf);
-
         let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo).unwrap();
 
         let y1_norm = y1.normalize().unwrap();
@@ -2005,7 +1979,6 @@ mod test {
     // quickcheck to confirm affine_combination introduces bounded error if close fraction x/y passed in first
     #[quickcheck]
     fn quickcheck_affine_combination_normalize_fractions(x1_inp: i32, y1: Price, x2_inp: i32, y2: Price, x_query_inp: i32) -> TestResult {
-        println!("Arguments (BEGIN): {}, {}, {}, {}, {}", x1_inp, y1.price, x2_inp, y2.price, x_query_inp);
         let x1 = i64::try_from(x1_inp).ok().unwrap();
         let x2 = i64::try_from(x2_inp).ok().unwrap();
         let x_query = i64::try_from(x_query_inp).ok().unwrap();
@@ -2054,16 +2027,9 @@ mod test {
 
         let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo).unwrap().
             scale_to_exponent(-7).unwrap();
-        // println!("GOT HERE 6, {}, {}, {}", x1_new, x2_new, xq_new);
 
         let result_norm = Price::affine_combination(x1_new, y1, x2_new, y2, xq_new, pre_add_expo).unwrap().
             scale_to_exponent(-7).unwrap();
-        // println!("GOT HERE 7");
-
-        println!("Arguments (END): {}, {}, {}, {}, {}", x1, y1.price, x2, y2.price, x_query);
-        println!("result orig: {}, {}, {}, {}", result_orig.price, result_orig.expo, result_orig.conf, result_orig.publish_time);
-        println!("result norm: {}, {}, {}, {}", result_norm.price, result_norm.expo, result_norm.conf, result_norm.publish_time);
-
 
         let price_diff = result_norm.add(&result_orig.cmul(-1, 0).unwrap()).unwrap();
     
