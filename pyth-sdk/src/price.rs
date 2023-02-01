@@ -639,7 +639,7 @@ impl Price {
 
 #[cfg(test)]
 mod test {
-    use quickcheck::{Arbitrary, Gen, TestResult};
+    use quickcheck::TestResult;
     use std::convert::TryFrom;
 
     use crate::price::{
@@ -672,17 +672,6 @@ mod test {
         .unwrap()
     }
 
-    // arbitrary trait for quickcheck
-    impl Arbitrary for Price {
-        fn arbitrary(g: &mut Gen) -> Price {
-            Price {
-                price: i64::try_from(i32::arbitrary(g)).ok().unwrap(),
-                conf: 0,
-                expo: -9,//i32::arbitrary(g), 
-                publish_time: 0
-            }
-        }
-    }
 
     #[test]
     fn test_normalize() {
@@ -1700,6 +1689,53 @@ mod test {
             pc(7_000_000, 0, -9)
         );
 
+        // test with different pre_add_expos than -9
+        succeeds(
+            0,
+            pc(100, 0, -2),
+            100,
+            pc(8000, 0, -4),
+            50,
+            -1,
+            pc(9, 0, -1)
+        );
+        succeeds(
+            100_000,
+            pc(200_000, 0, -6),
+            200_000,
+            pc(-20_000_000_000, 0, -11),
+            175_000,
+            -4,
+            pc(-1_000, 0, -4)
+        );
+        succeeds(
+            2000,
+            pc(75, 0, 3),
+            10000,
+            pc(675_000_000, 0, -3),
+            6000,
+            -2,
+            pc(37_500_000, 0, -2)
+        );
+        succeeds(
+            0,
+            pc(100, 0, 2),
+            100,
+            pc(0, 0, -12),
+            200,
+            -12,
+            pc(-10_000_000_000_000_000, 0, -12)
+        );
+        succeeds(
+            0,
+            pc(10, 0, 9),
+            1000,
+            pc(2, 0, 10),
+            6000,
+            6,
+            pc(70_000, 0, 6)
+        );
+
         // test loss due to scaling
         // lose more bc scale to higher expo
         succeeds(
@@ -1760,6 +1796,16 @@ mod test {
             (i64::MIN/4)*3,
             -9,
             pc(50, 0, -9)
+        );
+        // test with xs that yield fractions with significantly different expos
+        succeeds(
+            0,
+            pc(100_000_000, 0, -9),
+            1_000_000_000_000_000,
+            pc(0, 0, -9),
+            10_000_000,
+            -9,
+            pc(99_999_999, 0, -9)
         );
 
         // Test with end range of possible inputs in prices to identify precision inaccuracy
@@ -1939,30 +1985,31 @@ mod test {
         );
     }
 
+    pub fn construct_quickcheck_affine_combination_price(price: i64) -> Price {
+        return Price {
+            price: price,
+            conf: 0,
+            expo: -9,
+            publish_time: 0
+        }
+    }
+
     // quickcheck to confirm affine_combination introduces no error if normalization done explicitly on prices first
     #[quickcheck]
-    fn quickcheck_affine_combination_normalize_prices(x1_inp: i32, y1: Price, x2_inp: i32, y2: Price, x_query_inp: i32) -> TestResult {
+    fn quickcheck_affine_combination_normalize_prices(x1_inp: i32, p1: i32, x2_inp: i32, p2: i32, x_query_inp: i32) -> TestResult {
+        // generating xs and prices from i32 to limit the range to reasonable values and guard against overflow/bespoke constraint setting for quickcheck
+        let y1 = construct_quickcheck_affine_combination_price(i64::try_from(p1).ok().unwrap());
+        let y2 = construct_quickcheck_affine_combination_price(i64::try_from(p2).ok().unwrap());
+        
         let x1 = i64::try_from(x1_inp).ok().unwrap();
         let x2 = i64::try_from(x2_inp).ok().unwrap();
         let x_query = i64::try_from(x_query_inp).ok().unwrap();
 
+        // stick with single expo for ease of testing and generation
         let pre_add_expo = -9;
 
-        // require x2 > x1
+        // require x2 > x1, as needed for affine_combination
         if x1 >= x2 {
-            return TestResult::discard()
-        }
-
-        // require low pre_add_expo
-        if pre_add_expo >= 2 {
-            return TestResult::discard()
-        }
-
-        // require reasonable price/conf range
-        if (y1.price > 2*MAX_PD_V_I64) || (y1.price < 2*MIN_PD_V_I64) {
-            return TestResult::discard()
-        }
-        if (y2.price > 2*MAX_PD_V_I64) || (y2.price < 2*MIN_PD_V_I64) {
             return TestResult::discard()
         }
 
@@ -1978,24 +2025,24 @@ mod test {
 
     // quickcheck to confirm affine_combination introduces bounded error if close fraction x/y passed in first
     #[quickcheck]
-    fn quickcheck_affine_combination_normalize_fractions(x1_inp: i32, y1: Price, x2_inp: i32, y2: Price, x_query_inp: i32) -> TestResult {
+    fn quickcheck_affine_combination_normalize_fractions(x1_inp: i32, p1: i32, x2_inp: i32, p2: i32, x_query_inp: i32) -> TestResult {
+        // generating xs and prices from i32 to limit the range to reasonable values and guard against overflow/bespoke constraint setting for quickcheck
+        let y1 = construct_quickcheck_affine_combination_price(i64::try_from(p1).ok().unwrap());
+        let y2 = construct_quickcheck_affine_combination_price(i64::try_from(p2).ok().unwrap());
+        
         let x1 = i64::try_from(x1_inp).ok().unwrap();
         let x2 = i64::try_from(x2_inp).ok().unwrap();
         let x_query = i64::try_from(x_query_inp).ok().unwrap();
 
+        // stick with single expo for ease of testing and generation
         let pre_add_expo = -9;
 
-        // require x2 > x1
+        // require x2 > x1, as needed for affine_combination
         if x1 >= x2 {
             return TestResult::discard()
         }
 
         if (x_query > 5*x2) || (x_query < 2*x1 - x2) {
-            return TestResult::discard()
-        }
-
-        // require low pre_add_expo
-        if pre_add_expo >= 2 {
             return TestResult::discard()
         }
 
