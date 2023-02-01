@@ -110,39 +110,25 @@ impl Price {
     /// Args
     /// deposits: u64, quantity of token deposited in the protocol
     /// deposits_endpoint: u64, deposits right endpoint for the affine combination
-    /// discount_initial: u64, initial discount rate at 0 deposits (units given by discount_exponent)
-    /// discount_final: u64, final discount rate at deposits_endpoint deposits (units given by discount_exponent)
+    /// rate_discount_initial: u64, initial discounted rate at 0 deposits (units given by discount_exponent)
+    /// rate_discount_final: u64, final discounted rate at deposits_endpoint deposits (units given by discount_exponent)
     /// discount_exponent: u64, the exponent to apply to the discounts above (e.g. if discount_final is 10 but meant to express 0.1/10%, exponent would be -2)
     /// note that if discount_initial is bigger than 100% per the discount exponent scale, then the initial valuation of the collateral will be higher than the oracle price
-    /// 
-    /// affine_combination yields us error <= 2/PD_SCALE for discount_interpolated
-    /// We then multiply this with the price to yield price_discounted before scaling this back to the original expo
-    /// Output of affine_combination has expo >= -18, price (self) has arbitrary expo
-    /// Scaling this back to the original expo then has error bounded by the expo (10^expo).
-    /// This is because reverting a potentially finer expo to a coarser grid has the potential to be off by
-    /// the order of the atomic unit of the coarser grid.
-    /// This scaling error combines with the previous error additively: Err <= 2/PD_SCALE + 10^expo
-    /// 
-    /// The practical error is based on the original expo:
-    /// if it is big, then the 10^expo loss dominates;
-    /// otherwise, the 2/PD_SCALE error dominates.
-    /// 
-    /// Thus, we expect the computed collateral valuation price to be no more than 2/PD_SCALE + 10^expo off of the mathematically true value
-    /// For this reason, we encourage using this function with prices that have high expos, to minimize the potential error.
-    pub fn get_collateral_valuation_price(&self, deposits: u64, deposits_endpoint: u64, discount_initial: u64, discount_final: u64, discount_exponent: i32) -> Option<Price> {
-        if discount_initial < discount_final {
+    pub fn get_collateral_valuation_price(&self, deposits: u64, deposits_endpoint: u64, rate_discount_initial: u64, rate_discount_final: u64, discount_exponent: i32) -> Option<Price> {
+        // valuation price should not increase as amount of collateral grows, so rate_discount_initial should >= rate_discount_final
+        if rate_discount_initial < rate_discount_final {
             return None;
         }
 
         // get price versions of discounts
         let initial_percentage = Price {
-            price: i64::try_from(discount_initial).ok()?,
+            price: i64::try_from(rate_discount_initial).ok()?,
             conf: 0,
             expo: discount_exponent,
             publish_time: 0,
         };
         let final_percentage = Price {
-            price: i64::try_from(discount_final).ok()?,
+            price: i64::try_from(rate_discount_final).ok()?,
             conf: 0,
             expo: discount_exponent,
             publish_time: 0,
@@ -196,39 +182,25 @@ impl Price {
     /// Args
     /// borrows: u64, quantity of token borrowed from the protocol
     /// borrows_endpoint: u64, borrows right endpoint for the affine combination
-    /// premium_initial: u64, initial premium at 0 borrows (units given by premium_exponent)
-    /// premium_final: u64, final premium at borrows_endpoint borrows (units given by premium_exponent)
+    /// rate_premium_initial: u64, initial premium at 0 borrows (units given by premium_exponent)
+    /// rate_premium_final: u64, final premium at borrows_endpoint borrows (units given by premium_exponent)
     /// premium_exponent: u64, the exponent to apply to the premiums above (e.g. if premium_final is 50 but meant to express 0.05/5%, exponent would be -3)
     /// note that if premium_initial is less than 100% per the premium exponent scale, then the initial valuation of the borrow will be lower than the oracle price
-    /// 
-    /// affine_combination yields us error <= 2/PD_SCALE for premium_interpolated
-    /// We then multiply this with the price to yield price_premium before scaling this back to the original expo
-    /// Output of affine_combination has expo >= -18, price (self) has arbitrary expo
-    /// Scaling this back to the original expo then has error bounded by the expo (10^expo).
-    /// This is because reverting a potentially finer expo to a coarser grid has the potential to be off by
-    /// the order of the atomic unit of the coarser grid.
-    /// This scaling error combines with the previous error additively: Err <= 2/PD_SCALE + 10^expo
-    /// 
-    /// The practical error is based on the original expo:
-    /// if it is big, then the 10^expo loss dominates;
-    /// otherwise, the 2/PD_SCALE error dominates.
-    /// 
-    /// Thus, we expect the computed borrow valuation price to be no more than 2/PD_SCALE + 10^expo off of the mathematically true value
-    /// For this reason, we encourage using this function with prices that have high expos, to minimize the potential error.
-    pub fn get_borrow_valuation_price(&self, borrows: u64, borrows_endpoint: u64, premium_initial: u64, premium_final: u64, premium_exponent: i32) -> Option<Price> {
-        if premium_initial > premium_final {
+    pub fn get_borrow_valuation_price(&self, borrows: u64, borrows_endpoint: u64, rate_premium_initial: u64, rate_premium_final: u64, premium_exponent: i32) -> Option<Price> {
+        // valuation price should not decrease as amount of borrow grows, so rate_premium_initial should <= rate_premium_final
+        if rate_premium_initial > rate_premium_final {
             return None;
         }
 
         // get price versions of premiums
         let initial_percentage = Price {
-            price: i64::try_from(premium_initial).ok()?,
+            price: i64::try_from(rate_premium_initial).ok()?,
             conf: 0,
             expo: premium_exponent,
             publish_time: 0,
         };
         let final_percentage = Price {
-            price: i64::try_from(premium_final).ok()?,
+            price: i64::try_from(rate_premium_final).ok()?,
             conf: 0,
             expo: premium_exponent,
             publish_time: 0,
@@ -308,7 +280,7 @@ impl Price {
     /// Scaling this back has error bounded by the expo (10^pre_add_expo).
     /// This is because reverting a potentially finer expo to a coarser grid has the potential to be off by
     /// the order of the atomic unit of the coarser grid.
-    /// This scaling error combines with the previous error additively: Err <= 2/PD_SCALE + 2*10^pre_add_expo
+    /// This scaling error combines with the previous error additively: Err <= 4x + 2*10^pre_add_expo
     /// But if pre_add_expo is reasonably small (<= -9), then other term will dominate
     pub fn affine_combination(x1: i64, y1: Price, x2: i64, y2: Price, x_query: i64, pre_add_expo: i32) -> Option<Price> {
         if x2 <= x1 {
@@ -324,15 +296,15 @@ impl Price {
         let delta_21 = x2.checked_sub(x1)?;
 
         // get the relevant fractions of the deltas, with scaling
-        // 4. compute D = A/C, Err(D) <= x = 1/PD_SCALE
+        // 4. compute D = A/C, Err(D) <= x
         let frac_q1 = Price::fraction(delta_q1, delta_21)?;
         // 5. compute E = B/C, Err(E) <= x
         let frac_2q = Price::fraction(delta_2q, delta_21)?;
 
         // calculate products for left and right
-        // 6. compute F = y2 * D, Err(F) <= (1+x)^2 - 1
+        // 6. compute F = y2 * D, Err(F) <= (1+x)^2 - 1 ~= 2x
         let mut left = y2.mul(&frac_q1)?;
-        // 7. compute G = y1 * E, Err(G) <= (1+x)^2 - 1
+        // 7. compute G = y1 * E, Err(G) <= (1+x)^2 - 1 ~= 2x
         let mut right = y1.mul(&frac_2q)?; 
 
         // Err(scaling) += 2*10^pre_add_expo
@@ -343,7 +315,7 @@ impl Price {
             return None;
         }
 
-        // 8. compute H = F + G, Err(H) ~= 2x + 2*10^pre_add_expo
+        // 8. compute H = F + G, Err(H) ~= 4x + 2*10^pre_add_expo
         return left.add(&right);
     }
 
@@ -1623,7 +1595,7 @@ mod test {
             assert_eq!(result, None);
         }
 
-        // constant, inbounds
+        // constant, in the bounds [x1, x2]
         succeeds(
             0,
             pc(100, 0, -4),
@@ -1645,7 +1617,7 @@ mod test {
             pc(10_000_000, 0, -9),
         );
 
-        // increasing, inbounds
+        // increasing, in the bounds
         succeeds(
             0,
             pc(90, 0, -4),
@@ -1667,7 +1639,7 @@ mod test {
             pc(10_500_000, 0, -9)
         );
 
-        // decreasing, inbounds
+        // decreasing, in the bounds
         succeeds(
             0,
             pc(100, 0, -4),
@@ -1737,7 +1709,7 @@ mod test {
         );
 
         // test loss due to scaling
-        // lose more bc scale to higher expo
+        // lose more bc scaling to higher expo
         succeeds(
             0,
             pc(0, 0, -2),
@@ -1747,7 +1719,7 @@ mod test {
             -8,
             pc(769230, 0, -8)
         );
-        // lose less bc scale to lower expo
+        // lose less bc scaling to lower expo
         succeeds(
             0,
             pc(0, 0, -2),
@@ -1757,7 +1729,7 @@ mod test {
             -9,
             pc(7692307, 0, -9)
         );
-        // lose more bc need to increment expo more in scaling
+        // lose more bc need to increment expo more in scaling from original inputs
         succeeds(
             0,
             pc(0, 0, -3),
@@ -1767,7 +1739,7 @@ mod test {
             -9,
             pc(7692307, 0, -9)
         );
-        // lose less bc need to increment expo less in scaling
+        // lose less bc need to increment expo less in scaling from original inputs
         succeeds(
             0,
             pc(0, 0, -2),
@@ -1889,7 +1861,7 @@ mod test {
         );
 
 
-        // test w confidence (same at both endpoints)
+        // test w confidence (same at both endpoints)--expect linear change btwn x1 and x2 and growth in conf as distance from interval [x1, x2] increases
         succeeds(
             0,
             pc(90, 10, -4),
@@ -1995,6 +1967,10 @@ mod test {
     }
 
     // quickcheck to confirm affine_combination introduces no error if normalization done explicitly on prices first
+    // this quickcheck calls affine_combination with two sets of almost identical inputs:
+    // the first set has potentially unnormalized prices, the second set simply has the normalized versions of those prices
+    // this set of checks should pass because normalization is automatically performed on the prices before they are multiplied
+    // this set of checks passing indicates that it doesn't matter whether the prices passed in are normalized
     #[quickcheck]
     fn quickcheck_affine_combination_normalize_prices(x1_inp: i32, p1: i32, x2_inp: i32, p2: i32, x_query_inp: i32) -> TestResult {
         // generating xs and prices from i32 to limit the range to reasonable values and guard against overflow/bespoke constraint setting for quickcheck
@@ -2013,17 +1989,24 @@ mod test {
             return TestResult::discard()
         }
 
+        // original result
         let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo).unwrap();
 
         let y1_norm = y1.normalize().unwrap();
         let y2_norm = y2.normalize().unwrap();
 
+        // result with normalized price inputs
         let result_norm = Price::affine_combination(x1, y1_norm, x2, y2_norm, x_query, pre_add_expo).unwrap();
 
+        // results should match exactly
         TestResult::from_bool(result_norm == result_orig)
     }
 
     // quickcheck to confirm affine_combination introduces bounded error if close fraction x/y passed in first
+    // this quickcheck calls affine_combination with two sets of similar inputs:
+    // the first set has xs generated by the quickcheck generation process, leading to potentially inexact fractions that don't fit within 8 digits of precision
+    // the second set "normalizes" down to 8 digits of precision by setting x1 to 0, x2 to 100_000_000, and xquery proportionally
+    // based on the bounds described in the docstring of affine_combination, we expect error due to this to be leq 4*10^-7
     #[quickcheck]
     fn quickcheck_affine_combination_normalize_fractions(x1_inp: i32, p1: i32, x2_inp: i32, p2: i32, x_query_inp: i32) -> TestResult {
         // generating xs and prices from i32 to limit the range to reasonable values and guard against overflow/bespoke constraint setting for quickcheck
@@ -2042,15 +2025,8 @@ mod test {
             return TestResult::discard()
         }
 
-        if (x_query > 5*x2) || (x_query < 2*x1 - x2) {
-            return TestResult::discard()
-        }
-
-        // require reasonable price/conf range
-        if (y1.price > 2*MAX_PD_V_I64) || (y1.price < 2*MIN_PD_V_I64) {
-            return TestResult::discard()
-        }
-        if (y2.price > 2*MAX_PD_V_I64) || (y2.price < 2*MIN_PD_V_I64) {
+        // constrain x_query to be within 5 interval lengths of x1 or x2
+        if (x_query > x2 + 5*(x2-x1)) || (x_query < x1 - 5*(x2-x1)) {
             return TestResult::discard()
         }
 
@@ -2072,14 +2048,18 @@ mod test {
             x2_new = 100_000_000 as i64;
         }
 
+        // original result
         let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo).unwrap().
             scale_to_exponent(-7).unwrap();
 
+        // xs "normalized" result
         let result_norm = Price::affine_combination(x1_new, y1, x2_new, y2, xq_new, pre_add_expo).unwrap().
             scale_to_exponent(-7).unwrap();
 
+        // compute difference in prices
         let price_diff = result_norm.add(&result_orig.cmul(-1, 0).unwrap()).unwrap();
     
+        // results should differ by less than 4*10^-7
         TestResult::from_bool((price_diff.price < 4) && (price_diff.price > -4))
     }
 
