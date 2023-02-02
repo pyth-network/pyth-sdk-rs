@@ -19,7 +19,6 @@ borsh = "0.9"
 borsh-derive = "0.9.0"
 serde = { version = "1.0.136", features = ["derive"] }
 schemars = "0.8.8"
-thiserror = "1.0.24"
 
 [dev-dependencies]
 serde_json = "1.0.79"
