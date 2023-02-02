@@ -2030,6 +2030,7 @@ mod test {
             return TestResult::discard()
         }
 
+        // generate new xs based on scaling x_1 --> 0, x_2 --> 10^8
         let x1_new: i64;
         let xq_new: i64;
         let x2_new: i64;
