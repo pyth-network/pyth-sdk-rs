@@ -643,7 +643,7 @@ impl Price {
 
 #[cfg(test)]
 mod test {
-    // use quickcheck::TestResult;
+    use quickcheck::TestResult;
     use std::convert::TryFrom;
 
     use crate::price::{
@@ -2051,135 +2051,134 @@ mod test {
         fails(i64::MIN, pc(100, 10, -9), 0, pc(0, 12, -9), 0, -9);
     }
 
-    // pub fn construct_quickcheck_affine_combination_price(price: i64) -> Price {
-    //     return Price {
-    //         price:        price,
-    //         conf:         0,
-    //         expo:         -9,
-    //         publish_time: 0,
-    //     };
-    // }
+    pub fn construct_quickcheck_affine_combination_price(price: i64) -> Price {
+        return Price {
+            price:        price,
+            conf:         0,
+            expo:         -9,
+            publish_time: 0,
+        };
+    }
 
-    // // quickcheck to confirm affine_combination introduces no error if normalization done
-    // explicitly // on prices first this quickcheck calls affine_combination with two sets of
-    // almost // identical inputs: the first set has potentially unnormalized prices, the second
-    // set // simply has the normalized versions of those prices this set of checks should pass
-    // because // normalization is automatically performed on the prices before they are
-    // multiplied // this set of checks passing indicates that it doesn't matter whether the
-    // prices passed in are // normalized
-    // #[quickcheck]
-    // fn quickcheck_affine_combination_normalize_prices(
-    //     x1_inp: i32,
-    //     p1: i32,
-    //     x2_inp: i32,
-    //     p2: i32,
-    //     x_query_inp: i32,
-    // ) -> TestResult {
-    //     // generating xs and prices from i32 to limit the range to reasonable values and guard
-    //     // against overflow/bespoke constraint setting for quickcheck
-    //     let y1 = construct_quickcheck_affine_combination_price(i64::try_from(p1).ok().unwrap());
-    //     let y2 = construct_quickcheck_affine_combination_price(i64::try_from(p2).ok().unwrap());
+    // quickcheck to confirm affine_combination introduces no error if normalization done
+    // explicitly on prices first this quickcheck calls affine_combination with two sets of
+    // almost identical inputs: the first set has potentially unnormalized prices, the second
+    // set simply has the normalized versions of those prices this set of checks should pass
+    // because normalization is automatically performed on the prices before they are
+    // multiplied this set of checks passing indicates that it doesn't matter whether the
+    // prices passed in are normalized
+    #[quickcheck]
+    fn quickcheck_affine_combination_normalize_prices(
+        x1_inp: i32,
+        p1: i32,
+        x2_inp: i32,
+        p2: i32,
+        x_query_inp: i32,
+    ) -> TestResult {
+        // generating xs and prices from i32 to limit the range to reasonable values and guard
+        // against overflow/bespoke constraint setting for quickcheck
+        let y1 = construct_quickcheck_affine_combination_price(i64::try_from(p1).ok().unwrap());
+        let y2 = construct_quickcheck_affine_combination_price(i64::try_from(p2).ok().unwrap());
 
-    //     let x1 = i64::try_from(x1_inp).ok().unwrap();
-    //     let x2 = i64::try_from(x2_inp).ok().unwrap();
-    //     let x_query = i64::try_from(x_query_inp).ok().unwrap();
+        let x1 = i64::try_from(x1_inp).ok().unwrap();
+        let x2 = i64::try_from(x2_inp).ok().unwrap();
+        let x_query = i64::try_from(x_query_inp).ok().unwrap();
 
-    //     // stick with single expo for ease of testing and generation
-    //     let pre_add_expo = -9;
+        // stick with single expo for ease of testing and generation
+        let pre_add_expo = -9;
 
-    //     // require x2 > x1, as needed for affine_combination
-    //     if x1 >= x2 {
-    //         return TestResult::discard();
-    //     }
+        // require x2 > x1, as needed for affine_combination
+        if x1 >= x2 {
+            return TestResult::discard();
+        }
 
-    //     // original result
-    //     let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query,
-    // pre_add_expo).unwrap();
+        // original result
+        let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo).unwrap();
 
-    //     let y1_norm = y1.normalize().unwrap();
-    //     let y2_norm = y2.normalize().unwrap();
+        let y1_norm = y1.normalize().unwrap();
+        let y2_norm = y2.normalize().unwrap();
 
-    //     // result with normalized price inputs
-    //     let result_norm =
-    //         Price::affine_combination(x1, y1_norm, x2, y2_norm, x_query, pre_add_expo).unwrap();
+        // result with normalized price inputs
+        let result_norm =
+            Price::affine_combination(x1, y1_norm, x2, y2_norm, x_query, pre_add_expo).unwrap();
 
-    //     // results should match exactly
-    //     TestResult::from_bool(result_norm == result_orig)
-    // }
+        // results should match exactly
+        TestResult::from_bool(result_norm == result_orig)
+    }
 
-    // // quickcheck to confirm affine_combination introduces bounded error if close fraction x/y
-    // // passed in first this quickcheck calls affine_combination with two sets of similar inputs:
-    // // the first set has xs generated by the quickcheck generation process, leading to
-    // potentially // inexact fractions that don't fit within 8 digits of precision the second
-    // set "normalizes" // down to 8 digits of precision by setting x1 to 0, x2 to 100_000_000,
-    // and xquery // proportionally based on the bounds described in the docstring of
-    // affine_combination, we // expect error due to this to be leq 4*10^-7
-    // #[quickcheck]
-    // fn quickcheck_affine_combination_normalize_fractions(
-    //     x1_inp: i32,
-    //     p1: i32,
-    //     x2_inp: i32,
-    //     p2: i32,
-    //     x_query_inp: i32,
-    // ) -> TestResult {
-    //     // generating xs and prices from i32 to limit the range to reasonable values and guard
-    //     // against overflow/bespoke constraint setting for quickcheck
-    //     let y1 = construct_quickcheck_affine_combination_price(i64::try_from(p1).ok().unwrap());
-    //     let y2 = construct_quickcheck_affine_combination_price(i64::try_from(p2).ok().unwrap());
+    // quickcheck to confirm affine_combination introduces bounded error if close fraction x/y
+    // passed in first this quickcheck calls affine_combination with two sets of similar inputs:
+    // the first set has xs generated by the quickcheck generation process, leading to
+    // potentially inexact fractions that don't fit within 8 digits of precision the second
+    // set "normalizes" down to 8 digits of precision by setting x1 to 0, x2 to 100_000_000,
+    // and xquery proportionally based on the bounds described in the docstring of
+    // affine_combination, we expect error due to this to be leq 4*10^-7
+    #[quickcheck]
+    fn quickcheck_affine_combination_normalize_fractions(
+        x1_inp: i32,
+        p1: i32,
+        x2_inp: i32,
+        p2: i32,
+        x_query_inp: i32,
+    ) -> TestResult {
+        // generating xs and prices from i32 to limit the range to reasonable values and guard
+        // against overflow/bespoke constraint setting for quickcheck
+        let y1 = construct_quickcheck_affine_combination_price(i64::try_from(p1).ok().unwrap());
+        let y2 = construct_quickcheck_affine_combination_price(i64::try_from(p2).ok().unwrap());
 
-    //     let x1 = i64::try_from(x1_inp).ok().unwrap();
-    //     let x2 = i64::try_from(x2_inp).ok().unwrap();
-    //     let x_query = i64::try_from(x_query_inp).ok().unwrap();
+        let x1 = i64::try_from(x1_inp).ok().unwrap();
+        let x2 = i64::try_from(x2_inp).ok().unwrap();
+        let x_query = i64::try_from(x_query_inp).ok().unwrap();
 
-    //     // stick with single expo for ease of testing and generation
-    //     let pre_add_expo = -9;
+        // stick with single expo for ease of testing and generation
+        let pre_add_expo = -9;
 
-    //     // require x2 > x1, as needed for affine_combination
-    //     if x1 >= x2 {
-    //         return TestResult::discard();
-    //     }
+        // require x2 > x1, as needed for affine_combination
+        if x1 >= x2 {
+            return TestResult::discard();
+        }
 
-    //     // constrain x_query to be within 5 interval lengths of x1 or x2
-    //     if (x_query > x2 + 5 * (x2 - x1)) || (x_query < x1 - 5 * (x2 - x1)) {
-    //         return TestResult::discard();
-    //     }
+        // constrain x_query to be within 5 interval lengths of x1 or x2
+        if (x_query > x2 + 5 * (x2 - x1)) || (x_query < x1 - 5 * (x2 - x1)) {
+            return TestResult::discard();
+        }
 
-    //     // generate new xs based on scaling x_1 --> 0, x_2 --> 10^8
-    //     let x1_new: i64;
-    //     let xq_new: i64;
-    //     let x2_new: i64;
+        // generate new xs based on scaling x_1 --> 0, x_2 --> 10^8
+        let x1_new: i64;
+        let xq_new: i64;
+        let x2_new: i64;
 
-    //     if x2 == 0 {
-    //         x1_new = x1;
-    //         xq_new = x_query;
-    //         x2_new = x2;
-    //     } else {
-    //         let mut frac_q2 = Price::fraction(x_query - x1, x2 - x1).unwrap();
-    //         frac_q2 = frac_q2.scale_to_exponent(-8).unwrap();
+        if x2 == 0 {
+            x1_new = x1;
+            xq_new = x_query;
+            x2_new = x2;
+        } else {
+            let mut frac_q2 = Price::fraction(x_query - x1, x2 - x1).unwrap();
+            frac_q2 = frac_q2.scale_to_exponent(-8).unwrap();
 
-    //         x1_new = 0;
-    //         xq_new = frac_q2.price;
-    //         x2_new = 100_000_000 as i64;
-    //     }
+            x1_new = 0;
+            xq_new = frac_q2.price;
+            x2_new = 100_000_000 as i64;
+        }
 
-    //     // original result
-    //     let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo)
-    //         .unwrap()
-    //         .scale_to_exponent(-7)
-    //         .unwrap();
+        // original result
+        let result_orig = Price::affine_combination(x1, y1, x2, y2, x_query, pre_add_expo)
+            .unwrap()
+            .scale_to_exponent(-7)
+            .unwrap();
 
-    //     // xs "normalized" result
-    //     let result_norm = Price::affine_combination(x1_new, y1, x2_new, y2, xq_new, pre_add_expo)
-    //         .unwrap()
-    //         .scale_to_exponent(-7)
-    //         .unwrap();
+        // xs "normalized" result
+        let result_norm = Price::affine_combination(x1_new, y1, x2_new, y2, xq_new, pre_add_expo)
+            .unwrap()
+            .scale_to_exponent(-7)
+            .unwrap();
 
-    //     // compute difference in prices
-    //     let price_diff = result_norm.add(&result_orig.cmul(-1, 0).unwrap()).unwrap();
+        // compute difference in prices
+        let price_diff = result_norm.add(&result_orig.cmul(-1, 0).unwrap()).unwrap();
 
-    //     // results should differ by less than 4*10^-7
-    //     TestResult::from_bool((price_diff.price < 4) && (price_diff.price > -4))
-    // }
+        // results should differ by less than 4*10^-7
+        TestResult::from_bool((price_diff.price < 4) && (price_diff.price > -4))
+    }
 
     #[test]
     fn test_fraction() {
