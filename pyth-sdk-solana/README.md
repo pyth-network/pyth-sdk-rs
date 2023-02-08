@@ -42,7 +42,7 @@ let price_account_info: AccountInfo = ...;
 let price_feed: PriceFeed = load_price_feed_from_account_info( &price_account_info ).unwrap();
 let current_timestamp = Clock::get()?.unix_timestamp;
 let current_price: Price = price_feed.get_price_no_older_than(current_timestamp, STALENESS_THRESHOLD).unwrap();
-println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
+msg!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 
 The `PriceFeed` object returned by `load_price_feed_from_account_info` contains all currently-available pricing information about the product.
