@@ -48,7 +48,7 @@ println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, c
 The `PriceFeed` object returned by `load_price_feed_from_account_info` contains all currently-available pricing information about the product.
 This struct also has some useful functions for manipulating and combining prices; see the [common SDK documentation](../pyth-sdk) for more details.
 
-`get_price_no_older_than` takes in an `age` in seconds. If the current aggregate is older than `current_timestamp - age`, `get_price_no_older_than` will return `None`.
+The function `get_price_no_older_than` takes in an `age` in seconds. If the current aggregate is older than `current_timestamp - age`, `get_price_no_older_than` will return `None`.
 
 Note that your application should also validate the address of the passed-in price account before using it.
 Otherwise, an attacker could pass in a different account and set the price to an arbitrary value.
