@@ -26,7 +26,7 @@ Applications can obtain the content of these accounts in two different ways:
 * On-chain programs should pass these accounts to the instructions that require price feeds.
 * Off-chain programs can access these accounts using the Solana RPC client (as in the [eth price example program](examples/eth_price.rs)).
 
-The pyth.network website can be used to identify the public keys of the various Pyth Network accounts (e.g., [Crypto.BTC/USD accounts](https://pyth.network/markets/#Crypto.BTC/USD)).
+The pyth.network website can be used to identify the public keys of each price feed's price account (e.g., [Crypto.BTC/USD accounts](https://pyth.network/developers/price-feed-ids#solana-mainnet-beta)).
 
 ### On-chain
 
@@ -37,9 +37,11 @@ The `load_price_feed_from_account_info` function will construct a `PriceFeed` st
 ```rust
 use pyth_sdk_solana::{load_price_feed_from_account_info, PriceFeed};
 
+const STALENESS_THRESHOLD : u64 = 60; // staleness threshold in seconds
 let price_account_info: AccountInfo = ...;
 let price_feed: PriceFeed = load_price_feed_from_account_info( &price_account_info ).unwrap();
-let current_price: Price = price_feed.get_current_price().unwrap();
+let current_timestamp = Clock::get()?.unix_timestamp;
+let current_price: Price = price_feed.get_price_no_older_than(current_timestamp, STALENESS_THRESHOLD).unwrap();
 println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 
@@ -58,10 +60,16 @@ The `load_price_feed_from_account` function will construct a `PriceFeed` struct 
 ```rust
 use pyth_sdk_solana::{load_price_feed_from_account, PriceFeed};
 
+const STALENESS_THRESHOLD : u64 = 60; // staleness threshold in seconds
+let current_time = SystemTime::now()
+    .duration_since(UNIX_EPOCH)
+    .unwrap()
+    .as_secs() as i64;
+
 let price_key: Pubkey = ...;
-let mut price_account: Account = ...;
+let mut price_account: Account = clnt.get_account(&price_key).unwrap();
 let price_feed: PriceFeed = load_price_feed_from_account( &price_key, &mut price_account ).unwrap();
-let current_price: Price = price_feed.get_current_price().unwrap();
+let current_price: Price = price_feed.get_price_no_older_than(current_time, STALENESS_THRESHOLD).unwrap();
 println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 

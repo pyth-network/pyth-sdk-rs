@@ -1,7 +1,7 @@
 # Pyth Network Common Rust SDK
 
 This crate contains Pyth Network data structures that are shared across all Rust-based consumers of Pyth Network data.
-This crate is typically used in combination with a platform-specific crate such as [pyth-sdk-solana](../pyth-sdk-solana) or [pyth-sdk-cw](../pyth-sdk-cw).
+This crate is typically used in combination with a platform-specific crate such as [pyth-sdk-solana](../pyth-sdk-solana).
 
 ## Usage
 
@@ -19,7 +19,9 @@ Once you have a `PriceFeed`, you can call one of the methods below to get the pr
 Get the current price of the product from its `PriceFeed`:
 
 ```rust
-let current_price: Price = price_feed.get_current_price().ok_or(StdError::not_found("Current price is not available"))?;
+const STALENESS_THRESHOLD : u64 = 60; // staleness threshold in seconds
+let current_timestamp = ...;
+let current_price: Price = price_feed.get_price_no_older_than(current_timestamp, STALENESS_THRESHOLD).ok_or(StdError::not_found("Current price is not available"))?;
 println!("price: ({} +- {}) x 10^{}", current_price.price, current_price.conf, current_price.expo);
 ```
 
@@ -35,7 +37,9 @@ Please see the [consumer best practices guide](https://docs.pyth.network/consume
 The EMA price can be retrieved as follows:
 
 ```rust
-let ema_price: Price = price_feed.get_ema_price().ok_or(StdError::not_found("EMA price is not available"))?;
+const STALENESS_THRESHOLD : u64 = 60; // staleness threshold in seconds
+let current_timestamp = ...;
+let ema_price: Price = price_feed.get_ema_price_no_older_than(current_timestamp, STALENESS_THRESHOLD).ok_or(StdError::not_found("EMA price is not available"))?;
 println!("price: ({} +- {}) x 10^{}", ema_price.price, ema_price.conf, ema_price.expo);
 ```
 

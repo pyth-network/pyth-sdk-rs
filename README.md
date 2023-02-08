@@ -18,7 +18,6 @@ This repository is divided into several crates focused on specific use cases:
 1. [Pyth SDK](pyth-sdk) provides common data types and interfaces for that are shared across different blockchains.
 2. [Pyth SDK Solana](pyth-sdk-solana) provides an interface for reading Pyth price feeds in Solana programs.
    This crate may also be used in off-chain applications that read prices from the Solana blockchain.
-3. [Pyth SDK CosmWasm](pyth-sdk-cw) provides an interface for reading Pyth price feeds in on-chain CosmWasm contracts.
 
 Please see the documentation for the relevant crate to get started using Pyth Network.
 
