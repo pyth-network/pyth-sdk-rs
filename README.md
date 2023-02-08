@@ -7,7 +7,7 @@ Key features of this SDK include:
 * Get the current price of over [50 products](https://pyth.network/markets/), including cryptocurrencies,
   US equities, forex and more.
 * Combine listed products to create new price feeds, e.g., for baskets of tokens or non-USD quote currencies.
-* Consume prices in Solana programs, CosmWasm smart contracts, or off-chain applications.
+* Consume prices in Solana programs or off-chain applications.
 
 Please see the [pyth.network documentation](https://docs.pyth.network/) for more information about pyth.network.
 
