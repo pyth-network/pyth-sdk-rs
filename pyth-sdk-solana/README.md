@@ -26,7 +26,7 @@ Applications can obtain the content of these accounts in two different ways:
 * On-chain programs should pass these accounts to the instructions that require price feeds.
 * Off-chain programs can access these accounts using the Solana RPC client (as in the [eth price example program](examples/eth_price.rs)).
 
-The pyth.network website can be used to identify the public keys of each price feed's price account (e.g., [Crypto.BTC/USD accounts](https://pyth.network/developers/price-feed-ids#solana-mainnet-beta)).
+The [pyth.network](https://pyth.network/developers/price-feed-ids#solana-mainnet-beta) website can be used to identify the public keys of each price feed's price account (e.g. Crypto.BTC/USD).
 
 ### On-chain
 
