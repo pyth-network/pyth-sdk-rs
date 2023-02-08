@@ -7,7 +7,7 @@ Key features of this SDK include:
 * Get the current price of over [50 products](https://pyth.network/markets/), including cryptocurrencies,
   US equities, forex and more.
 * Combine listed products to create new price feeds, e.g., for baskets of tokens or non-USD quote currencies.
-* Consume prices in Solana programs, CosmWasm smart contracts, or off-chain applications.
+* Consume prices in Solana programs or off-chain applications.
 
 Please see the [pyth.network documentation](https://docs.pyth.network/) for more information about pyth.network.
 
@@ -18,7 +18,6 @@ This repository is divided into several crates focused on specific use cases:
 1. [Pyth SDK](pyth-sdk) provides common data types and interfaces for that are shared across different blockchains.
 2. [Pyth SDK Solana](pyth-sdk-solana) provides an interface for reading Pyth price feeds in Solana programs.
    This crate may also be used in off-chain applications that read prices from the Solana blockchain.
-3. [Pyth SDK CosmWasm](pyth-sdk-cw) provides an interface for reading Pyth price feeds in on-chain CosmWasm contracts.
 
 Please see the documentation for the relevant crate to get started using Pyth Network.
 

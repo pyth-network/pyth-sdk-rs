@@ -220,16 +220,14 @@ unsafe impl Pod for ProductAccount {
 #[repr(C)]
 pub struct PriceInfo {
     /// the current price.
-    /// For the aggregate price use price.get_current_price() whenever possible. It has more checks
-    /// to make sure price is valid.
+    /// For the aggregate price use `get_price_no_older_than()` whenever possible. Accessing fields
+    /// directly might expose you to stale or invalid prices.
     pub price:    i64,
     /// confidence interval around the price.
-    /// For the aggregate confidence use price.get_current_price() whenever possible. It has more
-    /// checks to make sure price is valid.
+    /// For the aggregate confidence use `get_price_no_older_than()` whenever possible. Accessing
+    /// fields directly might expose you to stale or invalid prices.
     pub conf:     u64,
-    /// status of price (Trading is valid).
-    /// For the aggregate status use price.get_current_status() whenever possible.
-    /// Price data can sometimes go stale and the function handles the status in such cases.
+    /// status of price (Trading is valid)
     pub status:   PriceStatus,
     /// notification of any corporate action
     pub corp_act: CorpAction,
