@@ -133,6 +133,8 @@ pub enum PriceStatus {
     Halted,
     /// The price feed is not currently updating because an auction is setting the price.
     Auction,
+    /// A price component can be ignored if the confidence interval is too wide
+    Ignored,
 }
 
 impl Default for PriceStatus {
