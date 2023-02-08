@@ -35,8 +35,6 @@ pub struct QueryRequest<'info> {
 pub mod example_sol_anchor_contract {
     use super::*;
 
-    const STALENESS_THRESHOLD : u64 = 60; // staleness threshold in seconds
-
     pub fn init(ctx: Context<InitRequest>, config: AdminConfig) -> Result<()> {
         ctx.accounts.config.set_inner(config);
         Ok(())
@@ -55,7 +53,7 @@ pub mod example_sol_anchor_contract {
         // https://docs.pyth.network/consume-data/best-practices
         let current_timestamp1 = Clock::get()?.unix_timestamp;
         let loan_price = loan_feed
-            .get_price_no_older_than(current_timestamp1, STALENESS_THRESHOLD)
+            .get_price_no_older_than(current_timestamp1, 60)
             .ok_or(ErrorCode::PythOffline)?;
         let loan_max_price = loan_price
             .price
