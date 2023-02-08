@@ -226,7 +226,6 @@ pub struct PriceInfo {
     /// confidence interval around the price.
     /// For the aggregate confidence use `get_price_no_older_than()` whenever possible. Accessing
     /// fields directly might expose you to stale or invalid prices.
-    /// is valid.
     pub conf:     u64,
     /// status of price (Trading is valid)
     pub status:   PriceStatus,
