@@ -644,6 +644,7 @@ impl Price {
 #[cfg(test)]
 mod test {
     use quickcheck::TestResult;
+    use quickcheck_macros::quickcheck;
     use std::convert::TryFrom;
 
     use crate::price::{
