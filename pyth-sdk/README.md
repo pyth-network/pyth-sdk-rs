@@ -106,7 +106,7 @@ println!("The valuation price for the collateral given {} tokens deposited is ({
          deposits, price_collateral.price, price_collateral.conf, price_collateral.expo);
 ```
 
-Here, `deposits` indicates the total amount of collateral deposited. `get_collateral_valuation_price` takes in the total deposits in the protocol and interpolates between (`0`, `rate_discount_inital`) and (`deposits_endpoint`, `rate_discount_final`) to linearly caclulate the discount at `deposits`. As a note, this function scales down the price depending on the provided discount and deposit inputs, but it does not alter the confidence.
+Here, `deposits` indicates the total amount of collateral deposited. `get_collateral_valuation_price` takes in the total deposits in the protocol and interpolates between (`0`, `rate_discount_inital`) and (`deposits_endpoint`, `rate_discount_final`) to linearly caclulate the discount at `deposits`. As a note, this function scales the price depending on the provided discount and deposit inputs, but it does not alter the confidence.
 
 To adjust the price at which a borrow position is valued, a protocol can similarly combine the current Pyth price and their estimate of liquidity:
 
@@ -123,7 +123,7 @@ let price_borrow: Price = btc_usd.get_borrow_valuation_price(
     borrows_endpoint,
     rate_premium_initial,
     rate_premium_final,
-    discount_exponent).ok_or(StdError::not_found("Issue with querying borrow price"))?;
+    premium_exponent).ok_or(StdError::not_found("Issue with querying borrow price"))?;
 println!("The valuation price for the borrow given {} tokens borrowed is ({} +- {}) x 10^{} USD",
          borrows, price_borrow.price, price_borrow.conf, price_borrow.expo);
 ```
