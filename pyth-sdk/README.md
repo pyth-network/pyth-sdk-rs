@@ -123,7 +123,7 @@ let price_borrow: Price = btc_usd.get_borrow_valuation_price(
     borrows_endpoint,
     rate_premium_initial,
     rate_premium_final,
-    discount_exponent).ok_or(StdError::not_found("Issue with querying collateral price"))?;
+    discount_exponent).ok_or(StdError::not_found("Issue with querying borrow price"))?;
 println!("The valuation price for the borrow given {} tokens borrowed is ({} +- {}) x 10^{} USD",
          borrows, price_borrow.price, price_borrow.conf, price_borrow.expo);
 ```
