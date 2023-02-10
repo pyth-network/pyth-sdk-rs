@@ -81,3 +81,49 @@ println!("0.1 BTC and 0.05 ETH are worth: ({} +- {}) x 10^{} USD",
 ```
 
 This operation can be useful for pricing, e.g., an LP token that is backed by two underlying currencies.
+
+## Liquidity-related Pricing Measures
+
+A variety of measures should be taken for protocols looking to mitigate liquidity-related risks. To limit deposits and borrows, protocols could simply derive their limit from the off-chain liquidity estimates and then store those values in contract state. No explicit interaction with the Pyth SDK would be needed in this simple case.
+
+To adjust the price at which collateral is valued based on the liquidity information, a protocol can combine the current Pyth price and their estimate of liquidity:
+
+```rust
+let btc_usd: Price = ...;
+let deposits: u64 = ...;
+let deposits_endpoint: u64 = ...;
+let rate_discount_initial: u64 = ...;
+let rate_discount_final: u64 = ...;
+let discount_exponent: i32 = ...;
+
+let price_collateral: Price = btc_usd.get_collateral_valuation_price(
+    deposits,
+    deposits_endpoint,
+    rate_discount_initial,
+    rate_discount_final,
+    discount_exponent).ok_or(StdError::not_found("Issue with querying collateral price"))?;
+println!("The valuation price for the collateral given {} tokens deposited is ({} +- {}) x 10^{} USD",
+         deposits, price_collateral.price, price_collateral.conf, price_collateral.expo);
+```
+
+Here, `deposits` indicates the total amount of collateral deposited. `get_collateral_valuation_price` takes in the total deposits in the protocol and interpolates between (`0`, `rate_discount_inital`) and (`deposits_endpoint`, `rate_discount_final`) to linearly caclulate the discount at `deposits`. As a note, this function scales down the price depending on the provided discount and deposit inputs, but it does not alter the confidence.
+
+To adjust the price at which a borrow position is valued, a protocol can similarly combine the current Pyth price and their estimate of liquidity:
+
+```rust
+let btc_usd: Price = ...;
+let borrows: u64 = ...;
+let borrows_endpoint: u64 = ...;
+let rate_premium_initial: u64 = ...;
+let rate_premium_final: u64 = ...;
+let premium_exponent: i32 = ...;
+
+let price_borrow: Price = btc_usd.get_borrow_valuation_price(
+    borrows,
+    borrows_endpoint,
+    rate_premium_initial,
+    rate_premium_final,
+    discount_exponent).ok_or(StdError::not_found("Issue with querying collateral price"))?;
+println!("The valuation price for the borrow given {} tokens borrowed is ({} +- {}) x 10^{} USD",
+         borrows, price_borrow.price, price_borrow.conf, price_borrow.expo);
+```
