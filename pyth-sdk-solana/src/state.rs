@@ -1,4 +1,8 @@
 //! Structures and functions for interacting with Solana on-chain account data.
+//!
+//! The definitions here should be in sync with the definitinos provided within the pyth-oracle
+//! Solana contract. To enforce this the tests at the bottom of this file attempt to compare the
+//! definitions here with the definitions in the contract.
 
 use borsh::{
     BorshDeserialize,
@@ -511,10 +515,16 @@ mod test {
     use solana_program::pubkey::Pubkey;
 
     use super::{
+        CorpAction,
+        MappingAccount,
         PriceAccount,
+        PriceComp,
         PriceInfo,
         PriceStatus,
+        PriceType,
+        ProductAccount,
         Rational,
+        PROD_ATTR_SIZE,
     };
 
 
@@ -736,5 +746,175 @@ mod test {
         };
 
         assert_eq!(price_account.get_price_no_older_than(&clock, 1), None);
+    }
+
+    // Convert the pyth-client program definition to our local accounts. This uses
+    // destructuring to make sure that we cover all fields and gain some confidence that the
+    // types are at least isomoprhic.
+    #[test]
+    fn test_compare_upstream_definitions() {
+        impl From<pyth_oracle::PriceInfo> for PriceInfo {
+            fn from(other: pyth_oracle::PriceInfo) -> Self {
+                let pyth_oracle::PriceInfo {
+                    price_,
+                    conf_,
+                    status_,
+                    corp_act_status_,
+                    pub_slot_,
+                } = other;
+
+                Self {
+                    price:    price_,
+                    conf:     conf_,
+                    status:   match status_ {
+                        0 => PriceStatus::Unknown,
+                        1 => PriceStatus::Trading,
+                        2 => PriceStatus::Halted,
+                        3 => PriceStatus::Auction,
+                        4 => PriceStatus::Ignored,
+                        _ => unreachable!(),
+                    },
+                    corp_act: match corp_act_status_ {
+                        0 => CorpAction::NoCorpAct,
+                        _ => unreachable!(),
+                    },
+                    pub_slot: pub_slot_,
+                }
+            }
+        }
+
+        impl From<pyth_oracle::PriceAccount> for PriceAccount {
+            fn from(other: pyth_oracle::PriceAccount) -> Self {
+                let pyth_oracle::PriceAccount {
+                    header,
+                    price_type,
+                    exponent,
+                    num_,
+                    num_qt_,
+                    last_slot_,
+                    valid_slot_,
+                    twap_,
+                    twac_,
+                    timestamp_,
+                    min_pub_,
+                    unused_1_,
+                    unused_2_,
+                    unused_3_,
+                    product_account,
+                    next_price_account,
+                    prev_slot_,
+                    prev_price_,
+                    prev_conf_,
+                    prev_timestamp_,
+                    agg_,
+                    comp_,
+                } = other;
+
+                Self {
+                    magic:          header.magic_number,
+                    ver:            header.version,
+                    atype:          header.account_type,
+                    size:           header.size,
+                    ptype:          match price_type {
+                        0 => PriceType::Unknown,
+                        1 => PriceType::Price,
+                        _ => unreachable!(),
+                    },
+                    expo:           exponent,
+                    num:            num_,
+                    num_qt:         num_qt_,
+                    last_slot:      last_slot_,
+                    valid_slot:     valid_slot_,
+                    ema_price:      Rational {
+                        val:   twap_.val_,
+                        numer: twap_.numer_,
+                        denom: twap_.denom_,
+                    },
+                    ema_conf:       Rational {
+                        val:   twac_.val_,
+                        numer: twac_.numer_,
+                        denom: twac_.denom_,
+                    },
+                    timestamp:      timestamp_,
+                    min_pub:        min_pub_,
+                    drv2:           unused_1_ as u8,
+                    drv3:           unused_2_ as u16,
+                    drv4:           unused_3_ as u32,
+                    prod:           product_account,
+                    next:           next_price_account,
+                    prev_slot:      prev_slot_,
+                    prev_price:     prev_price_,
+                    prev_conf:      prev_conf_,
+                    prev_timestamp: prev_timestamp_,
+                    agg:            PriceInfo::from(agg_),
+                    comp:           comp_.map(|comp| PriceComp {
+                        publisher: comp.pub_,
+                        agg:       PriceInfo::from(comp.agg_),
+                        latest:    PriceInfo::from(comp.latest_),
+                    }),
+                }
+            }
+        }
+
+        impl From<pyth_oracle::MappingAccount> for MappingAccount {
+            fn from(other: pyth_oracle::MappingAccount) -> Self {
+                let pyth_oracle::MappingAccount {
+                    header,
+                    number_of_products,
+                    unused_,
+                    next_mapping_account,
+                    products_list,
+                } = other;
+
+                Self {
+                    magic:    header.magic_number,
+                    ver:      header.version,
+                    atype:    header.account_type,
+                    size:     header.size,
+                    num:      number_of_products,
+                    unused:   unused_,
+                    next:     next_mapping_account,
+                    products: products_list,
+                }
+            }
+        }
+
+        // We then compare the type sizes to get some guarantee that the layout is likely the same.
+        // Combined with the isomorphism above we should be able to catch layout changes that were
+        // not propogated from the pyth-client program.
+        assert_eq!(
+            std::mem::size_of::<PriceAccount>(),
+            std::mem::size_of::<pyth_oracle::PriceAccount>()
+        );
+
+        assert_eq!(
+            std::mem::size_of::<MappingAccount>(),
+            std::mem::size_of::<pyth_oracle::MappingAccount>()
+        );
+
+        assert_eq!(
+            std::mem::size_of::<PriceInfo>(),
+            std::mem::size_of::<pyth_oracle::PriceInfo>()
+        );
+
+        assert_eq!(
+            std::mem::size_of::<PriceComp>(),
+            std::mem::size_of::<pyth_oracle::PriceComponent>()
+        );
+
+        assert_eq!(
+            std::mem::size_of::<Rational>(),
+            std::mem::size_of::<pyth_oracle::PriceEma>()
+        );
+
+        // For ProductAccount, there are fields we expose from this library that are not exposed by
+        // pyth-oracle. So we need to ignore the remaining fields of the account. This is safe and
+        // is in fact an example of our local types being better than upstream, we don't worry
+        // about enforcing that. Assume a header.size of 0.
+        assert_eq!(
+            std::mem::size_of::<ProductAccount>(),
+            std::mem::size_of::<pyth_oracle::ProductAccount>()
+                + std::mem::size_of::<[u8; PROD_ATTR_SIZE]>()
+        );
     }
 }
