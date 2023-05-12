@@ -88,7 +88,7 @@ impl Default for AccountType {
 )]
 #[repr(u32)]
 pub enum CorpAction {
-    NoCorpAct,
+    NoCorpAct = 0,
 }
 
 impl Default for CorpAction {
