@@ -113,7 +113,7 @@ impl Default for CorpAction {
 )]
 #[repr(u32)]
 pub enum PriceType {
-    Unknown,
+    Unknown = 0,
     Price,
 }
 
