@@ -10,13 +10,13 @@ use borsh::{
     BorshDeserialize,
     BorshSerialize,
 };
+use bytemuck::checked::{
+    cast_slice,
+    from_bytes,
+    try_cast_slice,
+    CheckedCastError,
+};
 use bytemuck::{
-    checked::{
-	cast_slice,
-	from_bytes,
-	try_cast_slice,
-	CheckedCastError,
-    },
     CheckedBitPattern,
     Pod,
     PodCastError,
@@ -757,11 +757,11 @@ mod test {
     /// valid bytes
     #[test]
     fn test_happy_recognized_price_status() {
-	let happy_status_bytes = 2u32.to_le_bytes();
+        let happy_status_bytes = 2u32.to_le_bytes();
 
         let happy_status_result = try_from_bytes::<PriceStatus>(happy_status_bytes.as_slice());
 
-	assert_eq!(happy_status_result, Ok(&PriceStatus::Halted));
+        assert_eq!(happy_status_result, Ok(&PriceStatus::Halted));
     }
 
     /// Ensure that bytemuck::checked::* casting functions reject
