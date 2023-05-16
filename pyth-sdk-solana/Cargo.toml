@@ -1,6 +1,6 @@
 [package]
 name = "pyth-sdk-solana"
-version = "0.7.1"
+version = "0.7.2"
 authors = ["Pyth Data Foundation"]
 edition = "2018"
 license = "Apache-2.0"
@@ -11,7 +11,7 @@ keywords = [ "pyth", "solana", "oracle" ]
 readme = "README.md"
 
 [dependencies]
-solana-program = ">= 1.9, < 1.15"
+solana-program = ">= 1.9, <= 1.15"
 borsh = "0.9"
 borsh-derive = "0.9.0"
 bytemuck = "1.7.2"
@@ -22,8 +22,8 @@ serde = { version = "1.0.136", features = ["derive"] }
 pyth-sdk = { path = "../pyth-sdk", version = "0.7.0" }
 
 [dev-dependencies]
-solana-client = ">= 1.9, < 1.15"
-solana-sdk = ">= 1.9, < 1.15"
+solana-client = ">= 1.9, <= 1.15"
+solana-sdk = ">= 1.9, <= 1.15"
 
 [lib]
 crate-type = ["cdylib", "lib"]
