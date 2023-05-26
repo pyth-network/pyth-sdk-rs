@@ -1,9 +1,0 @@
-yarn.lock
-Cargo.lock
-.anchor
-.DS_Store
-target
-**/*.rs.bk
-node_modules
-test-ledger
-program_address.json
