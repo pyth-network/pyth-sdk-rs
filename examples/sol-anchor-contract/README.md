@@ -35,6 +35,6 @@ anchor test --skip-local-validator
 
 NB
 
-When tetsing on local cluster you may encounter error "Pyth price oracle is offline.", please find below one of the approaches of addressing it.
+When testing on local cluster you may encounter error "Pyth price oracle is offline.", please find below one of the approaches of addressing it.
 - On file "src\lib.rs", change the value "60" to a higher figure on these lines of code ".get_price_no_older_than(current_timestamp1, 60)"
 and ".get_price_no_older_than(current_timestamp2, 60)". This should just be for testing purposes on local cluster.
