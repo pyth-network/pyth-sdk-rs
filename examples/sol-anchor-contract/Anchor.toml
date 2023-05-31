@@ -7,3 +7,19 @@ sol_anchor_contract = "GFPM2LncpbWiLkePLs3QjcLVPw31B2h23FwFfhig79fh"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[test]
+startup_wait = 20000
+
+[[test.genesis]]
+address = "GFPM2LncpbWiLkePLs3QjcLVPw31B2h23FwFfhig79fh"
+program = "./target/deploy/sol_anchor_contract.so"
+
+[test.validator]
+url = "https://api.devnet.solana.com"
+
+[[test.validator.clone]]
+address = "EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw"
+
+[[test.validator.clone]]
+address = "38xoQ4oeJCBrcVvca2cGk7iV1dAfrmTR1kmhSCJQ8Jto"
