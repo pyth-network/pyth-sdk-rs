@@ -46,7 +46,7 @@ pub mod sol_anchor_contract {
             .checked_mul(loan_qty)
             .ok_or(ErrorCode::Overflow)?;
 
-        // Note : f64 should not be used in smart contracts, but we use it here so it gets displayed nicely in the logs.
+        // WARNING : f64 SHOULD NOT BE USED IN SMART CONTRACTS, IT IS USED HERE ONLY FOR LOGGING PURPOSES
         // lets get the maximum loan value based on computation
         // i.e {} * 10^({})
         // loan_max_value * 10^(loan_price.expo)
@@ -78,12 +78,12 @@ pub mod sol_anchor_contract {
             .checked_mul(collateral_qty)
             .ok_or(ErrorCode::Overflow)?;
 
-        // Note : f64 should not be used in smart contracts, but we use it here so it gets displayed nicely in the logs.
+        // WARNING : f64 SHOULD NOT BE USED IN SMART CONTRACTS, IT IS USED HERE ONLY FOR LOGGING PURPOSES
         // lets get the minimum collateral value based on computation
         // i.e {} * 10^({})
         // i.e collateral_min_value * 10^(collateral_price.expo)
         let exponent: i32 = collateral_price.expo;
-        let result = (BASE).powi(exponent.abs());
+        let result = BASE.powi(exponent.abs());
         let result: f64 = if exponent < 0 { 1.0 / result } else { result };
         let result_collateral_value = collateral_min_value as f64 * result;
 
