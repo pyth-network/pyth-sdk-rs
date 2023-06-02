@@ -9,6 +9,8 @@ use error::ErrorCode;
 
 declare_id!("GFPM2LncpbWiLkePLs3QjcLVPw31B2h23FwFfhig79fh");
 
+const BASE : f64 = 10.0;
+
 #[program]
 pub mod sol_anchor_contract {
     use super::*;
@@ -44,12 +46,12 @@ pub mod sol_anchor_contract {
             .checked_mul(loan_qty)
             .ok_or(ErrorCode::Overflow)?;
 
+        // Note : f64 should not be used in smart contracts, but we use it here so it gets displayed nicely in the logs.
         // lets get the maximum loan value based on computation
         // i.e {} * 10^({})
         // loan_max_value * 10^(loan_price.expo)
-        let base: i32 = 10;
         let exponent: i32 = loan_price.expo;
-        let result = (base as f64).powi(exponent.abs());
+        let result = (BASE as f64).powi(exponent.abs());
         let result = if exponent < 0 { 1.0 / result } else { result };
         let result_loan_value = loan_max_value as f64 * result;
 
@@ -76,13 +78,13 @@ pub mod sol_anchor_contract {
             .checked_mul(collateral_qty)
             .ok_or(ErrorCode::Overflow)?;
 
+        // Note : f64 should not be used in smart contracts, but we use it here so it gets displayed nicely in the logs.
         // lets get the minimum collateral value based on computation
         // i.e {} * 10^({})
         // i.e collateral_min_value * 10^(collateral_price.expo)
-        let base: i32 = 10;
         let exponent: i32 = collateral_price.expo;
-        let result = (base as f64).powi(exponent.abs());
-        let result = if exponent < 0 { 1.0 / result } else { result };
+        let result = (BASE).powi(exponent.abs());
+        let result: f64 = if exponent < 0 { 1.0 / result } else { result };
         let result_collateral_value = collateral_min_value as f64 * result;
 
         msg!(
