@@ -18,28 +18,8 @@ describe("sol-anchor-contract", () => {
     .SolAnchorContract as anchor.Program<SolAnchorContract>;
   const payer = provider.wallet.publicKey;
   let programId = program.programId;
-  var programKey;
-
-  try {
-    let data = fs.readFileSync(
-      "./target/deploy/sol_anchor_contract-keypair.json"
-    );
-    programKey = anchor.web3.Keypair.fromSecretKey(
-      new Uint8Array(JSON.parse(data))
-    );
-  } catch (error) {
-    throw new Error(
-      "Please make sure the program key is program_address.json."
-    );
-  }
-
-  try {
-    assert(programId.equals(programKey.publicKey));
-  } catch (error) {
-    throw new Error(
-      "Please make sure you have the same program address in Anchor.toml and program_address.json"
-    );
-  }
+  const programKey = program.programId;
+  console.log(programKey)
 
   it("Initialize the config.", async () => {
     const tx = await program.methods
@@ -53,7 +33,7 @@ describe("sol-anchor-contract", () => {
         config: config.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
-      .signers([config, programKey])
+      .signers([config])
       .rpc();
 
     console.log("Config key: " + config.publicKey);

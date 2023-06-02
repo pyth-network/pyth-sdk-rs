@@ -122,10 +122,6 @@ pub mod sol_anchor_contract {
 
 #[derive(Accounts)]
 pub struct InitRequest<'info> {
-    #[account(
-        address = *program_id @ ErrorCode::Unauthorized
-    )]
-    pub program: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
