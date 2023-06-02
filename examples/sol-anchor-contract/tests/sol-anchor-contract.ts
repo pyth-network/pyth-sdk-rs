@@ -15,7 +15,7 @@ describe("sol-anchor-contract", () => {
   const program = anchor.workspace
     .SolAnchorContract as anchor.Program<SolAnchorContract>;
   const payer = provider.wallet.publicKey;
-  
+
   it("Initialize the config.", async () => {
     const tx = await program.methods
       .init({
