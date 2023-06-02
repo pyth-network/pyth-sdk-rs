@@ -51,7 +51,7 @@ pub mod sol_anchor_contract {
         // i.e {} * 10^({})
         // loan_max_value * 10^(loan_price.expo)
         let exponent: i32 = loan_price.expo;
-        let result = (BASE as f64).powi(exponent.abs());
+        let result = BASE.powi(exponent.abs());
         let result = if exponent < 0 { 1.0 / result } else { result };
         let result_loan_value = loan_max_value as f64 * result;
 
