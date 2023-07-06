@@ -8,16 +8,16 @@ test-bpf = []
 no-entrypoint = []
 
 [dependencies]
-pyth-sdk-solana = { path = "../", version = "0.7.0" }
-solana-program = ">= 1.10, < 1.15"
+pyth-sdk-solana = { path = "../", version = "0.7.3" }
+solana-program = ">= 1.10, <= 1.16"
 bytemuck = "1.7.2"
-borsh = "0.9"
-borsh-derive = "0.9.0"
+borsh = "0.10.3"
+borsh-derive = "0.10.3"
 
 [dev-dependencies]
-solana-program-test = ">= 1.10, < 1.15"
-solana-client = ">= 1.10, < 1.15"
-solana-sdk = ">= 1.10, < 1.15"
+solana-program-test = ">= 1.10, <= 1.16"
+solana-client = ">= 1.10, <= 1.16"
+solana-sdk = ">= 1.10, <= 1.16"
 
 [lib]
 crate-type = ["cdylib", "lib"]
