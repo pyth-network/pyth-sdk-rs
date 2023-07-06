@@ -18,5 +18,5 @@ default = []
 
 [dependencies]
 anchor-lang = "0.28.0"
-pyth-sdk = { path = "../../../../pyth-sdk", version = "0.7.0" }
+pyth-sdk = { path = "../../../../pyth-sdk", version = "0.7.1" }
 pyth-sdk-solana = { path = "../../../../pyth-sdk-solana", version = "0.7.3" }
