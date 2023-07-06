@@ -1,6 +1,6 @@
 [package]
 name = "example-sol-contract"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Pyth Data Foundation"]
 edition = "2021"
 

@@ -1,6 +1,6 @@
 [package]
 name = "sol-anchor-contract"
-version = "0.1.0"
+version = "0.1.1"
 description = "Created with Anchor"
 rust-version = "1.60"
 edition = "2021"
