@@ -30,6 +30,11 @@ jobs:
         working-directory: ./pyth-sdk-solana/test-contract
     steps:
     - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: 1.68.0
+        override: true
     - name: Install dependencies
       run: sudo apt-get update && sudo apt-get install libudev-dev
     - name: Install Solana Binaries
