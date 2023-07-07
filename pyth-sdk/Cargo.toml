@@ -1,6 +1,6 @@
 [package]
 name = "pyth-sdk"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Pyth Data Foundation"]
 edition = "2018"
 license = "Apache-2.0"
@@ -15,8 +15,8 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 hex = { version = "0.4.3", features = ["serde"] }
-borsh = "0.9"
-borsh-derive = "0.9.0"
+borsh = "0.10.3"
+borsh-derive = "0.10.3"
 serde = { version = "1.0.136", features = ["derive"] }
 schemars = "0.8.8"
 getrandom = { version = "0.2.2", features = ["custom"] }
