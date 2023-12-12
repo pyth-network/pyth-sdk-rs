@@ -1,6 +1,6 @@
 [package]
 name = "example-sol-contract"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Pyth Data Foundation"]
 edition = "2021"
 
@@ -10,5 +10,5 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 borsh = "0.10.3"
 arrayref = "0.3.6"
-solana-program = ">= 1.10, <= 1.16"
-pyth-sdk-solana = { path = "../../pyth-sdk-solana", version = "0.8.0" }
+solana-program = ">= 1.10"
+pyth-sdk-solana = { path = "../../pyth-sdk-solana", version = "0.9.0" }
