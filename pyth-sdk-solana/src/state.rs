@@ -283,10 +283,87 @@ pub struct Rational {
     pub denom: i64,
 }
 
+/// Macro for PriceAccountSolana/PriceAccountPythnet methods,
+/// eliminates repetition for the shared methods. Self type name is the
+/// only parameter.
+macro_rules! price_account_impl {
+    ($name:ty) => {
+        impl $name {
+            pub fn get_publish_time(&self) -> UnixTimestamp {
+                match self.agg.status {
+                    PriceStatus::Trading => self.timestamp,
+                    _ => self.prev_timestamp,
+                }
+            }
+
+            /// Get the last valid price as long as it was updated within `slot_threshold` slots of
+            /// the current slot.
+            pub fn get_price_no_older_than(
+                &self,
+                clock: &Clock,
+                slot_threshold: u64,
+            ) -> Option<Price> {
+                if self.agg.status == PriceStatus::Trading
+                    && self.agg.pub_slot >= clock.slot - slot_threshold
+                {
+                    return Some(Price {
+                        conf:         self.agg.conf,
+                        expo:         self.expo,
+                        price:        self.agg.price,
+                        publish_time: self.timestamp,
+                    });
+                }
+
+                if self.prev_slot >= clock.slot - slot_threshold {
+                    return Some(Price {
+                        conf:         self.prev_conf,
+                        expo:         self.expo,
+                        price:        self.prev_price,
+                        publish_time: self.prev_timestamp,
+                    });
+                }
+
+                None
+            }
+
+            pub fn to_price_feed(&self, price_key: &Pubkey) -> PriceFeed {
+                let status = self.agg.status;
+
+                let price = match status {
+                    PriceStatus::Trading => Price {
+                        conf:         self.agg.conf,
+                        expo:         self.expo,
+                        price:        self.agg.price,
+                        publish_time: self.get_publish_time(),
+                    },
+                    _ => Price {
+                        conf:         self.prev_conf,
+                        expo:         self.expo,
+                        price:        self.prev_price,
+                        publish_time: self.get_publish_time(),
+                    },
+                };
+
+                let ema_price = Price {
+                    conf:         self.ema_conf.val as u64,
+                    expo:         self.expo,
+                    price:        self.ema_price.val,
+                    publish_time: self.get_publish_time(),
+                };
+
+                PriceFeed::new(PriceIdentifier::new(price_key.to_bytes()), price, ema_price)
+            }
+        }
+    };
+}
+
+/// Backwards-compatible typedef
+pub type PriceAccount = PriceAccountSolana;
+
 /// Price accounts represent a continuously-updating price feed for a product.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 #[repr(C)]
-pub struct PriceAccount {
+pub struct PriceAccountSolana {
     /// pyth magic number
     pub magic:          u32,
     /// program version
@@ -339,76 +416,95 @@ pub struct PriceAccount {
     pub comp:           [PriceComp; 32],
 }
 
-#[cfg(target_endian = "little")]
-unsafe impl Zeroable for PriceAccount {
-}
+price_account_impl!(PriceAccountSolana);
 
 #[cfg(target_endian = "little")]
-unsafe impl Pod for PriceAccount {
+unsafe impl Zeroable for PriceAccountSolana {
 }
 
-impl PriceAccount {
-    pub fn get_publish_time(&self) -> UnixTimestamp {
-        match self.agg.status {
-            PriceStatus::Trading => self.timestamp,
-            _ => self.prev_timestamp,
-        }
-    }
-
-    /// Get the last valid price as long as it was updated within `slot_threshold` slots of the
-    /// current slot.
-    pub fn get_price_no_older_than(&self, clock: &Clock, slot_threshold: u64) -> Option<Price> {
-        if self.agg.status == PriceStatus::Trading
-            && self.agg.pub_slot >= clock.slot - slot_threshold
-        {
-            return Some(Price {
-                conf:         self.agg.conf,
-                expo:         self.expo,
-                price:        self.agg.price,
-                publish_time: self.timestamp,
-            });
-        }
-
-        if self.prev_slot >= clock.slot - slot_threshold {
-            return Some(Price {
-                conf:         self.prev_conf,
-                expo:         self.expo,
-                price:        self.prev_price,
-                publish_time: self.prev_timestamp,
-            });
-        }
-
-        None
-    }
-
-    pub fn to_price_feed(&self, price_key: &Pubkey) -> PriceFeed {
-        let status = self.agg.status;
-
-        let price = match status {
-            PriceStatus::Trading => Price {
-                conf:         self.agg.conf,
-                expo:         self.expo,
-                price:        self.agg.price,
-                publish_time: self.get_publish_time(),
-            },
-            _ => Price {
-                conf:         self.prev_conf,
-                expo:         self.expo,
-                price:        self.prev_price,
-                publish_time: self.get_publish_time(),
-            },
-        };
-
-        let ema_price = Price {
-            conf:         self.ema_conf.val as u64,
-            expo:         self.expo,
-            price:        self.ema_price.val,
-            publish_time: self.get_publish_time(),
-        };
-
-        PriceFeed::new(PriceIdentifier::new(price_key.to_bytes()), price, ema_price)
-    }
+#[cfg(target_endian = "little")]
+unsafe impl Pod for PriceAccountSolana {
 }
+
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[repr(C)]
+pub struct PriceAccountPythnet {
+    /// pyth magic number
+    pub magic:            u32,
+    /// program version
+    pub ver:              u32,
+    /// account type
+    pub atype:            u32,
+    /// price account size
+    pub size:             u32,
+    /// price or calculation type
+    pub ptype:            PriceType,
+    /// price exponent
+    pub expo:             i32,
+    /// number of component prices
+    pub num:              u32,
+    /// number of quoters that make up aggregate
+    pub num_qt:           u32,
+    /// slot of last valid (not unknown) aggregate price
+    pub last_slot:        u64,
+    /// valid slot-time of agg. price
+    pub valid_slot:       u64,
+    /// exponentially moving average price
+    pub ema_price:        Rational,
+    /// exponentially moving average confidence interval
+    pub ema_conf:         Rational,
+    /// unix timestamp of aggregate price
+    pub timestamp:        i64,
+    /// min publishers for valid price
+    pub min_pub:          u8,
+    /// space for future derived values
+    pub drv2:             u8,
+    /// space for future derived values
+    pub drv3:             u16,
+    /// space for future derived values
+    pub drv4:             u32,
+    /// product account key
+    pub prod:             Pubkey,
+    /// next Price account in linked list
+    pub next:             Pubkey,
+    /// valid slot of previous update
+    pub prev_slot:        u64,
+    /// aggregate price of previous update with TRADING status
+    pub prev_price:       i64,
+    /// confidence interval of previous update with TRADING status
+    pub prev_conf:        u64,
+    /// unix timestamp of previous aggregate with TRADING status
+    pub prev_timestamp:   i64,
+    /// aggregate price info
+    pub agg:              PriceInfo,
+    /// price components one per quoter.
+    pub comp:             [PriceComp; 32],
+    /// Rationale (2023-12-12): Rust is currently unable to derive Default for [PriceComp; 64]
+    pub comp2:            [PriceComp; 32],
+    /// Cumulative sums of aggregative price and confidence used to compute arithmetic moving
+    /// averages
+    pub price_cumulative: PriceCumulative,
+}
+
+/// NOTE(2023-12-12): Copied from pyth-client
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Default, Pod, Zeroable, PartialEq, Eq)]
+pub struct PriceCumulative {
+    /// Cumulative sum of price * slot_gap
+    pub price:          i128,
+    /// Cumulative sum of conf * slot_gap
+    pub conf:           u128,
+    /// Cumulative number of slots where the price wasn't recently updated (within
+    /// PC_MAX_SEND_LATENCY slots). This field should be used to calculate the downtime
+    /// as a percent of slots between two times `T` and `t` as follows:
+    /// `(T.num_down_slots - t.num_down_slots) / (T.agg_.pub_slot_ - t.agg_.pub_slot_)`
+    pub num_down_slots: u64,
+    /// Padding for alignment
+    pub unused:         u64,
+}
+
+price_account_impl!(PriceAccountPythnet);
 
 fn load<T: Pod>(data: &[u8]) -> Result<&T, PodCastError> {
     let size = size_of::<T>();
@@ -456,8 +552,8 @@ pub fn load_product_account(data: &[u8]) -> Result<&ProductAccount, PythError> {
 }
 
 /// Get a `Price` account from the raw byte value of a Solana account.
-pub fn load_price_account(data: &[u8]) -> Result<&PriceAccount, PythError> {
-    let pyth_price = load::<PriceAccount>(data).map_err(|_| PythError::InvalidAccountData)?;
+pub fn load_price_account(data: &[u8]) -> Result<&PriceAccountSolana, PythError> {
+    let pyth_price = load::<PriceAccountSolana>(data).map_err(|_| PythError::InvalidAccountData)?;
 
     if pyth_price.magic != MAGIC {
         return Err(PythError::InvalidAccountData);
