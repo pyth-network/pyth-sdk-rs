@@ -18,7 +18,7 @@ use borsh::{
     BorshDeserialize,
     BorshSerialize,
 };
-use pyth_sdk_solana::load_price_feed_from_account_info;
+use pyth_sdk_solana::state::SolanaPriceAccount;
 
 use crate::instruction::ExampleInstructions;
 use crate::state::AdminConfig;
@@ -53,8 +53,8 @@ pub fn process_instruction(
             config.collateral_price_feed_id = *pyth_collateral_account.key;
 
             // Make sure these Pyth price accounts can be loaded
-            load_price_feed_from_account_info(pyth_loan_account)?;
-            load_price_feed_from_account_info(pyth_collateral_account)?;
+            SolanaPriceAccount::account_info_to_feed(pyth_loan_account)?;
+            SolanaPriceAccount::account_info_to_feed(pyth_collateral_account)?;
 
             let config_data = config.try_to_vec()?;
             let config_dst = &mut admin_config_account.try_borrow_mut_data()?;
@@ -85,7 +85,7 @@ pub fn process_instruction(
             // (price + conf) * loan_qty * 10 ^ (expo).
             // Here is more explanation on confidence interval in Pyth:
             // https://docs.pyth.network/consume-data/best-practices
-            let feed1 = load_price_feed_from_account_info(pyth_loan_account)?;
+            let feed1 = SolanaPriceAccount::account_info_to_feed(pyth_loan_account)?;
             let current_timestamp1 = Clock::get()?.unix_timestamp;
             let result1 = feed1
                 .get_price_no_older_than(current_timestamp1, 60)
@@ -107,7 +107,7 @@ pub fn process_instruction(
             // (price - conf) * collateral_qty * 10 ^ (expo).
             // Here is more explanation on confidence interval in Pyth:
             // https://docs.pyth.network/consume-data/best-practices
-            let feed2 = load_price_feed_from_account_info(pyth_collateral_account)?;
+            let feed2 = SolanaPriceAccount::account_info_to_feed(pyth_collateral_account)?;
             let current_timestamp2 = Clock::get()?.unix_timestamp;
             let result2 = feed2
                 .get_price_no_older_than(current_timestamp2, 60)

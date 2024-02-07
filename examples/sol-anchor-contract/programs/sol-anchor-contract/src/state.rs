@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use pyth_sdk_solana::state::load_price_account;
+use pyth_sdk_solana::state::SolanaPriceAccount;
 use std::ops::Deref;
 use std::str::FromStr;
 
@@ -25,7 +26,8 @@ impl anchor_lang::Owner for PriceFeed {
 
 impl anchor_lang::AccountDeserialize for PriceFeed {
     fn try_deserialize_unchecked(data: &mut &[u8]) -> Result<Self> {
-        let account = load_price_account(data).map_err(|_x| error!(ErrorCode::PythError))?;
+        let account: &SolanaPriceAccount =
+            load_price_account(data).map_err(|_x| error!(ErrorCode::PythError))?;
 
         // Use a dummy key since the key field will be removed from the SDK
         let zeros: [u8; 32] = [0; 32];
