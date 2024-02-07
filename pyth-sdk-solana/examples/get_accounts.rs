@@ -9,6 +9,7 @@ use pyth_sdk_solana::state::{
     load_product_account,
     CorpAction,
     PriceType,
+    SolanaPriceAccount,
 };
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
@@ -62,7 +63,8 @@ fn main() {
                 let mut px_pkey = prod_acct.px_acc;
                 loop {
                     let price_data = clnt.get_account_data(&px_pkey).unwrap();
-                    let price_account = load_price_account(&price_data).unwrap();
+                    let price_account: &SolanaPriceAccount =
+                        load_price_account(&price_data).unwrap();
                     let price_feed = price_account.to_price_feed(&px_pkey);
 
                     println!("  price_account .. {:?}", px_pkey);
