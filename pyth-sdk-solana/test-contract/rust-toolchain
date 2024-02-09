@@ -1,5 +1,5 @@
 
 # This is only used for tests
 [toolchain]
-channel = "1.68.0"
+channel = "1.71.0"
 profile = "minimal"

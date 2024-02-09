@@ -110,7 +110,6 @@ impl Default for PriceType {
     }
 }
 
-
 /// Represents availability status of a price feed.
 #[derive(
     Copy,
@@ -170,7 +169,6 @@ unsafe impl Zeroable for MappingAccount {
 #[cfg(target_endian = "little")]
 unsafe impl Pod for MappingAccount {
 }
-
 
 /// Product accounts contain metadata for a single product, such as its symbol ("Crypto.BTC/USD")
 /// and its base/quote currencies.
@@ -283,10 +281,13 @@ pub struct Rational {
     pub denom: i64,
 }
 
-/// Price accounts represent a continuously-updating price feed for a product.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 #[repr(C)]
-pub struct PriceAccount {
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct GenericPriceAccount<const N: usize, T>
+where
+    T: Default,
+    T: Copy,
+{
     /// pyth magic number
     pub magic:          u32,
     /// program version
@@ -336,18 +337,103 @@ pub struct PriceAccount {
     /// aggregate price info
     pub agg:            PriceInfo,
     /// price components one per quoter
-    pub comp:           [PriceComp; 32],
+    pub comp:           [PriceComp; N],
+    /// additional extended account data
+    pub extended:       T,
+}
+
+impl<const N: usize, T> Default for GenericPriceAccount<N, T>
+where
+    T: Default,
+    T: Copy,
+{
+    fn default() -> Self {
+        Self {
+            magic:          Default::default(),
+            ver:            Default::default(),
+            atype:          Default::default(),
+            size:           Default::default(),
+            ptype:          Default::default(),
+            expo:           Default::default(),
+            num:            Default::default(),
+            num_qt:         Default::default(),
+            last_slot:      Default::default(),
+            valid_slot:     Default::default(),
+            ema_price:      Default::default(),
+            ema_conf:       Default::default(),
+            timestamp:      Default::default(),
+            min_pub:        Default::default(),
+            drv2:           Default::default(),
+            drv3:           Default::default(),
+            drv4:           Default::default(),
+            prod:           Default::default(),
+            next:           Default::default(),
+            prev_slot:      Default::default(),
+            prev_price:     Default::default(),
+            prev_conf:      Default::default(),
+            prev_timestamp: Default::default(),
+            agg:            Default::default(),
+            comp:           [Default::default(); N],
+            extended:       Default::default(),
+        }
+    }
+}
+
+impl<const N: usize, T> std::ops::Deref for GenericPriceAccount<N, T>
+where
+    T: Default,
+    T: Copy,
+{
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.extended
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Default, Pod, Zeroable, PartialEq, Eq)]
+pub struct PriceCumulative {
+    /// Cumulative sum of price * slot_gap
+    pub price:          i128,
+    /// Cumulative sum of conf * slot_gap
+    pub conf:           u128,
+    /// Cumulative number of slots where the price wasn't recently updated (within
+    /// PC_MAX_SEND_LATENCY slots). This field should be used to calculate the downtime
+    /// as a percent of slots between two times `T` and `t` as follows:
+    /// `(T.num_down_slots - t.num_down_slots) / (T.agg_.pub_slot_ - t.agg_.pub_slot_)`
+    pub num_down_slots: u64,
+    /// Padding for alignment
+    pub unused:         u64,
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct PriceAccountExt {
+    pub price_cumulative: PriceCumulative,
+}
+
+/// Backwards compatibility.
+#[deprecated(note = "use an explicit SolanaPriceAccount or PythnetPriceAccount to avoid ambiguity")]
+pub type PriceAccount = GenericPriceAccount<32, ()>;
+
+/// Solana-specific Pyth account where the old 32-element publishers are present.
+pub type SolanaPriceAccount = GenericPriceAccount<32, ()>;
+
+/// Pythnet-specific Price accountw ith upgraded 64-element publishers and extended fields.
+pub type PythnetPriceAccount = GenericPriceAccount<128, PriceAccountExt>;
+
+#[cfg(target_endian = "little")]
+unsafe impl<const N: usize, T: Default + Copy> Zeroable for GenericPriceAccount<N, T> {
 }
 
 #[cfg(target_endian = "little")]
-unsafe impl Zeroable for PriceAccount {
+unsafe impl<const N: usize, T: Default + Copy + 'static> Pod for GenericPriceAccount<N, T> {
 }
 
-#[cfg(target_endian = "little")]
-unsafe impl Pod for PriceAccount {
-}
-
-impl PriceAccount {
+impl<const N: usize, T> GenericPriceAccount<N, T>
+where
+    T: Default,
+    T: Copy,
+{
     pub fn get_publish_time(&self) -> UnixTimestamp {
         match self.agg.status {
             PriceStatus::Trading => self.timestamp,
@@ -456,8 +542,11 @@ pub fn load_product_account(data: &[u8]) -> Result<&ProductAccount, PythError> {
 }
 
 /// Get a `Price` account from the raw byte value of a Solana account.
-pub fn load_price_account(data: &[u8]) -> Result<&PriceAccount, PythError> {
-    let pyth_price = load::<PriceAccount>(data).map_err(|_| PythError::InvalidAccountData)?;
+pub fn load_price_account<const N: usize, T: Default + Copy + 'static>(
+    data: &[u8],
+) -> Result<&GenericPriceAccount<N, T>, PythError> {
+    let pyth_price =
+        load::<GenericPriceAccount<N, T>>(data).map_err(|_| PythError::InvalidAccountData)?;
 
     if pyth_price.magic != MAGIC {
         return Err(PythError::InvalidAccountData);
@@ -511,16 +600,15 @@ mod test {
     use solana_program::pubkey::Pubkey;
 
     use super::{
-        PriceAccount,
         PriceInfo,
         PriceStatus,
         Rational,
+        SolanaPriceAccount,
     };
-
 
     #[test]
     fn test_trading_price_to_price_feed() {
-        let price_account = PriceAccount {
+        let price_account = SolanaPriceAccount {
             expo: 5,
             agg: PriceInfo {
                 price: 10,
@@ -568,7 +656,7 @@ mod test {
 
     #[test]
     fn test_non_trading_price_to_price_feed() {
-        let price_account = PriceAccount {
+        let price_account = SolanaPriceAccount {
             expo: 5,
             agg: PriceInfo {
                 price: 10,
@@ -616,7 +704,7 @@ mod test {
 
     #[test]
     fn test_happy_use_latest_price_in_price_no_older_than() {
-        let price_account = PriceAccount {
+        let price_account = SolanaPriceAccount {
             expo: 5,
             agg: PriceInfo {
                 price: 10,
@@ -650,7 +738,7 @@ mod test {
 
     #[test]
     fn test_happy_use_prev_price_in_price_no_older_than() {
-        let price_account = PriceAccount {
+        let price_account = SolanaPriceAccount {
             expo: 5,
             agg: PriceInfo {
                 price: 10,
@@ -685,7 +773,7 @@ mod test {
 
     #[test]
     fn test_sad_cur_price_unknown_in_price_no_older_than() {
-        let price_account = PriceAccount {
+        let price_account = SolanaPriceAccount {
             expo: 5,
             agg: PriceInfo {
                 price: 10,
@@ -713,7 +801,7 @@ mod test {
 
     #[test]
     fn test_sad_cur_price_stale_in_price_no_older_than() {
-        let price_account = PriceAccount {
+        let price_account = SolanaPriceAccount {
             expo: 5,
             agg: PriceInfo {
                 price: 10,
@@ -736,5 +824,143 @@ mod test {
         };
 
         assert_eq!(price_account.get_price_no_older_than(&clock, 1), None);
+    }
+
+    #[test]
+    fn test_price_feed_representations_equal() {
+        #[repr(C)]
+        #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+        pub struct OldPriceAccount {
+            pub magic:          u32,
+            pub ver:            u32,
+            pub atype:          u32,
+            pub size:           u32,
+            pub ptype:          crate::state::PriceType,
+            pub expo:           i32,
+            pub num:            u32,
+            pub num_qt:         u32,
+            pub last_slot:      u64,
+            pub valid_slot:     u64,
+            pub ema_price:      Rational,
+            pub ema_conf:       Rational,
+            pub timestamp:      i64,
+            pub min_pub:        u8,
+            pub drv2:           u8,
+            pub drv3:           u16,
+            pub drv4:           u32,
+            pub prod:           Pubkey,
+            pub next:           Pubkey,
+            pub prev_slot:      u64,
+            pub prev_price:     i64,
+            pub prev_conf:      u64,
+            pub prev_timestamp: i64,
+            pub agg:            PriceInfo,
+            pub comp:           [crate::state::PriceComp; 32],
+        }
+
+        // Would be better to fuzz this but better than no check.
+        let old = OldPriceAccount {
+            magic:          1,
+            ver:            2,
+            atype:          3,
+            size:           4,
+            ptype:          crate::state::PriceType::Price,
+            expo:           5,
+            num:            6,
+            num_qt:         7,
+            last_slot:      8,
+            valid_slot:     9,
+            ema_price:      Rational {
+                val:   1,
+                numer: 2,
+                denom: 3,
+            },
+            ema_conf:       Rational {
+                val:   1,
+                numer: 2,
+                denom: 3,
+            },
+            timestamp:      12,
+            min_pub:        13,
+            drv2:           14,
+            drv3:           15,
+            drv4:           16,
+            prod:           Pubkey::new_from_array([1; 32]),
+            next:           Pubkey::new_from_array([2; 32]),
+            prev_slot:      19,
+            prev_price:     20,
+            prev_conf:      21,
+            prev_timestamp: 22,
+            agg:            PriceInfo {
+                price:    1,
+                conf:     2,
+                status:   PriceStatus::Trading,
+                corp_act: crate::state::CorpAction::NoCorpAct,
+                pub_slot: 5,
+            },
+            comp:           [Default::default(); 32],
+        };
+
+        let new = super::SolanaPriceAccount {
+            magic:          1,
+            ver:            2,
+            atype:          3,
+            size:           4,
+            ptype:          crate::state::PriceType::Price,
+            expo:           5,
+            num:            6,
+            num_qt:         7,
+            last_slot:      8,
+            valid_slot:     9,
+            ema_price:      Rational {
+                val:   1,
+                numer: 2,
+                denom: 3,
+            },
+            ema_conf:       Rational {
+                val:   1,
+                numer: 2,
+                denom: 3,
+            },
+            timestamp:      12,
+            min_pub:        13,
+            drv2:           14,
+            drv3:           15,
+            drv4:           16,
+            prod:           Pubkey::new_from_array([1; 32]),
+            next:           Pubkey::new_from_array([2; 32]),
+            prev_slot:      19,
+            prev_price:     20,
+            prev_conf:      21,
+            prev_timestamp: 22,
+            agg:            PriceInfo {
+                price:    1,
+                conf:     2,
+                status:   PriceStatus::Trading,
+                corp_act: crate::state::CorpAction::NoCorpAct,
+                pub_slot: 5,
+            },
+            comp:           [Default::default(); 32],
+            extended:       (),
+        };
+
+        // Equal Sized?
+        assert_eq!(
+            std::mem::size_of::<OldPriceAccount>(),
+            std::mem::size_of::<super::SolanaPriceAccount>(),
+        );
+
+        // Equal Byte Representation?
+        unsafe {
+            let old_b = std::slice::from_raw_parts(
+                &old as *const OldPriceAccount as *const u8,
+                std::mem::size_of::<OldPriceAccount>(),
+            );
+            let new_b = std::slice::from_raw_parts(
+                &new as *const super::SolanaPriceAccount as *const u8,
+                std::mem::size_of::<super::SolanaPriceAccount>(),
+            );
+            assert_eq!(old_b, new_b);
+        }
     }
 }
