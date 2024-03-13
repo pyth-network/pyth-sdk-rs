@@ -47,7 +47,7 @@ pub const PROD_ATTR_SIZE: usize = PROD_ACCT_SIZE - PROD_HDR_SIZE;
     serde::Serialize,
     serde::Deserialize,
 )]
-#[repr(C)]
+#[repr(u8)]
 pub enum AccountType {
     Unknown,
     Mapping,
@@ -74,7 +74,7 @@ impl Default for AccountType {
     serde::Serialize,
     serde::Deserialize,
 )]
-#[repr(C)]
+#[repr(u8)]
 pub enum CorpAction {
     NoCorpAct,
 }
@@ -98,7 +98,7 @@ impl Default for CorpAction {
     serde::Serialize,
     serde::Deserialize,
 )]
-#[repr(C)]
+#[repr(u8)]
 pub enum PriceType {
     Unknown,
     Price,
@@ -122,7 +122,7 @@ impl Default for PriceType {
     serde::Serialize,
     serde::Deserialize,
 )]
-#[repr(C)]
+#[repr(u8)]
 pub enum PriceStatus {
     /// The price feed is not currently updating for an unknown reason.
     Unknown,

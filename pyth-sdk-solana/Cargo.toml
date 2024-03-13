@@ -1,6 +1,6 @@
 [package]
 name = "pyth-sdk-solana"
-version = "0.10.0"
+version = "0.10.1"
 authors = ["Pyth Data Foundation"]
 edition = "2018"
 license = "Apache-2.0"
