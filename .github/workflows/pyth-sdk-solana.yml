@@ -34,14 +34,13 @@ jobs:
       run: sudo apt-get update && sudo apt-get install libudev-dev
     - name: Install Solana Binaries
       run: |
-        # Installing 1.17.x cli tools to have sbf instead of bpf. bpf does not work anymore.
-        sh -c "$(curl -sSfL https://release.solana.com/v1.18.1/install)"
+        sh -c "$(curl -sSfL https://release.solana.com/v1.18.4/install)"
         echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
     - name: Build
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
-    - name: Build BPF
-      run: cargo build-bpf --verbose
-    - name: Run BPF tests
-      run: cargo test-bpf --verbose
+    - name: Build SBF
+      run: cargo build-sbf --verbose
+    - name: Run SBF tests
+      run: cargo test-sbf --verbose
