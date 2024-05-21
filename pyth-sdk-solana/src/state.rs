@@ -1,6 +1,6 @@
 //! Structures and functions for interacting with Solana on-chain account data.
 
-use borsh::{
+use borsh_derive::{
     BorshDeserialize,
     BorshSerialize,
 };

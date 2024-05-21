@@ -11,9 +11,9 @@ keywords = [ "pyth", "solana", "oracle" ]
 readme = "README.md"
 
 [dependencies]
-solana-program = ">= 1.9"
-borsh = "0.10.3"
-borsh-derive = "0.10.3"
+solana-program = "1.18.14"
+borsh = "1.5.0"
+borsh-derive = "1.5.0"
 bytemuck = "1.7.2"
 num-derive = "0.3"
 num-traits = "0.2"
@@ -22,8 +22,8 @@ serde = { version = "1.0.136", features = ["derive"] }
 pyth-sdk = { path = "../pyth-sdk", version = "0.8.0" }
 
 [dev-dependencies]
-solana-client = ">= 1.9"
-solana-sdk = ">= 1.9"
+solana-client = "1.18.14"
+solana-sdk = "1.18.14"
 
 [lib]
 crate-type = ["cdylib", "lib"]

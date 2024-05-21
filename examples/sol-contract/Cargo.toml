@@ -8,7 +8,8 @@ edition = "2021"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-borsh = "0.10.3"
+borsh = { version = "1.5.0", features = ["derive"] }
+borsh-derive = "1.5.0"
 arrayref = "0.3.6"
-solana-program = ">= 1.10"
-pyth-sdk-solana = { path = "../../pyth-sdk-solana", version = "0.10.0" }
+solana-program = "1.18.4"
+pyth-sdk-solana = { path = "../../pyth-sdk-solana" }

@@ -4,7 +4,7 @@
 //!     Init{} initializing some loan information and
 //!     Loan2Value{} checking the loan-to-value ratio of the loan.
 
-use borsh::{
+use borsh_derive::{
     BorshDeserialize,
     BorshSerialize,
 };
