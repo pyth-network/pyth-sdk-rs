@@ -1,4 +1,4 @@
-use borsh::{
+use borsh_derive::{
     BorshDeserialize,
     BorshSerialize,
 };

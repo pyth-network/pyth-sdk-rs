@@ -14,10 +14,7 @@ use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::clock::Clock;
 use solana_program::sysvar::Sysvar;
 
-use borsh::{
-    BorshDeserialize,
-    BorshSerialize,
-};
+use borsh::BorshDeserialize;
 use pyth_sdk_solana::state::SolanaPriceAccount;
 
 use crate::instruction::ExampleInstructions;
@@ -56,7 +53,7 @@ pub fn process_instruction(
             SolanaPriceAccount::account_info_to_feed(pyth_loan_account)?;
             SolanaPriceAccount::account_info_to_feed(pyth_collateral_account)?;
 
-            let config_data = config.try_to_vec()?;
+            let config_data = borsh::to_vec(&config)?;
             let config_dst = &mut admin_config_account.try_borrow_mut_data()?;
             sol_memcpy(config_dst, &config_data, 1 + 32 + 32);
             Ok(())
