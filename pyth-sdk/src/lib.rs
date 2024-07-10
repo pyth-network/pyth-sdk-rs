@@ -116,6 +116,9 @@ pub struct PriceFeedMetadata {
 
     /// Pythnet slot number of the price
     slot: Option<u64>,
+
+    /// Sequence number of the price
+    proof_available_time: Option<u64>,
 }
 
 /// Represents a current aggregation price from pyth publisher feeds.
