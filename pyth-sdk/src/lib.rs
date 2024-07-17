@@ -86,9 +86,63 @@ pub type ProductIdentifier = Identifier;
 pub type UnixTimestamp = i64;
 pub type DurationInSeconds = u64;
 
-/// Represents a current aggregation price from pyth publisher feeds.
+// Metadata of the price
+/// Represents metadata of a price feed.
 #[derive(
     Copy,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    BorshSerialize,
+    BorshDeserialize,
+    serde::Serialize,
+    serde::Deserialize,
+    JsonSchema,
+)]
+pub struct PriceFeedMetadata {
+    /// Attestation time of the price
+    attestation_time:           Option<u64>,
+
+    /// Chain of the emitter
+    emitter_chain:              u64,
+
+    /// The time that the price service received the price
+    price_service_receive_time: Option<u64>,
+
+    /// Sequence number of the price
+    sequence_number:            Option<u64>,
+
+    /// Pythnet slot number of the price
+    slot:                       Option<u64>,
+
+    /// The time that the previous price was published
+    prev_publish_time:          Option<u64>,
+}
+
+impl PriceFeedMetadata {
+    pub fn new(
+        attestation_time: Option<u64>,
+        emitter_chain: u64,
+        price_service_receive_time: Option<u64>,
+        sequence_number: Option<u64>,
+        slot: Option<u64>,
+        prev_publish_time: Option<u64>
+    ) -> Self {
+        Self {
+            attestation_time,
+            emitter_chain,
+            prev_publish_time,
+            price_service_receive_time,
+            sequence_number,
+            slot,
+        }
+    }
+}
+
+/// Represents a current aggregation price from pyth publisher feeds.
+#[derive(
     Clone,
     Debug,
     Default,
@@ -108,6 +162,10 @@ pub struct PriceFeed {
     price:     Price,
     /// Exponentially-weighted moving average (EMA) price.
     ema_price: Price,
+    /// Metadata of the price
+    metadata: Option<PriceFeedMetadata>,
+    /// VAA of the price
+    vaa: Option<String>,
 }
 
 impl PriceFeed {
@@ -118,6 +176,8 @@ impl PriceFeed {
             id,
             price,
             ema_price,
+            metadata: None,
+            vaa: None
         }
     }
 
@@ -200,6 +260,20 @@ impl PriceFeed {
         }
 
         Some(price)
+    }
+
+    /// Get the price feed metadata.
+    ///
+    /// Returns `None` if metadata is currently unavailable.
+    pub fn get_metadata(&self) -> Option<PriceFeedMetadata> {
+        self.metadata
+    }
+
+    /// Get the price feed vaa.
+    ///
+    /// Returns `None` if vaa  is unavailable.
+    pub fn get_vaa(&self) -> Option<String> {
+        self.vaa.clone()
     }
 }
 #[cfg(test)]
