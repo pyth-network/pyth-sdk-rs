@@ -106,10 +106,7 @@ pub struct PriceFeedMetadata {
     attestation_time:           Option<u64>,
 
     /// Chain of the emitter
-    emitter_chain:              Option<u64>,
-
-    /// The time that the previous price was published
-    prev_publish_time:          Option<u64>,
+    emitter_chain:              u64,
 
     /// The time that the price service received the price
     price_service_receive_time: Option<u64>,
@@ -120,8 +117,28 @@ pub struct PriceFeedMetadata {
     /// Pythnet slot number of the price
     slot:                       Option<u64>,
 
-    /// Sequence number of the price
-    proof_available_time:       Option<u64>,
+    /// The time that the previous price was published
+    prev_publish_time:          Option<u64>,
+}
+
+impl PriceFeedMetadata {
+    pub fn new(
+        attestation_time: Option<u64>,
+        emitter_chain: u64,
+        price_service_receive_time: Option<u64>,
+        sequence_number: Option<u64>,
+        slot: Option<u64>,
+        prev_publish_time: Option<u64>
+    ) -> Self {
+        Self {
+            attestation_time,
+            emitter_chain,
+            prev_publish_time,
+            price_service_receive_time,
+            sequence_number,
+            slot,
+        }
+    }
 }
 
 /// Represents a current aggregation price from pyth publisher feeds.
