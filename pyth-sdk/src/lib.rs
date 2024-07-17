@@ -1,4 +1,7 @@
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::{
+    BorshDeserialize,
+    BorshSerialize,
+};
 
 use hex::FromHexError;
 use schemars::JsonSchema;
@@ -83,7 +86,7 @@ pub type ProductIdentifier = Identifier;
 pub type UnixTimestamp = i64;
 pub type DurationInSeconds = u64;
 
-/// Metadata of the price
+// Metadata of the price
 /// Represents metadata of a price feed.
 #[derive(
     Copy,
@@ -100,25 +103,25 @@ pub type DurationInSeconds = u64;
 )]
 pub struct PriceFeedMetadata {
     /// Attestation time of the price
-    attestation_time: Option<u64>,
+    attestation_time:           Option<u64>,
 
     /// Chain of the emitter
-    emitter_chain: Option<u64>,
+    emitter_chain:              Option<u64>,
 
     /// The time that the previous price was published
-    prev_publish_time: Option<u64>,
+    prev_publish_time:          Option<u64>,
 
     /// The time that the price service received the price
     price_service_receive_time: Option<u64>,
 
     /// Sequence number of the price
-    sequence_number: Option<u64>,
+    sequence_number:            Option<u64>,
 
     /// Pythnet slot number of the price
-    slot: Option<u64>,
+    slot:                       Option<u64>,
 
     /// Sequence number of the price
-    proof_available_time: Option<u64>,
+    proof_available_time:       Option<u64>,
 }
 
 /// Represents a current aggregation price from pyth publisher feeds.
@@ -137,9 +140,9 @@ pub struct PriceFeedMetadata {
 #[repr(C)]
 pub struct PriceFeed {
     /// Unique identifier for this price.
-    pub id: PriceIdentifier,
+    pub id:    PriceIdentifier,
     /// Price.
-    price: Price,
+    price:     Price,
     /// Exponentially-weighted moving average (EMA) price.
     ema_price: Price,
     /// Metadata of the price
@@ -151,21 +154,16 @@ pub struct PriceFeed {
 impl PriceFeed {
     /// Constructs a new Price Feed
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        id: PriceIdentifier,
-        price: Price,
-        ema_price: Price,
-        metadata: Option<PriceFeedMetadata>,
-        vaa: Option<String>,
-    ) -> PriceFeed {
+    pub fn new(id: PriceIdentifier, price: Price, ema_price: Price) -> PriceFeed {
         PriceFeed {
             id,
             price,
             ema_price,
-            metadata,
-            vaa,
+            metadata: None,
+            vaa: None
         }
     }
+
 
     /// Get the "unchecked" price and confidence interval as fixed-point numbers of the form
     /// a * 10^e along with its publish time.
@@ -179,6 +177,7 @@ impl PriceFeed {
     pub fn get_price_unchecked(&self) -> Price {
         self.price
     }
+
 
     /// Get the "unchecked" exponentially-weighted moving average (EMA) price and a confidence
     /// interval on the result along with its publish time.
