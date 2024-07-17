@@ -244,6 +244,20 @@ impl PriceFeed {
 
         Some(price)
     }
+
+    /// Get the price feed metadata.
+    ///
+    /// Returns `None` if metadata is currently unavailable.
+    pub fn get_metadata(&self) -> Option<PriceFeedMetadata> {
+        self.metadata
+    }
+
+    /// Get the price feed vaa.
+    ///
+    /// Returns `None` if vaa  is unavailable.
+    pub fn get_vaa(&self) -> Option<String> {
+        self.vaa.clone()
+    }
 }
 #[cfg(test)]
 mod test {
