@@ -123,7 +123,6 @@ pub struct PriceFeedMetadata {
 
 /// Represents a current aggregation price from pyth publisher feeds.
 #[derive(
-    Copy,
     Clone,
     Debug,
     Default,
@@ -145,6 +144,8 @@ pub struct PriceFeed {
     ema_price: Price,
     /// Metadata of the price
     metadata: Option<PriceFeedMetadata>,
+    /// VAA of the price
+    vaa: Option<String>,
 }
 
 impl PriceFeed {
@@ -155,12 +156,14 @@ impl PriceFeed {
         price: Price,
         ema_price: Price,
         metadata: Option<PriceFeedMetadata>,
+        vaa: Option<String>,
     ) -> PriceFeed {
         PriceFeed {
             id,
             price,
             ema_price,
             metadata,
+            vaa,
         }
     }
 

@@ -2,7 +2,7 @@
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use bytemuck::{cast_slice, from_bytes, try_cast_slice, Pod, PodCastError, Zeroable};
-use pyth_sdk::{PriceFeedMetadata, PriceIdentifier, UnixTimestamp};
+use pyth_sdk::{PriceIdentifier, UnixTimestamp};
 use solana_program::clock::Clock;
 use solana_program::pubkey::Pubkey;
 use std::mem::size_of;
@@ -475,6 +475,7 @@ where
             price,
             ema_price,
             None,
+            None,
         )
     }
 }
@@ -624,7 +625,8 @@ mod test {
                     expo: 5,
                     publish_time: 200,
                 },
-                None
+                None,
+                None,
             )
         );
     }
@@ -673,6 +675,7 @@ mod test {
                     expo: 5,
                     publish_time: 100,
                 },
+                None,
                 None
             ),
         );
