@@ -191,7 +191,9 @@ pub struct ProductAccount {
 
 impl ProductAccount {
     pub fn iter(&self) -> AttributeIter {
-        AttributeIter { attrs: &self.attr }
+        AttributeIter {
+            attrs: &self.attr[..(self.size as usize - PROD_HDR_SIZE)],
+        }
     }
 }
 
