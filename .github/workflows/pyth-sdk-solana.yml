@@ -31,7 +31,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install libudev-dev
+      run: sudo apt-get update && sudo apt-get install libudev-dev protobuf-compiler
     - name: Install Solana Binaries
       run: |
         sh -c "$(curl -sSfL https://release.solana.com/v1.18.4/install)"
