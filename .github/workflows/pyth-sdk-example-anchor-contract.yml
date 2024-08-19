@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install libudev-dev pkg-config build-essential
+      run: sudo apt-get update && sudo apt-get install libudev-dev pkg-config build-essential protobuf-compiler
     - name: Install solana binaries
       run: |
         # Installing 1.16.x cli tools to have sbf instead of bpf. bpf does not work anymore.
