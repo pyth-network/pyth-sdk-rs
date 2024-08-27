@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install libudev-dev
+      run: sudo apt-get update && sudo apt-get install libudev-dev protobuf-compiler
     - name: Build
       run: cargo build --verbose
     - name: Run tests
@@ -31,10 +31,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install libudev-dev
+      run: sudo apt-get update && sudo apt-get install libudev-dev protobuf-compiler
     - name: Install Solana Binaries
       run: |
-        sh -c "$(curl -sSfL https://release.solana.com/v1.18.4/install)"
+        sh -c "$(curl -sSfL https://release.solana.com/v1.18.21/install)"
         echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
     - name: Build
       run: cargo build --verbose

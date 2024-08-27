@@ -18,16 +18,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install libudev-dev pkg-config build-essential
+      run: sudo apt-get update && sudo apt-get install libudev-dev pkg-config build-essential protobuf-compiler
     - name: Install solana binaries
       run: |
-        # Installing 1.16.x cli tools to have sbf instead of bpf. bpf does not work anymore.
-        sh -c "$(curl -sSfL https://release.solana.com/v1.18.1/install)"
+        sh -c "$(curl -sSfL https://release.solana.com/v1.18.21/install)"
         echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
     - name: Install anchor binaries
       run: |
         cargo install --git https://github.com/project-serum/anchor avm --locked --force
-        avm install latest
-        avm use latest
+        avm install 0.28.0
+        avm use 0.28.0
     - name: Build
       run: anchor build

@@ -1,7 +1,8 @@
 [package]
 name = "pyth-sdk-solana"
-version = "0.10.1"
+version = "0.10.2"
 authors = ["Pyth Data Foundation"]
+workspace = "../"
 edition = "2018"
 license = "Apache-2.0"
 homepage = "https://pyth.network"
@@ -14,7 +15,7 @@ readme = "README.md"
 solana-program = ">= 1.9"
 borsh = "0.10.3"
 borsh-derive = "0.10.3"
-bytemuck = "1.7.2"
+bytemuck = {version ="1.7.2", features = ["derive"]}
 num-derive = "0.3"
 num-traits = "0.2"
 thiserror = "1.0"

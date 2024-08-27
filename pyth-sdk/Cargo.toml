@@ -2,6 +2,7 @@
 name = "pyth-sdk"
 version = "0.8.0"
 authors = ["Pyth Data Foundation"]
+workspace = "../"
 edition = "2018"
 license = "Apache-2.0"
 homepage = "https://pyth.network"
