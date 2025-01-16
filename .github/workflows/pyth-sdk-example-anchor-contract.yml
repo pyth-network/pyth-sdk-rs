@@ -25,8 +25,6 @@ jobs:
         echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
     - name: Install anchor binaries
       run: |
-        cargo install --git https://github.com/project-serum/anchor avm --locked --force
-        avm install 0.28.0
-        avm use 0.28.0
+        cargo install --git https://github.com/coral-xyz/anchor avm --tag v0.28.0 --locked --force
     - name: Build
       run: anchor build
