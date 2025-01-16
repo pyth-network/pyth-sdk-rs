@@ -26,6 +26,7 @@ jobs:
     - name: Install anchor binaries
       run: |
         cargo install --git https://github.com/coral-xyz/anchor avm --tag v0.28.0 --locked --force
+        avm install 0.28.0
         avm use 0.28.0
     - name: Build
       run: anchor build
