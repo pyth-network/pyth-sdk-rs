@@ -30,7 +30,7 @@ use crate::PythError;
 pub const MAGIC: u32 = 0xa1b2c3d4;
 pub const VERSION_2: u32 = 2;
 pub const VERSION: u32 = VERSION_2;
-pub const MAP_TABLE_SIZE: usize = 640;
+pub const MAP_TABLE_SIZE: usize = 5000;
 pub const PROD_ACCT_SIZE: usize = 512;
 pub const PROD_HDR_SIZE: usize = 48;
 pub const PROD_ATTR_SIZE: usize = PROD_ACCT_SIZE - PROD_HDR_SIZE;
