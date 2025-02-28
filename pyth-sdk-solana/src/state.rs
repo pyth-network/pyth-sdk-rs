@@ -46,19 +46,15 @@ pub const PROD_ATTR_SIZE: usize = PROD_ACCT_SIZE - PROD_HDR_SIZE;
     BorshDeserialize,
     serde::Serialize,
     serde::Deserialize,
+    Default,
 )]
 #[repr(u8)]
 pub enum AccountType {
+    #[default]
     Unknown,
     Mapping,
     Product,
     Price,
-}
-
-impl Default for AccountType {
-    fn default() -> Self {
-        AccountType::Unknown
-    }
 }
 
 /// Status of any ongoing corporate actions.
@@ -73,16 +69,12 @@ impl Default for AccountType {
     BorshDeserialize,
     serde::Serialize,
     serde::Deserialize,
+    Default,
 )]
 #[repr(u8)]
 pub enum CorpAction {
+    #[default]
     NoCorpAct,
-}
-
-impl Default for CorpAction {
-    fn default() -> Self {
-        CorpAction::NoCorpAct
-    }
 }
 
 /// The type of prices associated with a product -- each product may have multiple price feeds of
@@ -97,17 +89,13 @@ impl Default for CorpAction {
     BorshDeserialize,
     serde::Serialize,
     serde::Deserialize,
+    Default,
 )]
 #[repr(u8)]
 pub enum PriceType {
+    #[default]
     Unknown,
     Price,
-}
-
-impl Default for PriceType {
-    fn default() -> Self {
-        PriceType::Unknown
-    }
 }
 
 /// Represents availability status of a price feed.
@@ -121,10 +109,12 @@ impl Default for PriceType {
     BorshDeserialize,
     serde::Serialize,
     serde::Deserialize,
+    Default,
 )]
 #[repr(u8)]
 pub enum PriceStatus {
     /// The price feed is not currently updating for an unknown reason.
+    #[default]
     Unknown,
     /// The price feed is updating as expected.
     Trading,
@@ -136,9 +126,15 @@ pub enum PriceStatus {
     Ignored,
 }
 
-impl Default for PriceStatus {
-    fn default() -> Self {
-        PriceStatus::Unknown
+impl std::fmt::Display for PriceStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Self::Unknown =>"unknown",
+            Self::Trading =>"trading",
+            Self::Halted => "halted",
+            Self::Auction =>"auction",
+            Self::Ignored =>"ignored",
+        })
     }
 }
 
