@@ -12,15 +12,16 @@ keywords = [ "pyth", "solana", "oracle" ]
 readme = "README.md"
 
 [dependencies]
-solana-program = ">= 1.9"
-borsh = "0.10.3"
-borsh-derive = "0.10.3"
-bytemuck = {version ="1.7.2", features = ["derive"]}
+pyth-sdk.workspace = true
+
+solana-program.workspace = true
+borsh.workspace = true
+borsh-derive.workspace = true
+bytemuck = { version ="1.7.2", features = ["derive"] }
 num-derive = "0.3"
 num-traits = "0.2"
 thiserror = "1.0"
-serde = { version = "1.0.136", features = ["derive"] }
-pyth-sdk = { path = "../pyth-sdk", version = "0.8.0" }
+serde = { workspace=true, features = ["derive"] }
 
 [dev-dependencies]
 solana-client = ">= 1.9"

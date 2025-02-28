@@ -6,3 +6,12 @@ members = [
     "pyth-sdk-solana/test-contract",
     "examples/sol-contract",
 ]
+
+[workspace.dependencies]
+pyth-sdk = { path = "./pyth-sdk",version = "0.8.0" }
+pyth-sdk-solana = { path = "./pyth-sdk-solana", version = "0.10.2" }
+
+solana-program = ">= 1.10"
+borsh = "0.10.3"
+borsh-derive = "0.10.3"
+serde =  "1.0.136"
