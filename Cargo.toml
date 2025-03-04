@@ -1,8 +1,17 @@
-[workspace]
+[package]
+name = "pyth-lazer-example-publisher"
+version = "0.1.0"
+edition = "2021"
 
-members = [
-    "pyth-sdk",
-    "pyth-sdk-solana",
-    "pyth-sdk-solana/test-contract",
-    "examples/sol-contract",
-]
+[dependencies]
+pyth-lazer-protocol = "0.1.0"
+
+tokio = { version = "1.40.0", features = ["full"] }
+anyhow = "1.0.89"
+tokio-util = { version = "0.7.12", features = ["compat"] }
+bincode = "1.3.3"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
+tokio-tungstenite = { version = "0.23.1", features = ["native-tls", "url"] }
+url = "2.5.2"
+futures = "0.3.31"
