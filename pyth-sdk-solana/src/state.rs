@@ -128,13 +128,17 @@ pub enum PriceStatus {
 
 impl std::fmt::Display for PriceStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            Self::Unknown =>"unknown",
-            Self::Trading =>"trading",
-            Self::Halted => "halted",
-            Self::Auction =>"auction",
-            Self::Ignored =>"ignored",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Unknown => "unknown",
+                Self::Trading => "trading",
+                Self::Halted => "halted",
+                Self::Auction => "auction",
+                Self::Ignored => "ignored",
+            }
+        )
     }
 }
 
