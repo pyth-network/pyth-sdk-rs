@@ -8,7 +8,7 @@ license = "Apache-2.0"
 homepage = "https://pyth.network"
 repository = "https://github.com/pyth-network/pyth-sdk-rs"
 description = "pyth price oracle data structures and example usage"
-keywords = [ "pyth", "solana", "oracle" ]
+keywords = ["pyth", "solana", "oracle"]
 readme = "README.md"
 
 [dependencies]
@@ -17,11 +17,11 @@ pyth-sdk.workspace = true
 solana-program.workspace = true
 borsh.workspace = true
 borsh-derive.workspace = true
-bytemuck = { version ="1.7.2", features = ["derive"] }
+bytemuck = { version = "1.7.2", features = ["derive"] }
 num-derive = "0.3"
 num-traits = "0.2"
 thiserror = "1.0"
-serde = { workspace=true, features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]
 solana-client = ">= 1.9"
