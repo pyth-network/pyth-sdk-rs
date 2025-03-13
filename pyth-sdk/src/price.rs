@@ -163,12 +163,12 @@ impl Price {
             .mul(&discount_interpolated)?
             .scale_to_exponent(expo_orig)?;
 
-        return Some(Price {
+        Some(Price {
             price:        price_discounted.price,
             conf:         conf_orig,
             expo:         price_discounted.expo,
             publish_time: self.publish_time,
-        });
+        })
     }
 
     /// Get the valuation of a borrow position according to:
@@ -243,12 +243,12 @@ impl Price {
             .mul(&premium_interpolated)?
             .scale_to_exponent(expo_orig)?;
 
-        return Some(Price {
+        Some(Price {
             price:        price_premium.price,
             conf:         conf_orig,
             expo:         price_premium.expo,
             publish_time: self.publish_time,
-        });
+        })
     }
 
     /// affine_combination performs an affine combination of two prices located at x coordinates x1
@@ -345,7 +345,7 @@ impl Price {
         right = right.scale_to_exponent(pre_add_expo)?;
 
         // 8. compute H = F + G, Err(H) ~= 4x + 2*10^pre_add_expo
-        return left.add(&right);
+        left.add(&right)
     }
 
     /// Get the price of a basket of currencies.
@@ -637,7 +637,7 @@ impl Price {
         // get the relevant fraction
         let frac = x_as_price.div(&y_as_price)?;
 
-        return Some(frac);
+        Some(frac)
     }
 }
 
@@ -645,7 +645,6 @@ impl Price {
 mod test {
     use quickcheck::TestResult;
     use quickcheck_macros::quickcheck;
-    use std::convert::TryFrom;
 
     use crate::price::{
         Price,
@@ -2053,12 +2052,12 @@ mod test {
     }
 
     pub fn construct_quickcheck_affine_combination_price(price: i64) -> Price {
-        return Price {
+        Price {
             price:        price,
             conf:         0,
             expo:         -9,
             publish_time: 0,
-        };
+        }
     }
 
     // quickcheck to confirm affine_combination introduces no error if normalization done
@@ -2078,12 +2077,12 @@ mod test {
     ) -> TestResult {
         // generating xs and prices from i32 to limit the range to reasonable values and guard
         // against overflow/bespoke constraint setting for quickcheck
-        let y1 = construct_quickcheck_affine_combination_price(i64::try_from(p1).ok().unwrap());
-        let y2 = construct_quickcheck_affine_combination_price(i64::try_from(p2).ok().unwrap());
+        let y1 = construct_quickcheck_affine_combination_price(i64::from(p1));
+        let y2 = construct_quickcheck_affine_combination_price(i64::from(p2));
 
-        let x1 = i64::try_from(x1_inp).ok().unwrap();
-        let x2 = i64::try_from(x2_inp).ok().unwrap();
-        let x_query = i64::try_from(x_query_inp).ok().unwrap();
+        let x1 = i64::from(x1_inp);
+        let x2 = i64::from(x2_inp);
+        let x_query = i64::from(x_query_inp);
 
         // stick with single expo for ease of testing and generation
         let pre_add_expo = -9;
@@ -2124,12 +2123,12 @@ mod test {
     ) -> TestResult {
         // generating xs and prices from i32 to limit the range to reasonable values and guard
         // against overflow/bespoke constraint setting for quickcheck
-        let y1 = construct_quickcheck_affine_combination_price(i64::try_from(p1).ok().unwrap());
-        let y2 = construct_quickcheck_affine_combination_price(i64::try_from(p2).ok().unwrap());
+        let y1 = construct_quickcheck_affine_combination_price(i64::from(p1));
+        let y2 = construct_quickcheck_affine_combination_price(i64::from(p2));
 
-        let x1 = i64::try_from(x1_inp).ok().unwrap();
-        let x2 = i64::try_from(x2_inp).ok().unwrap();
-        let x_query = i64::try_from(x_query_inp).ok().unwrap();
+        let x1 = i64::from(x1_inp);
+        let x2 = i64::from(x2_inp);
+        let x_query = i64::from(x_query_inp);
 
         // stick with single expo for ease of testing and generation
         let pre_add_expo = -9;
@@ -2159,7 +2158,7 @@ mod test {
 
             x1_new = 0;
             xq_new = frac_q2.price;
-            x2_new = 100_000_000 as i64;
+            x2_new = 100_000_000;
         }
 
         // original result

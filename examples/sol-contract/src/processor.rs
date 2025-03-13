@@ -128,14 +128,14 @@ pub fn process_instruction(
             // If the loan and collateral prices use different exponent,
             // normalize the value.
             if result1.expo > result2.expo {
-                let normalize = (10 as i64)
+                let normalize = 10_i64
                     .checked_pow((result1.expo - result2.expo) as u32)
                     .ok_or(ProgramError::Custom(4))?;
                 collateral_min_value = collateral_min_value
                     .checked_mul(normalize)
                     .ok_or(ProgramError::Custom(4))?;
             } else if result1.expo < result2.expo {
-                let normalize = (10 as i64)
+                let normalize = 10_i64
                     .checked_pow((result2.expo - result1.expo) as u32)
                     .ok_or(ProgramError::Custom(4))?;
                 loan_max_value = loan_max_value
@@ -146,10 +146,10 @@ pub fn process_instruction(
             // Check whether the value of the collateral is higher.
             if collateral_min_value > loan_max_value {
                 msg!("The value of the collateral is higher.");
-                return Ok(());
+                Ok(())
             } else {
                 msg!("The value of the loan is higher!");
-                return Err(ProgramError::Custom(5));
+                Err(ProgramError::Custom(5))
             }
         }
     }

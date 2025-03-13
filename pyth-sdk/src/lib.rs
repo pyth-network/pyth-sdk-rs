@@ -167,7 +167,7 @@ impl PriceFeed {
     ) -> Option<Price> {
         let price = self.get_price_unchecked();
 
-        let time_diff_abs = (price.publish_time - current_time).abs() as u64;
+        let time_diff_abs = (price.publish_time - current_time).unsigned_abs();
 
         if time_diff_abs > age {
             return None;
@@ -193,7 +193,7 @@ impl PriceFeed {
     ) -> Option<Price> {
         let price = self.get_ema_price_unchecked();
 
-        let time_diff_abs = (price.publish_time - current_time).abs() as u64;
+        let time_diff_abs = (price.publish_time - current_time).unsigned_abs();
 
         if time_diff_abs > age {
             return None;
