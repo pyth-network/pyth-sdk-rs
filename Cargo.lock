@@ -2754,7 +2754,7 @@ dependencies = [
 
 [[package]]
 name = "pyth-sdk-solana"
-version = "0.10.3"
+version = "0.10.4"
 dependencies = [
  "borsh 0.10.3",
  "borsh-derive 0.10.3",

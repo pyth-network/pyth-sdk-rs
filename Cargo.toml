@@ -8,8 +8,8 @@ members = [
 ]
 
 [workspace.dependencies]
-pyth-sdk = { path = "./pyth-sdk", version = "0.8.0" }
-pyth-sdk-solana = { path = "./pyth-sdk-solana", version = "0.10.3" }
+pyth-sdk = { path = "./pyth-sdk" }
+pyth-sdk-solana = { path = "./pyth-sdk-solana" }
 
 solana-program = ">= 1.10"
 borsh = "0.10.3"
