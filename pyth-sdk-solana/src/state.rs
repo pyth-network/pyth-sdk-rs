@@ -590,7 +590,7 @@ fn get_attr_str(buf: &[u8]) -> Option<(&str, &[u8])> {
         return Some(("", &[]));
     }
     let len = buf[0] as usize;
-    let str = std::str::from_utf8(&buf[1..len + 1]).ok()?;
+    let str = std::str::from_utf8(buf.get(1..len + 1)?).ok()?;
     let remaining_buf = &buf.get(len + 1..)?;
     Some((str, remaining_buf))
 }
@@ -1006,7 +1006,34 @@ mod test {
         assert_eq!(iter.next(), Some(("key", "value")));
         while iter.next().is_some() {} // Consume the iterator
 
-        // Check that iterator ignores non-UTF8 attributes. This behaviour is not
+        // Check that invalid len stops the iterator. This behaviour is not perfect as it
+        // stops reading attributes after the first invalid one but is just a safety measure.
+        // In this case, we set the length byte to 255 which goes beyond the size of the
+        // product account.
+        product.attr[10] = 255;
+        for i in 11..266 {
+            product.attr[i] = b'a';
+        }
+        product.attr[266] = 255;
+        for i in 267..super::PROD_ATTR_SIZE {
+            product.attr[i] = b'b';
+        }
+        let mut iter = product.iter();
+        assert_eq!(iter.next(), Some(("key", "value")));
+        assert_eq!(iter.next(), None); // No more attributes because it stopped reading the invalid value
+
+        // Make sure if the value size was set to a smaller value, it would work fine
+        product.attr[266] = 10;
+        let mut iter = product.iter();
+        assert_eq!(iter.next(), Some(("key", "value")));
+        let (key, val) = iter.next().unwrap();
+        assert_eq!(key.len(), 255);
+        for byte in key.as_bytes() {
+            assert_eq!(byte, &b'a');
+        }
+        assert_eq!(val, "bbbbbbbbbb"); // No more attributes because it stopped reading the invalid value
+
+        // Check that iterator stops on non-UTF8 attributes. This behaviour is not
         // perfect as it stops reading attributes after the first non-UTF8 one but
         // is just a safety measure.
         product.attr[1..4].copy_from_slice(b"\xff\xfe\xfa");
