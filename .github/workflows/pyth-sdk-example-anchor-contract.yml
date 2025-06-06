@@ -21,7 +21,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install libudev-dev pkg-config build-essential protobuf-compiler
     - name: Install solana binaries
       run: |
-        sh -c "$(curl -sSfL https://release.solana.com/v1.18.21/install)"
+        sh -c "$(curl -sSfL https://release.anza.xyz/v1.18.21/install)"
         echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
     - name: Install anchor binaries
       run: |

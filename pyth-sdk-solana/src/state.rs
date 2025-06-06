@@ -18,6 +18,7 @@ use pyth_sdk::{
 };
 use solana_program::clock::Clock;
 use solana_program::pubkey::Pubkey;
+use std::cmp::min;
 use std::mem::size_of;
 
 pub use pyth_sdk::{
@@ -192,7 +193,10 @@ pub struct ProductAccount {
 impl ProductAccount {
     pub fn iter(&self) -> AttributeIter {
         AttributeIter {
-            attrs: &self.attr[..(self.size as usize - PROD_HDR_SIZE)],
+            attrs: &self.attr[..min(
+                (self.size as usize).saturating_sub(PROD_HDR_SIZE),
+                PROD_ATTR_SIZE,
+            )],
         }
     }
 }
@@ -574,21 +578,21 @@ impl<'a> Iterator for AttributeIter<'a> {
         if self.attrs.is_empty() {
             return None;
         }
-        let (key, data) = get_attr_str(self.attrs);
-        let (val, data) = get_attr_str(data);
+        let (key, data) = get_attr_str(self.attrs)?;
+        let (val, data) = get_attr_str(data)?;
         self.attrs = data;
         Some((key, val))
     }
 }
 
-fn get_attr_str(buf: &[u8]) -> (&str, &[u8]) {
+fn get_attr_str(buf: &[u8]) -> Option<(&str, &[u8])> {
     if buf.is_empty() {
-        return ("", &[]);
+        return Some(("", &[]));
     }
     let len = buf[0] as usize;
-    let str = std::str::from_utf8(&buf[1..len + 1]).expect("attr should be ascii or utf-8");
-    let remaining_buf = &buf[len + 1..];
-    (str, remaining_buf)
+    let str = std::str::from_utf8(buf.get(1..len + 1)?).ok()?;
+    let remaining_buf = &buf.get(len + 1..)?;
+    Some((str, remaining_buf))
 }
 
 #[cfg(test)]
@@ -600,6 +604,11 @@ mod test {
     };
     use solana_program::clock::Clock;
     use solana_program::pubkey::Pubkey;
+
+    use crate::state::{
+        PROD_ACCT_SIZE,
+        PROD_HDR_SIZE,
+    };
 
     use super::{
         PriceInfo,
@@ -964,5 +973,71 @@ mod test {
             );
             assert_eq!(old_b, new_b);
         }
+    }
+
+    #[test]
+    fn test_product_account_iter_works() {
+        let mut product = super::ProductAccount {
+            magic:  1,
+            ver:    2,
+            atype:  super::AccountType::Product as u32,
+            size:   PROD_HDR_SIZE as u32 + 10,
+            px_acc: Pubkey::new_from_array([3; 32]),
+            attr:   [0; super::PROD_ATTR_SIZE],
+        };
+
+        // Set some attributes
+        product.attr[0] = 3; // key length
+        product.attr[1..4].copy_from_slice(b"key");
+        product.attr[4] = 5; // value length
+        product.attr[5..10].copy_from_slice(b"value");
+
+        let mut iter = product.iter();
+        assert_eq!(iter.next(), Some(("key", "value")));
+        assert_eq!(iter.next(), None);
+
+        // Check that the iterator does not panic on size misconfiguration
+        product.size = PROD_HDR_SIZE as u32 - 10; // Invalid size
+        let mut iter = product.iter();
+        assert_eq!(iter.next(), None); // Should not panic, just return None
+
+        product.size = PROD_ACCT_SIZE as u32 + 10; // Reset size to a size larger than the account size
+        let mut iter = product.iter();
+        assert_eq!(iter.next(), Some(("key", "value")));
+        while iter.next().is_some() {} // Consume the iterator
+
+        // Check that invalid len stops the iterator. This behaviour is not perfect as it
+        // stops reading attributes after the first invalid one but is just a safety measure.
+        // In this case, we set the length byte to 255 which goes beyond the size of the
+        // product account.
+        product.attr[10] = 255;
+        for i in 11..266 {
+            product.attr[i] = b'a';
+        }
+        product.attr[266] = 255;
+        for i in 267..super::PROD_ATTR_SIZE {
+            product.attr[i] = b'b';
+        }
+        let mut iter = product.iter();
+        assert_eq!(iter.next(), Some(("key", "value")));
+        assert_eq!(iter.next(), None); // No more attributes because it stopped reading the invalid value
+
+        // Make sure if the value size was set to a smaller value, it would work fine
+        product.attr[266] = 10;
+        let mut iter = product.iter();
+        assert_eq!(iter.next(), Some(("key", "value")));
+        let (key, val) = iter.next().unwrap();
+        assert_eq!(key.len(), 255);
+        for byte in key.as_bytes() {
+            assert_eq!(byte, &b'a');
+        }
+        assert_eq!(val, "bbbbbbbbbb"); // No more attributes because it stopped reading the invalid value
+
+        // Check that iterator stops on non-UTF8 attributes. This behaviour is not
+        // perfect as it stops reading attributes after the first non-UTF8 one but
+        // is just a safety measure.
+        product.attr[1..4].copy_from_slice(b"\xff\xfe\xfa");
+        let mut iter = product.iter();
+        assert_eq!(iter.next(), None); // Should not panic, just return None
     }
 }
