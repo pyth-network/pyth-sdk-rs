@@ -15,7 +15,7 @@ use std::{
 
 
 fn main() {
-    let url = "http:/pythnet.rpcpool.com";
+    let url = "https://pythnet.rpcpool.com";
     // Pyth ETH/USD price account on pythnet (can be found on https://pyth.network/developers/price-feed-ids#solana-mainnet-beta which has the same price feed IDs as pythnet)
     let key = "JBu1AL4obBcCMqKBBxhpWCNUt136ijcuMZLFvTP7iWdB";
     let clnt = RpcClient::new(url.to_string());
