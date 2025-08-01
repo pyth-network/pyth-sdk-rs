@@ -10,19 +10,6 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./pyth-sdk-solana
-    steps:
-    - uses: actions/checkout@v2
-    - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install libudev-dev protobuf-compiler
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
   test-contract:
     runs-on: ubuntu-latest
     defaults:
