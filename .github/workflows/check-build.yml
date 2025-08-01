@@ -1,4 +1,4 @@
-name: Pyth SDK
+name: Check Build
 
 on:
   push:
@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install protoc
+      uses: arduino/setup-protoc@v3
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
     - name: Install dependencies
       run: sudo apt-get update && sudo apt-get install libudev-dev
     - name: Build
