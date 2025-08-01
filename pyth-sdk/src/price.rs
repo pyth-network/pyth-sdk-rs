@@ -1908,7 +1908,7 @@ mod test {
             pc(-1000, 0, -9),
             500,
             -9,
-            pc(-500, 92_23_372_000_000_000_000, -9),
+            pc(-500, 9_223_372_000_000_000_000, -9),
         );
         // test with MAX_PD_V_U64 in conf--no loss in precision unlike above
         succeeds(
@@ -2053,9 +2053,9 @@ mod test {
 
     pub fn construct_quickcheck_affine_combination_price(price: i64) -> Price {
         Price {
-            price:        price,
-            conf:         0,
-            expo:         -9,
+            price,
+            conf: 0,
+            expo: -9,
             publish_time: 0,
         }
     }
