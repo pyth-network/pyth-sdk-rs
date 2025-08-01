@@ -12,6 +12,46 @@ pyth-sdk = { path = "./pyth-sdk", version = "0.8.0" }
 pyth-sdk-solana = { path = "./pyth-sdk-solana", version = "0.10.4" }
 
 solana-program = ">= 1.10"
-borsh = "0.10.3"
-borsh-derive = "0.10.3"
-serde = "1.0.136"
+borsh = "0.10.4"
+borsh-derive = "0.10.4"
+serde = "1.0.219"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+wildcard_dependencies = "deny"
+
+collapsible_if = "allow"
+collapsible_else_if = "allow"
+
+allow_attributes_without_reason = "warn"
+
+# Panics
+expect_used = "warn"
+fallible_impl_from = "warn"
+indexing_slicing = "warn"
+panic = "warn"
+panic_in_result_fn = "warn"
+string_slice = "warn"
+todo = "warn"
+unchecked_duration_subtraction = "warn"
+unreachable = "warn"
+unwrap_in_result = "warn"
+unwrap_used = "warn"
+
+# Correctness
+cast_lossless = "warn"
+cast_possible_truncation = "warn"
+cast_possible_wrap = "warn"
+cast_sign_loss = "warn"
+collection_is_never_read = "warn"
+match_wild_err_arm = "warn"
+path_buf_push_overwrite = "warn"
+read_zero_byte_vec = "warn"
+same_name_method = "warn"
+suspicious_operation_groupings = "warn"
+suspicious_xor_used_as_pow = "warn"
+unused_self = "warn"
+used_underscore_binding = "warn"
+while_float = "warn"
