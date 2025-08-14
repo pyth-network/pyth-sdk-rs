@@ -9,7 +9,7 @@ test-bpf = []
 no-entrypoint = []
 
 [dependencies]
-pyth-sdk-solana = { path = "../", version = "0.10.0" }
+pyth-sdk-solana = { path = "../", version = "0.10.6" }
 solana-program = ">= 1.10"
 bytemuck = "1.7.2"
 borsh = "0.10.3"

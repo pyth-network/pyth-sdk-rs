@@ -1,6 +1,6 @@
 [package]
 name = "pyth-sdk-solana"
-version = "0.10.5"
+version = "0.10.6"
 authors = ["Pyth Data Foundation"]
 workspace = "../"
 edition = "2018"

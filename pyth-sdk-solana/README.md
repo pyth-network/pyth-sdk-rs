@@ -1,5 +1,7 @@
 # Pyth Network Solana SDK
 
+> Notice: This crate contains the internal implementation details of Pyth on Pythnet. If you want to use Pyth prices on Solana, use the [pyth-solana-receiver-sdk](https://crates.io/crates/pyth-solana-receiver-sdk) crate instead.
+
 This crate provides utilities for reading price feeds from the [pyth.network](https://pyth.network/) oracle on the Solana network.
 It also includes several [off-chain example programs](examples/).
 

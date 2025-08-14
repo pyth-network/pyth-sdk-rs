@@ -20,4 +20,4 @@ default = []
 anchor-lang = "0.28.0"
 pyth-sdk = { path = "../../../../pyth-sdk", version = "0.8.0" }
 solana-program = ">= 1.10, < 2.0"
-pyth-sdk-solana = { path = "../../../../pyth-sdk-solana", version = "0.10.2" }
+pyth-sdk-solana = { path = "../../../../pyth-sdk-solana", version = "0.10.6" }
