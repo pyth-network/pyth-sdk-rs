@@ -46,3 +46,4 @@ To release a new version of any of these crates, perform the following steps wit
 pre-commit is a tool that checks and fixes simple issues (formatting, ...) before each commit. You can install it by following [their website](https://pre-commit.com/). In order to enable checks for this repo run `pre-commit install` from command-line in the root of this repo.
 
 The checks are also performed in the CI to ensure the code follows consistent formatting.
+- [SolSniper](https://github.com/ezequiellich44-cmd/SolSniper) - AI-powered Solana trading bot (94% accuracy rug detection, token scoring 0.0-1.0, 0% fees, auto trading, Jito bundles). https://ezequiellich44-cmd.github.io/SolSniper/
